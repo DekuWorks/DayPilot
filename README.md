@@ -17,9 +17,21 @@ Visit [daypilot.co](https://daypilot.co) to learn more.
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 20+
+- pnpm 8.15.9+
+- Supabase account (for backend)
+
+### Development Setup
+
 ```bash
 # Install dependencies
 pnpm install
+
+# Set up environment variables
+cp ENV_SETUP.md apps/web/.env
+# Edit apps/web/.env with your Supabase credentials
 
 # Start development server
 pnpm dev
@@ -29,6 +41,34 @@ pnpm build
 
 # Run linter
 pnpm lint
+```
+
+### Environment Variables
+
+See [ENV_SETUP.md](./ENV_SETUP.md) for required environment variables.
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### Quick Deploy to Netlify
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Deploy
+netlify deploy --prod
 ```
 
 ## Project Structure

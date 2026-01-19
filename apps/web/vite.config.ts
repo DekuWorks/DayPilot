@@ -23,6 +23,27 @@ export default defineConfig({
     include: ['react', 'react-dom', 'react/jsx-runtime'],
     exclude: [],
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'calendar-vendor': [
+            '@fullcalendar/react',
+            '@fullcalendar/daygrid',
+            '@fullcalendar/timegrid',
+            '@fullcalendar/list',
+            '@fullcalendar/interaction',
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
   server: {
     port: 5174,
     strictPort: false,
@@ -30,5 +51,9 @@ export default defineConfig({
       protocol: 'ws',
       host: 'localhost',
     },
+  },
+  preview: {
+    port: 4173,
+    strictPort: false,
   },
 });

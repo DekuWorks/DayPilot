@@ -1,0 +1,19 @@
+name: Send Reminders
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    name: Trigger Reminder Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Reminder Function
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/send-reminders

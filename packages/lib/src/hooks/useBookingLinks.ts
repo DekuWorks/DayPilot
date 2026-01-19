@@ -252,6 +252,30 @@ export function useCreateBooking() {
         .single();
 
       if (error) throw error;
+
+      // Trigger booking confirmation email (fire and forget)
+      // This will be handled by the Edge Function
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co') {
+          // Call the edge function asynchronously (don't wait for response)
+          fetch(`${supabaseUrl}/functions/v1/send-booking-confirmation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ bookingId: booking.id }),
+          }).catch((err) => {
+            console.error('Error triggering booking confirmation email:', err);
+            // Don't throw - booking was created successfully
+          });
+        }
+      } catch (err) {
+        console.error('Error triggering booking confirmation email:', err);
+        // Don't throw - booking was created successfully
+      }
+
       return booking as Booking;
     },
     onSuccess: (_, variables) => {
