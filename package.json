@@ -1,0 +1,25 @@
+{
+  "name": "daypilot",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@8.15.9",
+  "scripts": {
+    "dev": "turbo run dev",
+    "start": "turbo run dev",
+    "build": "turbo run build",
+    "build:production": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "turbo run type-check"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0",
+    "turbo": "^2.6.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

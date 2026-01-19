@@ -1,0 +1,21 @@
+{
+  "name": "@daypilot/lib",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+
+
+
+
+
