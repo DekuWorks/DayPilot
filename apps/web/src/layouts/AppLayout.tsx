@@ -71,6 +71,18 @@ export function AppLayout() {
           >
             Settings
           </Link>
+          <Link
+            to="/app/integrations"
+            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+          >
+            Integrations
+          </Link>
+          <Link
+            to="/app/billing"
+            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+          >
+            Billing
+          </Link>
         </nav>
         <div className="p-4 border-t border-gray-800 space-y-4 hidden md:block">
           {user && (

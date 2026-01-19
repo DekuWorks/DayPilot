@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button, Card, Badge } from '@daypilot/ui';
 import {
   parseNaturalLanguage,
@@ -6,6 +7,8 @@ import {
   useEvents,
   useCalendars,
   useCreateEvent,
+  useEntitlements,
+  canUseAI,
 } from '@daypilot/lib';
 import type { AISchedule } from '@daypilot/lib';
 
@@ -17,10 +20,13 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
   const { data: events = [] } = useEvents();
   const { data: calendars = [] } = useCalendars();
   const createEvent = useCreateEvent();
+  const { data: entitlements } = useEntitlements();
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [schedule, setSchedule] = useState<AISchedule | null>(null);
   const [error, setError] = useState('');
+
+  const hasAIAccess = canUseAI(entitlements);
 
   const handleGenerate = async () => {
     if (!input.trim()) return;
@@ -100,13 +106,24 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
           onChange={(e) => setInput(e.target.value)}
           disabled={isGenerating}
         />
-        <Button
-          onClick={handleGenerate}
-          disabled={isGenerating || !input.trim()}
-          className="w-full"
-        >
-          {isGenerating ? 'Generating schedule...' : 'Generate schedule'}
-        </Button>
+        {!hasAIAccess ? (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800 mb-2">
+              AI features require a subscription. Upgrade to enable AI scheduling.
+            </p>
+            <Link to="/app/billing">
+              <Button className="w-full">Upgrade to Enable AI</Button>
+            </Link>
+          </div>
+        ) : (
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating || !input.trim()}
+            className="w-full"
+          >
+            {isGenerating ? 'Generating schedule...' : 'Generate schedule'}
+          </Button>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">

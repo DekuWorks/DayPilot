@@ -4,6 +4,143 @@ This directory contains Supabase Edge Functions for DayPilot.
 
 ## Functions
 
+### `create-checkout-session`
+Creates a Stripe Checkout Session for subscription upgrades.
+
+**Environment Variables Required:**
+- `STRIPE_SECRET_KEY` - Your Stripe secret key
+- `FRONTEND_URL` - Your frontend URL (for redirects)
+- `SUPABASE_URL` - Auto-provided
+- `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
+
+**Request Body:**
+```json
+{
+  "priceId": "price_xxxxx",
+  "tier": "student"
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://checkout.stripe.com/..."
+}
+```
+
+**Deployment:**
+```bash
+supabase functions deploy create-checkout-session
+```
+
+### `create-portal-session`
+Creates a Stripe Customer Portal Session for subscription management.
+
+**Environment Variables Required:**
+- `STRIPE_SECRET_KEY` - Your Stripe secret key
+- `FRONTEND_URL` - Your frontend URL (for redirects)
+
+**Request Body:**
+```json
+{
+  "customerId": "cus_xxxxx"
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://billing.stripe.com/..."
+}
+```
+
+**Deployment:**
+```bash
+supabase functions deploy create-portal-session
+```
+
+### `stripe-webhook`
+Handles Stripe webhook events for subscription lifecycle.
+
+**Environment Variables Required:**
+- `STRIPE_SECRET_KEY` - Your Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` - Webhook signing secret from Stripe
+- `SUPABASE_URL` - Auto-provided
+- `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
+
+**Events Handled:**
+- `checkout.session.completed` - Creates customer and subscription
+- `customer.subscription.created` - Updates entitlements
+- `customer.subscription.updated` - Updates entitlements
+- `customer.subscription.deleted` - Resets to free tier
+
+**Deployment:**
+```bash
+supabase functions deploy stripe-webhook
+```
+
+**Webhook Setup:**
+1. Go to Stripe Dashboard → Webhooks
+2. Add endpoint: `https://YOUR_PROJECT.supabase.co/functions/v1/stripe-webhook`
+3. Select events listed above
+4. Copy webhook secret → Set as `STRIPE_WEBHOOK_SECRET`
+
+### `generate-day`
+Generates an AI-powered schedule for a user's day based on existing events and backlog tasks.
+
+**Environment Variables Required:**
+- `SUPABASE_URL` - Auto-provided
+- `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
+- `OPENAI_API_KEY` - Optional (for future AI integration)
+- `ANTHROPIC_API_KEY` - Optional (for future AI integration)
+
+**Request Body:**
+```json
+{
+  "date": "2024-01-15", // Optional, defaults to today
+  "backlog_tasks": [
+    {
+      "title": "Review project proposal",
+      "description": "Need to review and provide feedback",
+      "priority": "high",
+      "estimated_duration": 60
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "action_id": "uuid",
+  "blocks": [
+    {
+      "start": "2024-01-15T09:00:00Z",
+      "end": "2024-01-15T10:00:00Z",
+      "title": "Review project proposal",
+      "type": "task",
+      "reason": "Scheduled based on priority: high"
+    }
+  ],
+  "conflicts": [],
+  "notes": [],
+  "existing_events": 2,
+  "new_blocks": 3
+}
+```
+
+**Features:**
+- Validates AI entitlement (ai_enabled OR ai_credits > 0)
+- Considers existing events
+- Respects working hours
+- Handles conflicts
+- Creates draft AI action
+
+**Deployment:**
+```bash
+supabase functions deploy generate-day
+```
+
 ### `send-reminders`
 Sends email reminders for events that are due. This function should be called periodically (via cron job) to check for reminders that need to be sent.
 

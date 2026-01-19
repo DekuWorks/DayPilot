@@ -1,6 +1,7 @@
 import { useEvents } from '@daypilot/lib';
 import { formatTime, isToday } from '@daypilot/lib';
 import { Card, Badge } from '@daypilot/ui';
+import { GenerateMyDay } from '../../components/GenerateMyDay';
 import { AIQuickPlan } from '../../components/AIQuickPlan';
 import { AISuggestions } from '../../components/AISuggestions';
 import { AIRescheduler } from '../../components/AIRescheduler';
@@ -44,6 +45,11 @@ export function TodayPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Today</h1>
+
+      {/* Generate My Day */}
+      <div className="mb-6">
+        <GenerateMyDay onScheduleGenerated={() => refetch()} />
+      </div>
 
       {/* AI Quick Plan */}
       <div className="mb-6">

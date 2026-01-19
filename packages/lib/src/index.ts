@@ -19,4 +19,7 @@ export * from './hooks/useCalendars';
 export * from './hooks/useOrganizations';
 export * from './hooks/useLocations';
 export * from './hooks/useBookingLinks';
+export * from './hooks/useAIActions';
+export * from './hooks/useEntitlements';
+export * from './hooks/useConnectedAccounts';
 

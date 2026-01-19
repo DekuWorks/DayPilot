@@ -15,6 +15,9 @@ import { OrganizationsPage } from './pages/app/OrganizationsPage';
 import { BookingLinksPage } from './pages/app/BookingLinksPage';
 import { BookingLinkEditPage } from './pages/app/BookingLinkEditPage';
 import { BookingPage } from './pages/BookingPage';
+import { BillingPage } from './pages/BillingPage';
+import { IntegrationsPage } from './pages/app/IntegrationsPage';
+import { GoogleOAuthCallback } from './pages/app/GoogleOAuthCallback';
 import { UIDemoPage } from './pages/UIDemoPage';
 import { RequireAuth } from './components/RequireAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -62,6 +65,9 @@ function App() {
                 <Route path="today" element={<TodayPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="billing" element={<BillingPage />} />
+                <Route path="integrations" element={<IntegrationsPage />} />
+                <Route path="integrations/google/callback" element={<GoogleOAuthCallback />} />
                 <Route path="organizations" element={<OrganizationsPage />} />
                 <Route path="organization/:orgId" element={<OrganizationPage />} />
                 <Route path="booking-links" element={<BookingLinksPage />} />

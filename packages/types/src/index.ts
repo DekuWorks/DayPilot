@@ -6,6 +6,11 @@ export interface User {
   avatar_url: string | null;
   timezone?: string | null;
   timezone_frozen?: boolean;
+  ai_enabled?: boolean;
+  ai_credits?: number;
+  working_hours_start?: string | null;
+  working_hours_end?: string | null;
+  focus_block_duration?: number | null;
   created_at: string;
 }
 
@@ -153,3 +158,117 @@ export interface Booking {
   updated_at: string;
 }
 
+// AI types
+export type AIActionType = 'generate_day';
+export type AIActionStatus = 'draft' | 'applied' | 'rejected';
+
+export interface AIAction {
+  id: string;
+  user_id: string;
+  action_type: AIActionType;
+  input: Record<string, any>;
+  output: {
+    blocks: AIBlock[];
+    alternatives?: AIBlock[][];
+    notes?: string;
+    conflicts?: string[];
+  };
+  status: AIActionStatus;
+  created_events?: string[]; // Array of event IDs
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIBlock {
+  start: string; // ISO timestamp
+  end: string; // ISO timestamp
+  title: string;
+  type: 'event' | 'task' | 'break' | 'focus_block';
+  reason?: string;
+  description?: string;
+}
+
+
+// Billing types
+export type SubscriptionTier = 'free' | 'student' | 'team' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'trialing';
+
+export interface StripeCustomer {
+  id: string;
+  user_id: string;
+  stripe_customer_id: string;
+  created_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  stripe_subscription_id: string;
+  status: SubscriptionStatus;
+  tier: SubscriptionTier;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Entitlements {
+  user_id: string;
+  tier: SubscriptionTier;
+  ai_enabled: boolean;
+  ai_credits: number;
+  max_connected_calendars: number;
+  sync_frequency_minutes: number;
+  updated_at: string;
+}
+
+// Google Calendar Sync types
+export interface ConnectedAccount {
+  id: string;
+  user_id: string;
+  provider: 'google' | 'outlook' | 'apple';
+  provider_account_id: string;
+  email: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expires_at: string | null;
+  scope: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CalendarMapping {
+  id: string;
+  connected_account_id: string;
+  daypilot_calendar_id: string;
+  provider_calendar_id: string;
+  provider_calendar_name: string | null;
+  sync_enabled: boolean;
+  sync_direction: 'import' | 'export' | 'bidirectional';
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventMapping {
+  id: string;
+  calendar_mapping_id: string;
+  daypilot_event_id: string;
+  provider_event_id: string;
+  provider_etag: string | null;
+  last_synced_at: string;
+  created_at: string;
+}
+
+export interface SyncState {
+  id: string;
+  calendar_mapping_id: string;
+  sync_token: string | null;
+  last_sync_token: string | null;
+  last_sync_at: string | null;
+  sync_status: 'idle' | 'syncing' | 'error';
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
