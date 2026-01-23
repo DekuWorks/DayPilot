@@ -4,6 +4,7 @@ import { supabaseClient, getUserTimezone } from '@daypilot/lib';
 import { useCalendars } from '@daypilot/lib';
 import { Card, Button, Input, Label, Badge } from '@daypilot/ui';
 import { CalendarManager } from '../../components/CalendarManager';
+import { ShareSettings } from '../../components/ShareSettings';
 import type { User } from '@supabase/supabase-js';
 
 export function SettingsPage() {
@@ -203,6 +204,9 @@ export function SettingsPage() {
         <Card>
           <CalendarManager />
         </Card>
+
+        {/* Calendar Sharing */}
+        <ShareSettings />
 
         {/* Calendar Connections - Premium Feature */}
         <Card>

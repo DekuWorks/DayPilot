@@ -9,19 +9,21 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', variant = 'primary', size = 'md', ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-semibold rounded-3xl transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-lg active:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm';
+      'inline-flex items-center justify-center font-semibold rounded-2xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    
     const variants = {
       primary:
-        'bg-gradient-to-br from-[#EFBF4D] to-[#4FB3B3] text-white hover:from-[#E5B545] hover:to-[#45A3A3] focus:ring-[#4FB3B3] active:scale-[0.98] hover:scale-[1.02]',
+        'bg-gradient-to-r from-[#EFBF4D] to-[#4FB3B3] text-white hover:from-[#E5B545] hover:to-[#45A3A3] focus:ring-[#4FB3B3] shadow-md hover:shadow-lg active:scale-[0.98]',
       secondary:
-        'bg-gradient-to-br from-[#4FB3B3] to-[#1D5A6E] text-white hover:from-[#45A3A3] hover:to-[#1A4F5F] focus:ring-[#4FB3B3] active:scale-[0.98] hover:scale-[1.02]',
+        'bg-gradient-to-r from-[#4FB3B3] to-[#1D5A6E] text-white hover:from-[#45A3A3] hover:to-[#1A4F5F] focus:ring-[#4FB3B3] shadow-md hover:shadow-lg active:scale-[0.98]',
       outline:
-        'border-2 border-[#4FB3B3] text-[#2B3448] bg-white hover:bg-gradient-to-br hover:from-[#EFBF4D]/10 hover:to-[#4FB3B3]/10 hover:border-[#4FB3B3] focus:ring-[#4FB3B3] active:scale-[0.98] hover:scale-[1.01] hover:shadow-md',
+        'border-2 border-[#4FB3B3] text-[#2B3448] bg-white hover:bg-[#4FB3B3]/5 hover:border-[#4FB3B3] focus:ring-[#4FB3B3] active:scale-[0.98]',
     };
+    
     const sizes = {
-      sm: 'px-6 py-3.5 text-sm',
-      md: 'px-8 py-4 text-base',
-      lg: 'px-12 py-6 text-xl',
+      sm: 'px-5 py-2.5 text-sm',
+      md: 'px-6 py-3 text-base',
+      lg: 'px-8 py-4 text-lg',
     };
 
     return (
@@ -35,4 +37,3 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
-

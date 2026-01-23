@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@daypilot/ui';
 import type { BookingLink, AvailabilityRule, BookingExcludedDate, Booking } from '@daypilot/types';
+import { scoreAndSortSlots } from '../utils/slotScoring';
 
 interface BookingCalendarProps {
   bookingLink: BookingLink;
@@ -42,8 +43,8 @@ export function BookingCalendar({
     return map;
   }, [existingBookings]);
 
-  // Calculate available time slots for a given date
-  const getAvailableSlots = (date: Date): string[] => {
+  // Calculate available time slots for a given date (with scoring)
+  const getAvailableSlots = (date: Date, sorted: boolean = true): string[] => {
     const dayOfWeek = date.getDay();
     const dateString = date.toISOString().split('T')[0];
 
@@ -121,6 +122,24 @@ export function BookingCalendar({
 
       // Move to next slot (15-minute intervals)
       currentTime.setMinutes(currentTime.getMinutes() + 15);
+    }
+
+    // Score and sort slots if requested
+    if (sorted && slots.length > 0) {
+      const bookingsForScoring = bookingsForDate.map(booking => ({
+        start: new Date(booking.start_time),
+        end: new Date(booking.end_time),
+      }));
+      
+      const scored = scoreAndSortSlots(
+        slots,
+        date,
+        bookingsForScoring,
+        bookingLink.buffer_before,
+        bookingLink.buffer_after
+      );
+      
+      return scored.map(s => s.time);
     }
 
     return slots;

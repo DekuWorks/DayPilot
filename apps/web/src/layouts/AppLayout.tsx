@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react';
 import { supabaseClient } from '@daypilot/lib';
 import { Button } from '@daypilot/ui';
 import type { User } from '@supabase/supabase-js';
+import { useLocation } from 'react-router-dom';
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const isDashboard = location.pathname === '/app' || location.pathname === '/app/';
 
   useEffect(() => {
     const getUser = async () => {
@@ -32,84 +35,112 @@ export function AppLayout() {
     navigate('/login');
   };
 
+  const handleNewEvent = () => {
+    // Always navigate to dashboard and trigger event
+    if (!isDashboard) {
+      navigate('/app');
+      // Wait a bit for navigation, then trigger
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('create-event'));
+      }, 100);
+    } else {
+      window.dispatchEvent(new CustomEvent('create-event'));
+    }
+  };
+
+  const handleConnect = () => {
+    navigate('/app/integrations');
+  };
+
+  const handleBookings = () => {
+    navigate('/app/booking-links');
+  };
+
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-gray-900 text-white flex flex-col">
-        <div className="p-4 md:p-6">
-          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#EFBF4D] to-[#4FB3B3] bg-clip-text text-transparent">
-            DayPilot
-          </h1>
-        </div>
-        <nav className="flex md:flex-col flex-row md:flex-1 px-4 space-y-2 md:space-y-2 space-x-2 md:space-x-0 overflow-x-auto">
-          <Link
-            to="/app/today"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+    <div className="min-h-screen">
+      {/* Navigation Bar - Matching Schedura Style */}
+      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-white/20">
+        <Link to="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity flex items-center gap-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          DayPilot
+        </Link>
+        
+        <div className="flex items-center gap-3">
+          {/* Action Buttons */}
+          <Button
+            onClick={handleNewEvent}
+            size="lg"
+            className="!bg-[#059669] !text-white hover:!bg-[#047857] shadow-sm !px-6 whitespace-nowrap !flex !items-center !gap-2"
           >
-            Today
-          </Link>
-          <Link
-            to="/app/calendar"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+            <span className="text-lg font-bold">+</span>
+            <span>New</span>
+          </Button>
+          <Button
+            onClick={handleConnect}
+            variant="outline"
+            size="lg"
+            className="!bg-[#3B82F6] !text-white !border-[#3B82F6] hover:!bg-[#2563EB] shadow-sm !px-6 whitespace-nowrap !flex !items-center !gap-2"
           >
-            Calendar
-          </Link>
-          <Link
-            to="/app/organizations"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>Connect</span>
+          </Button>
+          <Button
+            onClick={handleBookings}
+            variant="outline"
+            size="lg"
+            className="!bg-gray-700 !text-white !border-gray-700 hover:!bg-gray-600 shadow-sm !px-6 whitespace-nowrap !flex !items-center !gap-2"
           >
-            Organizations
-          </Link>
-          <Link
-            to="/app/booking-links"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
-          >
-            Booking Links
-          </Link>
-          <Link
-            to="/app/settings"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
-          >
-            Settings
-          </Link>
-          <Link
-            to="/app/integrations"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
-          >
-            Integrations
-          </Link>
-          <Link
-            to="/app/billing"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
-          >
-            Billing
-          </Link>
-        </nav>
-        <div className="p-4 border-t border-gray-800 space-y-4 hidden md:block">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>Bookings</span>
+          </Button>
+          
+          {/* User Info */}
           {user && (
-            <div className="text-sm">
-              <p className="font-medium truncate">{user.email}</p>
-              {user.user_metadata?.name && (
-                <p className="text-gray-400 truncate">
-                  {user.user_metadata.name}
-                </p>
-              )}
+            <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-white/20">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EFBF4D] to-[#4FB3B3] flex items-center justify-center text-white font-semibold text-sm">
+                  {user.user_metadata?.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <span className="text-sm text-[#2B3448] font-medium">
+                  {user.user_metadata?.name || user.email?.split('@')[0]}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-[#4FB3B3] hover:text-[#EFBF4D] transition-colors"
+              >
+                Sign out
+              </button>
             </div>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="w-full !text-white !border-gray-700 hover:!bg-gray-800"
-          >
-            Log out
-          </Button>
+          
+          {/* Mobile menu */}
+          <div className="md:hidden flex items-center gap-2">
+            {user && (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#EFBF4D] to-[#4FB3B3] flex items-center justify-center text-white font-semibold text-sm">
+                {user.user_metadata?.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
+            <button
+              onClick={handleLogout}
+              className="text-sm text-[#4FB3B3] hover:text-[#EFBF4D] transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
-      </aside>
+      </nav>
 
-      <main className="flex-1 bg-gray-50">
-        <div className="p-4 md:p-8">
-          <Outlet />
-        </div>
+      {/* Main Content */}
+      <main className="min-h-[calc(100vh-80px)]">
+        <Outlet />
       </main>
     </div>
   );

@@ -6,19 +6,33 @@ export function useEvents(calendarId?: string) {
   return useQuery({
     queryKey: ['events', calendarId],
     queryFn: async () => {
-      let query = supabaseClient
-        .from('events')
-        .select('*')
-        .order('start', { ascending: true });
+      try {
+        let query = supabaseClient
+          .from('events')
+          .select('*')
+          .order('start', { ascending: true });
 
-      if (calendarId) {
-        query = query.eq('calendar_id', calendarId);
+        if (calendarId) {
+          query = query.eq('calendar_id', calendarId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          // Create a more descriptive error
+          const errorMessage = error.message || 'Failed to load events';
+          const errorCode = error.code || 'UNKNOWN';
+          throw new Error(`${errorMessage} (Code: ${errorCode})`);
+        }
+        
+        return (data || []) as Event[];
+      } catch (err) {
+        // Re-throw with better error message
+        if (err instanceof Error) {
+          throw err;
+        }
+        throw new Error('Failed to load events: Unknown error');
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Event[];
     },
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
   });

@@ -236,9 +236,7 @@ export interface ConnectedAccount {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface CalendarMapping {
+}export interface CalendarMapping {
   id: string;
   connected_account_id: string;
   daypilot_calendar_id: string;
@@ -259,9 +257,7 @@ export interface EventMapping {
   provider_etag: string | null;
   last_synced_at: string;
   created_at: string;
-}
-
-export interface SyncState {
+}export interface SyncState {
   id: string;
   calendar_mapping_id: string;
   sync_token: string | null;
@@ -271,4 +267,57 @@ export interface SyncState {
   error_message: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Task types - Calendar-native tasks
+export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface Task {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null; // ISO date string
+  duration: number | null; // minutes
+  priority: TaskPriority;
+  status: TaskStatus;
+  category_id: string | null; // Reference to Tag/Category
+  converted_to_event_id: string | null; // If converted to event
+  created_at: string;
+  updated_at: string;
+}
+
+// Tag/Category types for color coding
+export interface Category {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  created_at: string;
+}
+
+// Public share types
+export interface PublicShare {
+  id: string;
+  user_id: string;
+  calendar_id: string;
+  share_token: string; // Unique token for the share link
+  is_busy_only: boolean; // If true, only show busy/free, not event details
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ShareLink types (simplified for localStorage MVP)
+export type ShareMode = 'readOnly' | 'busyOnly';
+
+export interface ShareLink {
+  id: string;
+  userId: string;
+  token: string; // Unguessable token for public access
+  mode: ShareMode;
+  createdAt: string;
+  revokedAt: string | null;
 }

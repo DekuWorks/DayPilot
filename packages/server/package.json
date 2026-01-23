@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "echo 'Server package is a placeholder - no dev server needed'",
     "build": "tsc",
     "type-check": "tsc --noEmit"
   },

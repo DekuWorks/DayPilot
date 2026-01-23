@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Button, Input, Label, Card } from '@daypilot/ui';
+import { Button, Input, Label } from '@daypilot/ui';
 import {
   useExcludedDates,
 } from '@daypilot/lib';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@daypilot/lib';
-import type { BookingExcludedDate } from '@daypilot/types';
 
 interface ExcludedDatesEditorProps {
   bookingLinkId: string;

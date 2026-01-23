@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button } from '@daypilot/ui';
 import {
   useBookingLinkBySlug,
@@ -13,6 +13,7 @@ import { BookingForm } from '../components/BookingForm';
 
 export function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { data: bookingLink, isLoading, error } = useBookingLinkBySlug(slug || null);
   const { data: availabilityRules = [] } = useAvailabilityRules(bookingLink?.id || null);
   const { data: excludedDates = [] } = useExcludedDates(bookingLink?.id || null);
@@ -83,7 +84,7 @@ export function BookingPage() {
       const startTimeISO = startDateTime.toISOString();
       const endTimeISO = endDateTime.toISOString();
 
-      await createBooking.mutateAsync({
+      const booking = await createBooking.mutateAsync({
         booking_link_id: bookingLink.id,
         booker_name: formData.name,
         booker_email: formData.email,
@@ -94,8 +95,34 @@ export function BookingPage() {
         notes: formData.notes,
       });
 
+      // Store booking in sessionStorage for confirmation page
+      if (booking?.id) {
+        sessionStorage.setItem(`booking_${booking.id}`, JSON.stringify(booking));
+      }
+
+      // Create event in localStorage (for MVP)
+      try {
+        const { getEvents, saveEvents } = await import('@daypilot/lib');
+        const events = getEvents();
+        const newEvent = {
+          id: `event-${Date.now()}`,
+          title: `Booking: ${formData.name}`,
+          description: formData.notes || `Booked by ${formData.name} (${formData.email})`,
+          start: startTimeISO,
+          end: endTimeISO,
+          status: 'scheduled' as const,
+          all_day: false,
+          color: '#059669',
+          category_id: null,
+        };
+        saveEvents([...events, newEvent]);
+      } catch (err) {
+        console.error('Failed to create event in localStorage:', err);
+        // Don't block booking confirmation if event creation fails
+      }
+
       // Navigate to confirmation page
-      window.location.href = `/book/${slug}/confirmed`;
+      navigate(`/book/${slug}/confirmed?bookingId=${booking?.id || Date.now()}`);
     } catch (error: any) {
       alert('Error creating booking: ' + error.message);
     } finally {

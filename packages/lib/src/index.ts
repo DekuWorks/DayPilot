@@ -19,6 +19,10 @@ export * from './hooks/useCalendars';
 export * from './hooks/useOrganizations';
 export * from './hooks/useLocations';
 export * from './hooks/useBookingLinks';
+export * from './hooks/useShareLinks';
+
+// LocalStorage storage (for MVP without database)
+export * from './storage/localStorage';
 export * from './hooks/useAIActions';
 export * from './hooks/useEntitlements';
 export * from './hooks/useConnectedAccounts';

@@ -7,15 +7,18 @@ import { FeaturesPage } from './pages/FeaturesPage';
 import { PricingPage } from './pages/PricingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { TodayPage } from './pages/app/TodayPage';
 import { CalendarPage } from './pages/app/CalendarPage';
+import { DashboardPage } from './pages/app/DashboardPage';
 import { SettingsPage } from './pages/app/SettingsPage';
 import { OrganizationPage } from './pages/app/OrganizationPage';
 import { OrganizationsPage } from './pages/app/OrganizationsPage';
 import { BookingLinksPage } from './pages/app/BookingLinksPage';
 import { BookingLinkEditPage } from './pages/app/BookingLinkEditPage';
 import { BookingPage } from './pages/BookingPage';
+import { BookingConfirmationPage } from './pages/BookingConfirmationPage';
+import { SharePage } from './pages/SharePage';
 import { BillingPage } from './pages/BillingPage';
+import { InsightsPage } from './pages/app/InsightsPage';
 import { IntegrationsPage } from './pages/app/IntegrationsPage';
 import { GoogleOAuthCallback } from './pages/app/GoogleOAuthCallback';
 import { UIDemoPage } from './pages/UIDemoPage';
@@ -50,6 +53,9 @@ function App() {
 
             {/* Public booking page (no auth required) */}
             <Route path="/book/:slug" element={<BookingPage />} />
+            <Route path="/book/:slug/confirmed" element={<BookingConfirmationPage />} />
+            {/* Public share page (no auth required) */}
+            <Route path="/share/:token" element={<SharePage />} />
 
             {/* App routes (protected) */}
             <Route
@@ -61,8 +67,7 @@ function App() {
               }
             >
               <Route element={<AppLayout />}>
-                <Route index element={<TodayPage />} />
-                <Route path="today" element={<TodayPage />} />
+                <Route index element={<DashboardPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="billing" element={<BillingPage />} />
@@ -73,6 +78,7 @@ function App() {
                 <Route path="booking-links" element={<BookingLinksPage />} />
                 <Route path="booking-links/new" element={<BookingLinkEditPage />} />
                 <Route path="booking-links/:id" element={<BookingLinkEditPage />} />
+                <Route path="insights" element={<InsightsPage />} />
               </Route>
             </Route>
           </Routes>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabaseClient, isSupabaseConfigured } from '@daypilot/lib';
 import { Button, Input, Label, Card } from '@daypilot/ui';
 
@@ -23,7 +23,7 @@ export function LoginPage() {
 
       if (error) throw error;
 
-      navigate('/app/today');
+      navigate('/app');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {
@@ -53,6 +53,14 @@ export function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto py-12">
+      <div className="mb-6 text-center">
+        <Link to="/" className="text-2xl font-bold gradient-text hover:opacity-80 transition-opacity flex items-center justify-center gap-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          DayPilot
+        </Link>
+      </div>
       <Card>
         <h1 className="text-3xl font-bold mb-6 text-center text-[#2B3448]">Sign In</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

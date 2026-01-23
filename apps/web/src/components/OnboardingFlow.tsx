@@ -22,7 +22,7 @@ export function OnboardingFlow() {
   const handleSubmit = async () => {
     if (choice === 'personal') {
       // Just personal use, skip organization creation
-      navigate('/app/today');
+      navigate('/app');
       return;
     }
 
@@ -43,7 +43,7 @@ export function OnboardingFlow() {
         });
       }
 
-      navigate('/app/today');
+      navigate('/app');
     } catch (error: any) {
       alert('Failed to create organization: ' + error.message);
     }
@@ -146,7 +146,7 @@ export function OnboardingFlow() {
         <div className="flex justify-end gap-4">
           <Button
             variant="outline"
-            onClick={() => navigate('/app/today')}
+            onClick={() => navigate('/app')}
           >
             Skip for now
           </Button>

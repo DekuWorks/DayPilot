@@ -4,7 +4,8 @@ import { supabaseClient, isSupabaseConfigured } from '@daypilot/lib';
 import { Button, Input, Label, Card } from '@daypilot/ui';
 
 export function SignupPage() {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +19,7 @@ export function SignupPage() {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/app/today`,
+          redirectTo: `${window.location.origin}/app`,
         },
       });
       if (error) throw error;
@@ -33,19 +34,22 @@ export function SignupPage() {
     setLoading(true);
 
     try {
+      // Combine first and last name
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
       const { error } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
+            name: fullName,
           },
         },
       });
 
       if (error) throw error;
 
-      navigate('/app/today');
+      navigate('/app');
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
     } finally {
@@ -194,15 +198,29 @@ export function SignupPage() {
             >
               ← Back to SSO options
             </Button>
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  placeholder="Doe"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
