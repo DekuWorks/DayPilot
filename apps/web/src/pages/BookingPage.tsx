@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Card, Button } from '@daypilot/ui';
 import {
   useBookingLinkBySlug,
@@ -10,7 +10,6 @@ import {
 } from '@daypilot/lib';
 import { BookingCalendar } from '../components/BookingCalendar';
 import { BookingForm } from '../components/BookingForm';
-import type { BookingLink } from '@daypilot/types';
 
 export function BookingPage() {
   const { slug } = useParams<{ slug: string }>();

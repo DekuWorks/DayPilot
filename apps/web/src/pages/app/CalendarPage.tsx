@@ -20,7 +20,6 @@ import {
 } from '@daypilot/lib';
 import { Button, Card, Input, Label } from '@daypilot/ui';
 import { RecurrenceEditor } from '../../components/RecurrenceEditor';
-import { ReminderEditor } from '../../components/ReminderEditor';
 import { expandRecurringEvent } from '@daypilot/lib';
 import type { Event } from '@daypilot/types';
 
@@ -504,21 +503,6 @@ export function CalendarPage() {
                   }}
                 />
               </div>
-              {selectedEvent && (
-                <div>
-                  <ReminderEditor
-                    eventId={selectedEvent.id}
-                    onRemindersChange={() => {
-                      // Refresh events if needed
-                    }}
-                  />
-                </div>
-              )}
-              {isNewEvent && (
-                <div className="text-sm text-gray-500 p-2 bg-gray-50 rounded">
-                  Reminders can be added after creating the event
-                </div>
-              )}
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1">
                   {isNewEvent ? 'Create' : 'Update'}

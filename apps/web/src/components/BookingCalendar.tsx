@@ -91,9 +91,6 @@ export function BookingCalendar({
       // Check if slot fits before end time
       if (slotEnd <= endTime) {
         // Check for conflicts with existing bookings
-        const slotStartISO = currentTime.toISOString();
-        const slotEndISO = slotEnd.toISOString();
-
         const hasConflict = bookingsForDate.some((booking) => {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);

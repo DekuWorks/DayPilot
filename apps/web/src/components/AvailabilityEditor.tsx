@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Input, Label, Card } from '@daypilot/ui';
+import { Button, Input, Label } from '@daypilot/ui';
 import {
   useAvailabilityRules,
 } from '@daypilot/lib';

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Card, Button, Badge } from '@daypilot/ui';
-import { useEntitlements, canUseAI, canSyncCalendars, syncFrequency } from '@daypilot/lib';
+import { useEntitlements, canUseAI, syncFrequency } from '@daypilot/lib';
 import { supabaseClient } from '@daypilot/lib';
 
 const PRICE_IDS = {
-  student: process.env.VITE_STRIPE_PRICE_ID_STUDENT || 'price_student',
-  team: process.env.VITE_STRIPE_PRICE_ID_TEAM || 'price_team',
-  enterprise: process.env.VITE_STRIPE_PRICE_ID_ENTERPRISE || 'price_enterprise',
+  student: import.meta.env.VITE_STRIPE_PRICE_ID_STUDENT || 'price_student',
+  team: import.meta.env.VITE_STRIPE_PRICE_ID_TEAM || 'price_team',
+  enterprise: import.meta.env.VITE_STRIPE_PRICE_ID_ENTERPRISE || 'price_enterprise',
 };
 
 export function BillingPage() {

@@ -172,7 +172,7 @@ export function useUpdateBookingLink() {
     mutationFn: async ({
       id,
       updates,
-      organizationId,
+      organizationId: _organizationId,
     }: {
       id: string;
       updates: Partial<BookingLink>;
@@ -202,7 +202,7 @@ export function useDeleteBookingLink() {
   return useMutation({
     mutationFn: async ({
       id,
-      organizationId,
+      organizationId: _organizationId,
     }: {
       id: string;
       organizationId?: string | null;

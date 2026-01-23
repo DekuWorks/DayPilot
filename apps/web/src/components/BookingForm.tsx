@@ -12,7 +12,7 @@ interface BookingFormProps {
   isSubmitting: boolean;
   selectedDate: Date | null;
   selectedTime: string | null;
-  bookingLink: BookingLink;
+  bookingLink?: BookingLink;
 }
 
 export function BookingForm({
@@ -20,7 +20,7 @@ export function BookingForm({
   isSubmitting,
   selectedDate,
   selectedTime,
-  bookingLink,
+  bookingLink: _bookingLink,
 }: BookingFormProps) {
   const [formData, setFormData] = useState({
     name: '',

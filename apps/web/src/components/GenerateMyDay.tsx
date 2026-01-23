@@ -39,7 +39,7 @@ export function GenerateMyDay({ onScheduleGenerated }: GenerateMyDayProps) {
 
   const handleGenerate = async () => {
     try {
-      const result = await generateDay.mutateAsync({
+      await generateDay.mutateAsync({
         backlog_tasks: backlogTasks.length > 0 ? backlogTasks : undefined,
       });
       
@@ -293,14 +293,18 @@ export function GenerateMyDay({ onScheduleGenerated }: GenerateMyDayProps) {
           )}
 
           {/* Notes */}
-          {latestAction.output.notes && latestAction.output.notes.length > 0 && (
+          {latestAction.output.notes && (
             <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
               <h4 className="text-sm font-medium mb-1 text-blue-800">Notes</h4>
-              <ul className="text-xs text-blue-700 list-disc list-inside">
-                {latestAction.output.notes.map((note, index) => (
-                  <li key={index}>{note}</li>
-                ))}
-              </ul>
+              {Array.isArray(latestAction.output.notes) ? (
+                <ul className="text-xs text-blue-700 list-disc list-inside">
+                  {latestAction.output.notes.map((note: string, index: number) => (
+                    <li key={index}>{note}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-blue-700">{latestAction.output.notes}</p>
+              )}
             </div>
           )}
 

@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Input, Label, Badge } from '@daypilot/ui';
+import { Card, Button, Input, Label } from '@daypilot/ui';
 import {
   useBookingLinks,
   useCreateBookingLink,
   useUpdateBookingLink,
-  useAvailabilityRules,
-  useExcludedDates,
   getUserTimezone,
 } from '@daypilot/lib';
 import { AvailabilityEditor } from '../../components/AvailabilityEditor';
 import { ExcludedDatesEditor } from '../../components/ExcludedDatesEditor';
-import type { BookingLink } from '@daypilot/types';
 
 export function BookingLinkEditPage() {
   const { id } = useParams<{ id: string }>();
