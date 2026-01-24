@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   CALENDARS: 'daypilot-calendars',
   PUBLIC_SHARES: 'daypilot-public-shares',
   SHARE_LINKS: 'daypilot-share-links',
+  ATTENDEES: 'daypilot-attendees',
   USER_PREFERENCES: 'daypilot-user-preferences',
 } as const;
 
@@ -111,3 +112,22 @@ export function generateShareToken(): string {
   crypto.getRandomValues(array);
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
+
+// Attendees storage
+export function getAttendees() {
+  return getStorageItem(STORAGE_KEYS.ATTENDEES, []);
+}
+
+export function saveAttendees(attendees: any[]) {
+  setStorageItem(STORAGE_KEYS.ATTENDEES, attendees);
+}
+
+// Generate invite token for RSVP
+export function generateInviteToken(): string {
+  const array = new Uint8Array(24);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Note: These functions are now wrapped by storageAdapter.ts
+// The adapter chooses between localStorage and Supabase based on VITE_USE_SUPABASE_STORAGE

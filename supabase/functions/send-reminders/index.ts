@@ -49,8 +49,34 @@ serve(async (req) => {
     const nowISO = now.toISOString();
 
     // Query reminders that are due and haven't been sent
-    // We need to check if event.start - minutes_before <= now
-    const { data: reminders, error: queryError } = await supabase
+    // Check reminders table (new structure) and event_reminders (legacy)
+    const { data: newReminders, error: newRemindersError } = await supabase
+      .from('reminders')
+      .select(`
+        id,
+        event_id,
+        send_at,
+        type,
+        recipient_email,
+        events!inner (
+          id,
+          title,
+          description,
+          start_time,
+          end_time,
+          user_id,
+          profiles!events_user_id_fkey (
+            id,
+            email,
+            name
+          )
+        )
+      `)
+      .eq('status', 'pending')
+      .lte('send_at', nowISO);
+
+    // Also check legacy event_reminders table
+    const { data: legacyReminders, error: legacyError } = await supabase
       .from('event_reminders')
       .select(`
         id,

@@ -15,6 +15,8 @@ import type { LocalEvent as PilotBriefLocalEvent } from '../../features/pilotBri
 import { InsightsCard } from '../../features/insights/InsightsCard';
 import { calculateInsightsSummary } from '../../features/insights/insightsSelectors';
 import { useMemo } from 'react';
+import { AttendeeManager } from '../../components/AttendeeManager';
+import { MigrationBanner } from '../../components/MigrationBanner';
 import {
   getEvents,
   saveEvents,
@@ -111,40 +113,51 @@ export function DashboardPage() {
     getUser();
   }, []);
 
-  // Load data from localStorage on mount
+  // Load data from storage (localStorage or Supabase) on mount
   useEffect(() => {
-    const savedEvents = getEvents();
-    const savedTasks = getTasks();
-    const savedCategories = getCategories();
-    
-    setEvents(savedEvents);
-    setTasks(savedTasks);
-    setCategories(savedCategories);
+    const loadData = async () => {
+      const [savedEvents, savedTasks, savedCategories] = await Promise.all([
+        getEvents(),
+        getTasks(),
+        getCategories(),
+      ]);
+      
+      setEvents(savedEvents as LocalEvent[]);
+      setTasks(savedTasks);
+      setCategories(savedCategories);
 
-    // Create default categories if none exist
-    if (savedCategories.length === 0) {
-      const defaultCategories: Category[] = [
-        { id: '1', user_id: 'local', name: 'Work', color: '#3B82F6', icon: '💼', created_at: new Date().toISOString() },
-        { id: '2', user_id: 'local', name: 'Personal', color: '#10B981', icon: '🏠', created_at: new Date().toISOString() },
-        { id: '3', user_id: 'local', name: 'Health', color: '#EF4444', icon: '❤️', created_at: new Date().toISOString() },
-        { id: '4', user_id: 'local', name: 'Education', color: '#8B5CF6', icon: '📚', created_at: new Date().toISOString() },
-      ];
-      setCategories(defaultCategories);
-      saveCategories(defaultCategories);
-    }
+      // Create default categories if none exist
+      if (savedCategories.length === 0) {
+        const defaultCategories: Category[] = [
+          { id: '1', user_id: 'local', name: 'Work', color: '#3B82F6', icon: '💼', created_at: new Date().toISOString() },
+          { id: '2', user_id: 'local', name: 'Personal', color: '#10B981', icon: '🏠', created_at: new Date().toISOString() },
+          { id: '3', user_id: 'local', name: 'Health', color: '#EF4444', icon: '❤️', created_at: new Date().toISOString() },
+          { id: '4', user_id: 'local', name: 'Education', color: '#8B5CF6', icon: '📚', created_at: new Date().toISOString() },
+        ];
+        setCategories(defaultCategories);
+        await saveCategories(defaultCategories);
+      }
+    };
+    loadData();
   }, []);
 
-  // Save to localStorage whenever data changes
+  // Save to storage whenever data changes
   useEffect(() => {
-    saveEvents(events);
+    if (events.length > 0) {
+      saveEvents(events);
+    }
   }, [events]);
 
   useEffect(() => {
-    saveTasks(tasks);
+    if (tasks.length > 0) {
+      saveTasks(tasks);
+    }
   }, [tasks]);
 
   useEffect(() => {
-    saveCategories(categories);
+    if (categories.length > 0) {
+      saveCategories(categories);
+    }
   }, [categories]);
 
   // Expand recurring events and convert to FullCalendar format
@@ -295,7 +308,7 @@ export function DashboardPage() {
     setIsEventModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     let startDate: Date;
@@ -326,6 +339,29 @@ export function DashboardPage() {
 
     if (isNewEvent) {
       setEvents([...events, eventData]);
+      
+      // Auto-add organizer as attendee for new events
+      if (user?.email) {
+        try {
+          const { getAttendees, saveAttendees, generateInviteToken } = await import('@daypilot/lib');
+          const allAttendees = await getAttendees();
+          const inviteToken = await generateInviteToken();
+          const organizerAttendee = {
+            id: `attendee-${Date.now()}`,
+            eventId: eventData.id,
+            email: user.email,
+            name: user.user_metadata?.name || null,
+            role: 'organizer' as const,
+            rsvpStatus: 'going' as const,
+            inviteToken,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await saveAttendees([...allAttendees, organizerAttendee]);
+        } catch (err) {
+          console.error('Failed to add organizer as attendee:', err);
+        }
+      }
     } else {
       setEvents(events.map((e) => (e.id === eventData.id ? eventData : e)));
     }
@@ -425,6 +461,11 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen py-6">
+      {/* Migration Banner */}
+      <div className="container-width section-padding">
+        <MigrationBanner />
+      </div>
+      
       {/* Dashboard Shell */}
       <div className="dashboard-shell">
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 h-[calc(100vh-120px)]">
@@ -825,6 +866,16 @@ export function DashboardPage() {
                   }}
                 />
               </div>
+
+              {/* Attendees */}
+              {!isNewEvent && selectedEvent && (
+                <div>
+                  <AttendeeManager
+                    eventId={selectedEvent.id}
+                    organizerEmail={user?.email || 'organizer@example.com'}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-6 border-t border-[var(--border)]">
                 <Button

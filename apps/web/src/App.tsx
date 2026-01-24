@@ -17,6 +17,7 @@ import { BookingLinkEditPage } from './pages/app/BookingLinkEditPage';
 import { BookingPage } from './pages/BookingPage';
 import { BookingConfirmationPage } from './pages/BookingConfirmationPage';
 import { SharePage } from './pages/SharePage';
+import { RSVPPage } from './pages/RSVPPage';
 import { BillingPage } from './pages/BillingPage';
 import { InsightsPage } from './pages/app/InsightsPage';
 import { IntegrationsPage } from './pages/app/IntegrationsPage';
@@ -52,10 +53,12 @@ function App() {
             </Route>
 
             {/* Public booking page (no auth required) */}
-            <Route path="/book/:slug" element={<BookingPage />} />
-            <Route path="/book/:slug/confirmed" element={<BookingConfirmationPage />} />
+            <Route path="/book/:slug" element={<ErrorBoundary><BookingPage /></ErrorBoundary>} />
+            <Route path="/book/:slug/confirmed" element={<ErrorBoundary><BookingConfirmationPage /></ErrorBoundary>} />
             {/* Public share page (no auth required) */}
-            <Route path="/share/:token" element={<SharePage />} />
+            <Route path="/share/:token" element={<ErrorBoundary><SharePage /></ErrorBoundary>} />
+            {/* Public RSVP page (no auth required) */}
+            <Route path="/rsvp/:token" element={<ErrorBoundary><RSVPPage /></ErrorBoundary>} />
 
             {/* App routes (protected) */}
             <Route

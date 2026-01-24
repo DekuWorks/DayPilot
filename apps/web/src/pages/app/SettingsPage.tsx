@@ -5,6 +5,7 @@ import { useCalendars } from '@daypilot/lib';
 import { Card, Button, Input, Label, Badge } from '@daypilot/ui';
 import { CalendarManager } from '../../components/CalendarManager';
 import { ShareSettings } from '../../components/ShareSettings';
+import { EmailPreferences } from '../../components/EmailPreferences';
 import type { User } from '@supabase/supabase-js';
 
 export function SettingsPage() {
@@ -207,6 +208,9 @@ export function SettingsPage() {
 
         {/* Calendar Sharing */}
         <ShareSettings />
+
+        {/* Email Preferences */}
+        <EmailPreferences />
 
         {/* Calendar Connections - Premium Feature */}
         <Card>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getShareLinks, saveShareLinks, generateShareToken } from '../storage/localStorage';
+import { getShareLinks, saveShareLinks, generateShareToken } from '../storage/storageAdapter';
 import type { ShareLink, ShareMode } from '@daypilot/types';
 import { supabaseClient } from '../supabaseClient';
 
@@ -14,12 +14,9 @@ export function useShareLinks() {
   return useQuery({
     queryKey: ['share-links'],
     queryFn: async () => {
-      const userId = await getCurrentUserId();
-      const allLinks = getShareLinks() as ShareLink[];
-      // Filter active (not revoked) links for current user
-      return allLinks.filter(
-        link => link.userId === userId && !link.revokedAt
-      );
+      const allLinks = await getShareLinks();
+      // Filter active (not revoked) links
+      return allLinks.filter(link => !link.revokedAt);
     },
   });
 }
@@ -30,11 +27,24 @@ export function useShareLinkByToken(token: string | null) {
     queryKey: ['share-link', token],
     queryFn: async () => {
       if (!token) return null;
-      const allLinks = getShareLinks() as ShareLink[];
-      const link = allLinks.find(
-        l => l.token === token && !l.revokedAt
-      );
-      return link || null;
+      // Query Supabase directly for public access
+      const { data, error } = await supabaseClient
+        .from('share_links')
+        .select('*')
+        .eq('token', token)
+        .is('revoked_at', null)
+        .single();
+      
+      if (error || !data) return null;
+      
+      return {
+        id: data.id,
+        userId: data.user_id,
+        token: data.token,
+        mode: data.mode,
+        createdAt: data.created_at,
+        revokedAt: data.revoked_at,
+      } as ShareLink;
     },
     enabled: !!token,
   });
@@ -47,7 +57,7 @@ export function useCreateShareLink() {
   return useMutation({
     mutationFn: async (data: { mode: ShareMode }) => {
       const userId = await getCurrentUserId();
-      const allLinks = getShareLinks() as ShareLink[];
+      const allLinks = await getShareLinks();
       
       // Check if user already has an active link
       const existingLink = allLinks.find(
@@ -61,21 +71,22 @@ export function useCreateShareLink() {
             ? { ...link, mode: data.mode, revokedAt: null }
             : link
         );
-        saveShareLinks(updated);
+        await saveShareLinks(updated);
         return updated.find(l => l.id === existingLink.id)!;
       }
       
       // Create new link
+      const token = await generateShareToken();
       const newLink: ShareLink = {
         id: `share-${Date.now()}`,
         userId,
-        token: generateShareToken(),
+        token,
         mode: data.mode,
         createdAt: new Date().toISOString(),
         revokedAt: null,
       };
       
-      saveShareLinks([...allLinks, newLink]);
+      await saveShareLinks([...allLinks, newLink]);
       return newLink;
     },
     onSuccess: () => {
@@ -90,13 +101,13 @@ export function useUpdateShareLink() {
 
   return useMutation({
     mutationFn: async (data: { id: string; mode?: ShareMode }) => {
-      const allLinks = getShareLinks() as ShareLink[];
+      const allLinks = await getShareLinks();
       const updated = allLinks.map(link =>
         link.id === data.id
           ? { ...link, ...(data.mode && { mode: data.mode }) }
           : link
       );
-      saveShareLinks(updated);
+      await saveShareLinks(updated);
       return updated.find(l => l.id === data.id)!;
     },
     onSuccess: () => {
@@ -111,13 +122,13 @@ export function useRevokeShareLink() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const allLinks = getShareLinks() as ShareLink[];
+      const allLinks = await getShareLinks();
       const updated = allLinks.map(link =>
         link.id === id
           ? { ...link, revokedAt: new Date().toISOString() }
           : link
       );
-      saveShareLinks(updated);
+      await saveShareLinks(updated);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['share-links'] });
