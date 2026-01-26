@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@daypilot/ui';
-import { useBookingLinkBySlug } from '@daypilot/lib';
-import type { Booking } from '@daypilot/types';
+import { useBookingLinkBySlug, useBookingById } from '@daypilot/lib';
 
 /**
  * Generate .ics file content for calendar download
@@ -66,32 +65,29 @@ function downloadICS(icsContent: string, filename: string) {
 export function BookingConfirmationPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: bookingLink } = useBookingLinkBySlug(slug || null);
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const bookingId = searchParams.get('bookingId');
+  const { data: booking, isLoading } = useBookingById(bookingId);
 
+  // Fallback to sessionStorage if database fetch fails
   useEffect(() => {
-    // Get booking from URL params or localStorage
-    const bookingId = new URLSearchParams(window.location.search).get(
-      'bookingId'
-    );
-    if (bookingId) {
-      // In a real app, fetch booking by ID
-      // For MVP, we'll use localStorage or URL params
+    if (!booking && bookingId) {
       const storedBooking = sessionStorage.getItem(`booking_${bookingId}`);
       if (storedBooking) {
-        setBooking(JSON.parse(storedBooking));
+        // Booking will be set from sessionStorage as fallback
       }
     }
-  }, []);
+  }, [booking, bookingId]);
 
   const handleDownloadICS = () => {
-    if (!booking || !bookingLink) return;
+    if (!displayBooking || !bookingLink) return;
 
-    const start = new Date(booking.start_time);
-    const end = new Date(booking.end_time);
-    const title = bookingLink.title || `Booking with ${booking.booker_name}`;
+    const start = new Date(displayBooking.start_time);
+    const end = new Date(displayBooking.end_time);
+    const title = bookingLink.title || `Booking with ${displayBooking.booker_name}`;
     const description =
-      booking.notes || `Booking confirmed for ${booking.booker_name}`;
+      displayBooking.notes || `Booking confirmed for ${displayBooking.booker_name}`;
 
     const ics = generateICS(
       title,
@@ -100,14 +96,44 @@ export function BookingConfirmationPage() {
       end,
       undefined,
       undefined, // organizerEmail
-      booking.booker_email
+      displayBooking.booker_email
     );
 
     const filename = `booking-${start.toISOString().split('T')[0]}.ics`;
     downloadICS(ics, filename);
   };
 
-  if (!booking) {
+  // Get booking from sessionStorage as fallback
+  const fallbackBooking = bookingId
+    ? (() => {
+        try {
+          const stored = sessionStorage.getItem(`booking_${bookingId}`);
+          return stored ? JSON.parse(stored) : null;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+
+  const displayBooking = booking || fallbackBooking;
+
+  if (isLoading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
+        <Card>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4FB3B3] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading booking confirmation...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!displayBooking) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -128,8 +154,8 @@ export function BookingConfirmationPage() {
     );
   }
 
-  const start = new Date(booking.start_time);
-  const end = new Date(booking.end_time);
+  const start = new Date(displayBooking.start_time);
+  const end = new Date(displayBooking.end_time);
 
   return (
     <div
@@ -173,7 +199,7 @@ export function BookingConfirmationPage() {
                   <p className="text-sm text-gray-600">Event</p>
                   <p className="font-medium text-[#2B3448]">
                     {bookingLink?.title ||
-                      `Booking with ${booking.booker_name}`}
+                      `Booking with ${displayBooking.booker_name}`}
                   </p>
                 </div>
                 <div>
@@ -200,11 +226,11 @@ export function BookingConfirmationPage() {
                     {bookingLink?.duration || 30} minutes
                   </p>
                 </div>
-                {booking.notes && (
+                {displayBooking.notes && (
                   <div>
                     <p className="text-sm text-gray-600">Notes</p>
                     <p className="font-medium text-[#2B3448]">
-                      {booking.notes}
+                      {displayBooking.notes}
                     </p>
                   </div>
                 )}

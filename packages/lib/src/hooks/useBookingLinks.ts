@@ -118,6 +118,26 @@ export function useBookings(bookingLinkId: string | null) {
   });
 }
 
+// Fetch a single booking by ID (for confirmation page)
+export function useBookingById(bookingId: string | null) {
+  return useQuery({
+    queryKey: ['booking', bookingId],
+    queryFn: async () => {
+      if (!bookingId) return null;
+
+      const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .single();
+
+      if (error) throw error;
+      return data as Booking;
+    },
+    enabled: !!bookingId,
+  });
+}
+
 // Create booking link
 export function useCreateBookingLink() {
   const queryClient = useQueryClient();

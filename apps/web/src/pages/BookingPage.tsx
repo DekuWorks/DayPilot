@@ -7,7 +7,6 @@ import {
   useExcludedDates,
   useBookings,
   useCreateBooking,
-  useSendEmail,
 } from '@daypilot/lib';
 import { BookingCalendar } from '../components/BookingCalendar';
 import { BookingForm } from '../components/BookingForm';
@@ -28,7 +27,6 @@ export function BookingPage() {
   );
   const { data: existingBookings = [] } = useBookings(bookingLink?.id || null);
   const createBooking = useCreateBooking();
-  const sendEmail = useSendEmail();
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -115,7 +113,7 @@ export function BookingPage() {
         notes: formData.notes,
       });
 
-      // Store booking in sessionStorage for confirmation page
+      // Store booking in sessionStorage for confirmation page (fallback)
       if (booking?.id) {
         sessionStorage.setItem(
           `booking_${booking.id}`,
@@ -123,61 +121,8 @@ export function BookingPage() {
         );
       }
 
-      // Create event in storage (localStorage or Supabase)
-      try {
-        const { getEvents, saveEvents } = await import('@daypilot/lib');
-        const events = await getEvents();
-        const newEvent = {
-          id: `event-${Date.now()}`,
-          title: `Booking: ${formData.name}`,
-          description:
-            formData.notes || `Booked by ${formData.name} (${formData.email})`,
-          start: startTimeISO,
-          end: endTimeISO,
-          status: 'scheduled' as const,
-          all_day: false,
-          color: '#059669',
-          category_id: null,
-        };
-        await saveEvents([...events, newEvent]);
-      } catch (err) {
-        console.error('Failed to create event:', err);
-        // Don't block booking confirmation if event creation fails
-      }
-
-      // Send booking confirmation email
-      try {
-        const { bookingConfirmationTemplate } = await import(
-          '../emails/templates'
-        );
-        const start = new Date(startTimeISO);
-        const end = new Date(endTimeISO);
-        const calendarLink = `${window.location.origin}/book/${slug}/confirmed?bookingId=${booking?.id || Date.now()}`;
-
-        const template = bookingConfirmationTemplate({
-          bookingTitle: bookingLink.title || 'Booking',
-          bookerName: formData.name,
-          bookerEmail: formData.email,
-          bookingDate: start.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
-          bookingTime: `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`,
-          duration: bookingLink.duration,
-          notes: formData.notes,
-          calendarLink,
-        });
-
-        await sendEmail.mutateAsync({
-          to: formData.email,
-          template,
-        });
-      } catch (emailError) {
-        console.error('Failed to send booking confirmation email:', emailError);
-        // Don't block booking if email fails
-      }
+      // Note: Event creation is handled automatically by database trigger
+      // Email sending is handled by the Edge Function triggered in useCreateBooking
 
       // Navigate to confirmation page
       navigate(
