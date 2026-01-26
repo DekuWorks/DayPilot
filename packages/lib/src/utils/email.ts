@@ -49,7 +49,13 @@ export async function sendEmail(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: await response.text() }));
+      let errorData: any;
+      try {
+        errorData = await response.json();
+      } catch {
+        const errorText = await response.text();
+        errorData = { error: errorText };
+      }
       console.error('Email send failed:', errorData);
       return {
         success: false,
@@ -57,7 +63,7 @@ export async function sendEmail(
       };
     }
 
-    const result = await response.json();
+    await response.json(); // Verify response is valid JSON
     return { success: true };
   } catch (error: any) {
     console.error('Email send error:', error);
