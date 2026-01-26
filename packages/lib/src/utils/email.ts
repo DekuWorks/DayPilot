@@ -1,16 +1,13 @@
 /**
  * Email utility functions
- * For MVP, these can be called from client-side but will need server-side implementation
- * for production (e.g., Resend API)
+ * Uses Supabase Edge Function to send emails via Resend
  */
 
 import type { EmailTemplate } from './emailTypes';
-
-const EMAIL_API_URL = import.meta.env.VITE_EMAIL_API_URL || '';
-const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || '';
+import { supabaseClient } from '../supabaseClient';
 
 /**
- * Send email (client-side stub - will need server endpoint in production)
+ * Send email via Supabase Edge Function (which uses Resend)
  */
 export async function sendEmail(
   to: string,
@@ -20,27 +17,23 @@ export async function sendEmail(
     replyTo?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  // For MVP, log the email instead of actually sending
-  // In production, this would call a server endpoint that uses Resend
-
-  if (!EMAIL_API_URL || !EMAIL_API_KEY) {
-    console.log('[Email (not sent - no API configured)]', {
-      to,
-      subject: template.subject,
-      // Don't log full HTML in console
-    });
-
-    // In development, you might want to show a toast or notification
-    // that emails are not configured
-    return { success: true }; // Return success so app doesn't break
-  }
-
   try {
-    const response = await fetch(`${EMAIL_API_URL}/send-email`, {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      console.warn('[Email] Supabase URL not configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    // Get auth session for authenticated requests
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${EMAIL_API_KEY}`,
+        Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         to,
@@ -50,21 +43,25 @@ export async function sendEmail(
         from:
           options?.from ||
           import.meta.env.VITE_EMAIL_FROM ||
-          'noreply@daypilot.app',
+          'DayPilot <noreply@daypilot.co>',
         replyTo: options?.replyTo,
       }),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Email send failed:', error);
-      return { success: false, error };
+      const errorData = await response.json().catch(() => ({ error: await response.text() }));
+      console.error('Email send failed:', errorData);
+      return {
+        success: false,
+        error: errorData.error || errorData.message || 'Failed to send email',
+      };
     }
 
+    const result = await response.json();
     return { success: true };
   } catch (error: any) {
     console.error('Email send error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Failed to send email' };
   }
 }
 
@@ -72,7 +69,8 @@ export async function sendEmail(
  * Check if email is enabled
  */
 export function isEmailEnabled(): boolean {
-  return !!(EMAIL_API_URL && EMAIL_API_KEY);
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  return !!supabaseUrl; // Email is enabled if Supabase is configured
 }
 
 /**
