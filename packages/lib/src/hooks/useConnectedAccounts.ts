@@ -97,38 +97,7 @@ export function useConnectGoogle() {
         throw new Error('Supabase not configured');
       }
 
-      // Get fresh session - refresh if needed
-      const {
-        data: { session: currentSession },
-        error: sessionError,
-      } = await supabaseClient.auth.getSession();
-
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Failed to get session: ' + sessionError.message);
-      }
-
-      let session = currentSession;
-
-      // If no session or session is expired, try to refresh
-      if (!session || !session.access_token) {
-        // Try to refresh the session
-        const {
-          data: { session: refreshedSession },
-          error: refreshError,
-        } = await supabaseClient.auth.refreshSession();
-
-        if (refreshError || !refreshedSession) {
-          console.error('Refresh error:', refreshError);
-          throw new Error(
-            'Session expired. Please sign out and sign back in, then try again.'
-          );
-        }
-
-        session = refreshedSession;
-      }
-
-      // Verify user exists
+      // Get user first (this will refresh the session if needed)
       const {
         data: { user: currentUser },
         error: userError,
@@ -139,8 +108,154 @@ export function useConnectGoogle() {
         throw new Error('Not authenticated. Please sign in again.');
       }
 
+      // Get fresh session after user verification
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Failed to get session: ' + sessionError.message);
+      }
+
       if (!session || !session.access_token) {
-        throw new Error('Not authenticated. Please sign in again.');
+        // Try to refresh the session
+        const {
+          data: { session: refreshedSession },
+          error: refreshError,
+        } = await supabaseClient.auth.refreshSession();
+
+        if (refreshError || !refreshedSession || !refreshedSession.access_token) {
+          console.error('Refresh error:', refreshError);
+          throw new Error(
+            'Session expired. Please sign out and sign back in, then try again.'
+          );
+        }
+
+        // Use refreshed session
+        const refreshedToken = refreshedSession.access_token;
+        console.log('Using refreshed token, length:', refreshedToken.length);
+        
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/google-oauth?action=authorize`,
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${refreshedToken}`,
+              apikey: supabaseAnonKey || '',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch {
+            const errorText = await response.text();
+            errorData = { error: errorText || `HTTP ${response.status}` };
+          }
+          console.error('OAuth request failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData,
+            url: response.url,
+          });
+          
+          if (response.status === 401) {
+            throw new Error(
+              errorData.error ||
+                errorData.details ||
+                'Authentication failed. Please sign out and sign back in, then try again.'
+            );
+          }
+          
+          throw new Error(
+            errorData.error || errorData.details || 'Failed to initiate OAuth'
+          );
+        }
+
+        const { url } = await response.json();
+        if (!url) {
+          throw new Error('No OAuth URL returned from server');
+        }
+
+        window.location.href = url;
+        return;
+      }
+
+      // Validate token before sending
+      const token = session.access_token;
+      console.log('Using session token, length:', token.length);
+      
+      // Verify token is valid by checking expiry
+      if (session.expires_at) {
+        const expiresAt = new Date(session.expires_at * 1000);
+        const now = new Date();
+        if (expiresAt < now) {
+          console.warn('Token expired, refreshing...');
+          const {
+            data: { session: refreshedSession },
+            error: refreshError,
+          } = await supabaseClient.auth.refreshSession();
+
+          if (refreshError || !refreshedSession || !refreshedSession.access_token) {
+            throw new Error(
+              'Session expired. Please sign out and sign back in, then try again.'
+            );
+          }
+          
+          // Use refreshed token
+          const refreshedToken = refreshedSession.access_token;
+          console.log('Using refreshed token after expiry check');
+          
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/google-oauth?action=authorize`,
+            {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${refreshedToken}`,
+                apikey: supabaseAnonKey || '',
+              },
+            }
+          );
+
+          if (!response.ok) {
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              const errorText = await response.text();
+              errorData = { error: errorText || `HTTP ${response.status}` };
+            }
+            console.error('OAuth request failed:', {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorData,
+            });
+            
+            if (response.status === 401) {
+              throw new Error(
+                errorData.error ||
+                  errorData.details ||
+                  'Authentication failed. Please sign out and sign back in, then try again.'
+              );
+            }
+            
+            throw new Error(
+              errorData.error || errorData.details || 'Failed to initiate OAuth'
+            );
+          }
+
+          const { url } = await response.json();
+          if (!url) {
+            throw new Error('No OAuth URL returned from server');
+          }
+
+          window.location.href = url;
+          return;
+        }
       }
 
       const response = await fetch(
@@ -148,7 +263,7 @@ export function useConnectGoogle() {
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
             apikey: supabaseAnonKey || '',
           },
         }

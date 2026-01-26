@@ -15,14 +15,23 @@ const corsHeaders = {
 };
 
 serve(async req => {
+  // Log all requests for debugging
+  console.log('Request received:', {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries()),
+  });
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
+    console.log('Action:', action);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -30,8 +39,12 @@ serve(async req => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === 'authorize') {
+      console.log('Processing authorize action');
+      
       // Get auth token from request
       const authHeader = req.headers.get('Authorization');
+      console.log('Authorization header present:', !!authHeader);
+      
       if (!authHeader) {
         console.error('No Authorization header provided');
         return new Response(
@@ -44,6 +57,8 @@ serve(async req => {
       }
 
       const token = authHeader.replace('Bearer ', '');
+      console.log('Token length:', token.length);
+      
       if (!token) {
         console.error('Empty token in Authorization header');
         return new Response(
@@ -55,13 +70,18 @@ serve(async req => {
         );
       }
 
+      console.log('Validating token with Supabase...');
       const {
         data: { user },
         error: authError,
       } = await supabase.auth.getUser(token);
 
       if (authError) {
-        console.error('Auth error:', authError.message);
+        console.error('Auth error:', {
+          message: authError.message,
+          status: authError.status,
+          name: authError.name,
+        });
         return new Response(
           JSON.stringify({
             error: 'Unauthorized',
@@ -84,6 +104,8 @@ serve(async req => {
           }
         );
       }
+
+      console.log('User authenticated:', user.id);
 
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         return new Response(
