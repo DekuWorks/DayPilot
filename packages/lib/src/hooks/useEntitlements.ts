@@ -18,7 +18,7 @@ export function useEntitlements() {
       }
 
       // Try to get entitlements
-      const { data, error } = await supabaseClient
+      let { data, error } = await supabaseClient
         .from('entitlements')
         .select('*')
         .eq('user_id', user.id)

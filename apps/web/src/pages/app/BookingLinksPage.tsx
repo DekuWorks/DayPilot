@@ -51,11 +51,12 @@ export function BookingLinksPage() {
   }
 
   if (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : typeof error === 'object' && error !== null && 'message' in error
-      ? String(error.message)
-      : 'Failed to load booking links. Please check your connection and try again.';
+    let errorMessage = 'Failed to load booking links. Please check your connection and try again.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null && 'message' in error) {
+      errorMessage = String((error as { message: unknown }).message);
+    }
     
     return (
       <div>
