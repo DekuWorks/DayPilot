@@ -125,6 +125,53 @@ export function useConnectGoogle() {
 }
 
 /**
+ * Discover and map Google calendars
+ */
+export function useDiscoverCalendars() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (connectedAccountId: string) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
+        throw new Error('Supabase not configured');
+      }
+
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/google-discover`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ connectedAccountId }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to discover calendars');
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar_mappings'] });
+      queryClient.invalidateQueries({ queryKey: ['calendars'] });
+    },
+  });
+}
+
+/**
  * Sync a calendar mapping
  */
 export function useSyncCalendar() {

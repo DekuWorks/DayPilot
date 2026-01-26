@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Badge } from '@daypilot/ui';
 import {
   useConnectedAccounts,
@@ -6,6 +7,7 @@ import {
   useConnectGoogle,
   useDisconnectAccount,
   useSyncCalendar,
+  useDiscoverCalendars,
   useEntitlements,
   canSyncCalendars,
 } from '@daypilot/lib';
@@ -37,6 +39,7 @@ function formatDistanceToNow(
 }
 
 export function IntegrationsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: connectedAccounts = [], isLoading: accountsLoading } =
     useConnectedAccounts();
   const { data: calendarMappings = [], isLoading: mappingsLoading } =
@@ -44,11 +47,15 @@ export function IntegrationsPage() {
   const { data: entitlements } = useEntitlements();
   const connectGoogle = useConnectGoogle();
   const disconnectAccount = useDisconnectAccount();
+  const discoverCalendars = useDiscoverCalendars();
   const syncCalendar = useSyncCalendar();
 
   const [syncingCalendarId, setSyncingCalendarId] = useState<string | null>(
     null
   );
+  const [discoveringAccountId, setDiscoveringAccountId] = useState<
+    string | null
+  >(null);
 
   const googleAccount = connectedAccounts.find(
     acc => acc.provider === 'google'
@@ -57,6 +64,17 @@ export function IntegrationsPage() {
     entitlements,
     connectedAccounts.length
   );
+
+  // Auto-discover calendars when user returns from OAuth
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'connected' && googleAccount && calendarMappings.length === 0) {
+      // Auto-discover calendars after connection
+      handleDiscoverCalendars(googleAccount.id);
+      // Clear the success param
+      setSearchParams({});
+    }
+  }, [googleAccount, calendarMappings.length, searchParams, setSearchParams]);
 
   const handleConnectGoogle = () => {
     connectGoogle.mutate();
@@ -69,6 +87,20 @@ export function IntegrationsPage() {
       )
     ) {
       await disconnectAccount.mutateAsync(accountId);
+    }
+  };
+
+  const handleDiscoverCalendars = async (accountId: string) => {
+    setDiscoveringAccountId(accountId);
+    try {
+      const result = await discoverCalendars.mutateAsync(accountId);
+      alert(
+        `Discovered ${result.mappingsCreated} calendar${result.mappingsCreated !== 1 ? 's' : ''}!`
+      );
+    } catch (error: any) {
+      alert('Failed to discover calendars: ' + error.message);
+    } finally {
+      setDiscoveringAccountId(null);
     }
   };
 
@@ -186,6 +218,28 @@ export function IntegrationsPage() {
                 </p>
               )}
             </div>
+
+            {/* Discover Calendars Button */}
+            {calendarMappings.filter(m => {
+              return connectedAccounts.some(
+                acc => acc.id === m.connected_account_id
+              );
+            }).length === 0 && (
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  onClick={() => handleDiscoverCalendars(googleAccount.id)}
+                  disabled={
+                    discoveringAccountId === googleAccount.id ||
+                    discoverCalendars.isPending
+                  }
+                >
+                  {discoveringAccountId === googleAccount.id
+                    ? 'Discovering...'
+                    : 'Discover Calendars'}
+                </Button>
+              </div>
+            )}
 
             {/* Calendar Mappings */}
             {calendarMappings.filter(m => {

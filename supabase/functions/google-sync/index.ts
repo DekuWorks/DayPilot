@@ -163,7 +163,7 @@ serve(async req => {
       // Check if event exists
       const { data: existingMapping } = await supabase
         .from('event_mappings')
-        .select('daypilot_event_id')
+        .select('id, daypilot_event_id')
         .eq('calendar_mapping_id', mapping.id)
         .eq('provider_event_id', event.id)
         .single();
@@ -190,7 +190,7 @@ serve(async req => {
             provider_etag: event.etag,
             last_synced_at: new Date().toISOString(),
           })
-          .eq('id', existingMapping.daypilot_event_id);
+          .eq('id', existingMapping.id);
 
         updated++;
       } else {
