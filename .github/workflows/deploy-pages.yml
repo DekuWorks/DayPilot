@@ -40,13 +40,38 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-key' }}
       
-      - name: Copy CNAME and create .nojekyll
+      - name: Copy CNAME and create .nojekyll and 404.html
         run: |
           if [ -f CNAME ]; then
             cp CNAME apps/web/dist/CNAME
           fi
           # Create .nojekyll to disable Jekyll processing
           touch apps/web/dist/.nojekyll
+          # Create 404.html for SPA routing (redirects to index.html)
+          cat > apps/web/dist/404.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>DayPilot</title>
+              <script>
+                // Single Page Apps for GitHub Pages
+                // https://github.com/rafgraph/spa-github-pages
+                var pathSegmentsToKeep = 0;
+                var l = window.location;
+                l.replace(
+                  l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+                  l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+                  l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+                  (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+                  l.hash
+                );
+              </script>
+            </head>
+            <body>
+            </body>
+          </html>
+          EOF
           # Verify build output
           ls -la apps/web/dist/
           echo "Build complete. Files in dist:"

@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { SiteLayout } from './layouts/SiteLayout';
 import { AppLayout } from './layouts/AppLayout';
 import { HomePage } from './pages/HomePage';
@@ -38,11 +39,30 @@ const queryClient = new QueryClient({
   },
 });
 
+// Handle GitHub Pages 404.html redirect
+function GitHubPagesRedirect() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check if we're coming from 404.html redirect (path in query string)
+    const queryParams = new URLSearchParams(location.search);
+    const redirectPath = queryParams.get('/');
+    if (redirectPath) {
+      // Replace the current path with the redirected path
+      const newPath = redirectPath.replace(/~and~/g, '&');
+      window.history.replaceState(null, '', newPath);
+    }
+  }, [location]);
+
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <GitHubPagesRedirect />
           <Routes>
             {/* Marketing routes */}
             <Route path="/" element={<SiteLayout />}>
