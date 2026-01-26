@@ -19,26 +19,35 @@ export function RequireAuth({ children }: RequireAuthProps) {
       return;
     }
 
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (!session) {
-        navigate('/login');
-      }
-    };
-
-    checkAuth();
+    // Wait for initial auth state change to ensure session is restored from storage
+    // This is critical for session persistence to work on page refresh
+    let hasInitialized = false;
 
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+    } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      // Wait for the initial session restoration event
+      if (!hasInitialized) {
+        hasInitialized = true;
+        setLoading(false);
+      }
+
       setUser(session?.user ?? null);
-      if (!session) {
+
+      // Only navigate to login if we've initialized and there's no session
+      if (hasInitialized && !session) {
         navigate('/login');
+      }
+    });
+
+    // Also check session immediately as a fallback
+    // But don't navigate until we've heard from onAuthStateChange
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (hasInitialized) {
+        setUser(session?.user ?? null);
+        if (!session) {
+          navigate('/login');
+        }
       }
     });
 
