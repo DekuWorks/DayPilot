@@ -33,15 +33,14 @@ serve(async req => {
     const action = url.searchParams.get('action');
     console.log('Action:', action);
 
-    // Initialize Supabase clients
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Use anon key client to validate user token (more reliable)
-    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
-    // Use service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // For token validation, we can use the service role key client
+    // It can validate user JWT tokens via getUser()
+    // Alternatively, we could make a direct API call to Supabase Auth
 
     if (action === 'authorize') {
       console.log('Processing authorize action');
@@ -76,12 +75,14 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase (anon key client)...');
-      // Use anon key client to validate the user token
+      console.log('Validating token with Supabase...');
+      
+      // Validate the user token using service role key client
+      // getUser() with service role key can validate user JWT tokens
       const {
         data: { user },
         error: authError,
-      } = await supabaseAnon.auth.getUser(token);
+      } = await supabase.auth.getUser(token);
 
       if (authError) {
         console.error('Auth error:', {
