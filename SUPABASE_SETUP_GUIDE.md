@@ -66,6 +66,7 @@ This guide walks you through setting up a new Supabase project from scratch for 
    - Or run: `supabase projects list` to see all projects
 
 4. **Verify Connection**
+
    ```bash
    supabase db remote commit
    ```
