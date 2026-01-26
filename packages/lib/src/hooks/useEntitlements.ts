@@ -18,11 +18,13 @@ export function useEntitlements() {
       }
 
       // Try to get entitlements
-      let { data, error } = await supabaseClient
+      const { data: initialData, error } = await supabaseClient
         .from('entitlements')
         .select('*')
         .eq('user_id', user.id)
         .single();
+
+      let data = initialData;
 
       // If not found, create default (free tier)
       if (error && error.code === 'PGRST116') {

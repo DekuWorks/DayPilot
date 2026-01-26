@@ -24,6 +24,8 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'prefer-const': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/set-state-in-effect': 'off', // Allow setState in effects for initialization
     },
   },
 ])
