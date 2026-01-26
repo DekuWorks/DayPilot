@@ -8,8 +8,9 @@ const supabaseAnonKey =
 // Only create client if we have real credentials
 export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
+    persistSession: true, // Persist session across page refreshes
+    autoRefreshToken: true, // Automatically refresh expired tokens
+    detectSessionInUrl: true, // Detect session in URL (for OAuth callbacks)
   },
 });
 
