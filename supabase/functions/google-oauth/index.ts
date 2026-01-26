@@ -33,9 +33,14 @@ serve(async req => {
     const action = url.searchParams.get('action');
     console.log('Action:', action);
 
-    // Initialize Supabase client
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Use anon key client to validate user token (more reliable)
+    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+    // Use service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === 'authorize') {
@@ -58,6 +63,7 @@ serve(async req => {
 
       const token = authHeader.replace('Bearer ', '');
       console.log('Token length:', token.length);
+      console.log('Token preview:', token.substring(0, 20) + '...');
       
       if (!token) {
         console.error('Empty token in Authorization header');
@@ -70,11 +76,12 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase...');
+      console.log('Validating token with Supabase (anon key client)...');
+      // Use anon key client to validate the user token
       const {
         data: { user },
         error: authError,
-      } = await supabase.auth.getUser(token);
+      } = await supabaseAnon.auth.getUser(token);
 
       if (authError) {
         console.error('Auth error:', {
