@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Badge } from '@daypilot/ui';
 import { useEvents } from '@daypilot/lib';
 import type { Event } from '@daypilot/types';
@@ -14,11 +14,35 @@ export function AISuggestions() {
   const { data: events = [] } = useEvents();
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
 
-  useEffect(() => {
-    generateSuggestions();
-  }, [events]);
+  const findTimeGaps = (
+    events: Event[],
+    now: Date
+  ): Array<{ start: Date; duration: number }> => {
+    const gaps: Array<{ start: Date; duration: number }> = [];
+    const sortedEvents = [...events].sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
 
-  const generateSuggestions = () => {
+    let currentTime = now;
+
+    for (const event of sortedEvents) {
+      const eventStart = new Date(event.start);
+      if (eventStart > currentTime) {
+        const duration = (eventStart.getTime() - currentTime.getTime()) / (1000 * 60);
+        if (duration >= 30) {
+          gaps.push({ start: new Date(currentTime), duration });
+        }
+      }
+      const eventEnd = new Date(event.end);
+      if (eventEnd > currentTime) {
+        currentTime = eventEnd;
+      }
+    }
+
+    return gaps.sort((a, b) => b.duration - a.duration);
+  };
+
+  const generateSuggestions = useCallback(() => {
     const newSuggestions: AISuggestion[] = [];
     const now = new Date();
     const todayEvents = events.filter((e) => {
@@ -94,51 +118,11 @@ export function AISuggestions() {
     }
 
     setSuggestions(newSuggestions.slice(0, 5)); // Limit to 5 suggestions
-  };
+  }, [events]);
 
-  const findTimeGaps = (
-    events: Event[],
-    startTime: Date
-  ): Array<{ start: Date; end: Date; duration: number }> => {
-    const sorted = [...events].sort(
-      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
-    );
-
-    const gaps: Array<{ start: Date; end: Date; duration: number }> = [];
-    let current = new Date(startTime);
-    current.setHours(9, 0, 0, 0); // Start of work day
-
-    sorted.forEach((event) => {
-      const eventStart = new Date(event.start);
-      if (eventStart > current) {
-        const duration = (eventStart.getTime() - current.getTime()) / (1000 * 60);
-        if (duration >= 30) {
-          gaps.push({
-            start: new Date(current),
-            end: eventStart,
-            duration,
-          });
-        }
-      }
-      current = new Date(event.end);
-    });
-
-    // Check gap until end of day
-    const endOfDay = new Date(current);
-    endOfDay.setHours(18, 0, 0, 0);
-    if (endOfDay > current) {
-      const duration = (endOfDay.getTime() - current.getTime()) / (1000 * 60);
-      if (duration >= 30) {
-        gaps.push({
-          start: new Date(current),
-          end: endOfDay,
-          duration,
-        });
-      }
-    }
-
-    return gaps.sort((a, b) => b.duration - a.duration);
-  };
+  useEffect(() => {
+    generateSuggestions();
+  }, [generateSuggestions]);
 
   if (suggestions.length === 0) {
     return null;

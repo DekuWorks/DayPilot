@@ -51,7 +51,7 @@ export function getRecurrenceDescription(recurrenceRule: string | null): string 
   try {
     const rule = RRule.fromString(recurrenceRule);
     return rule.toText();
-  } catch (error) {
+  } catch {
     return 'Recurring';
   }
 }

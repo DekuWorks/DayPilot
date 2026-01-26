@@ -83,7 +83,7 @@ export function BookingCalendar({
     const endTime = new Date(date);
     endTime.setHours(endHour, endMinute, 0, 0);
 
-    let currentTime = new Date(startTime);
+    const currentTime = new Date(startTime);
 
     while (currentTime < endTime) {
       const slotEnd = new Date(currentTime);
