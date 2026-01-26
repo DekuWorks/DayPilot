@@ -40,13 +40,17 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-key' }}
       
-      - name: Copy CNAME to dist
+      - name: Copy CNAME and create .nojekyll
         run: |
           if [ -f CNAME ]; then
             cp CNAME apps/web/dist/CNAME
           fi
           # Create .nojekyll to disable Jekyll processing
           touch apps/web/dist/.nojekyll
+          # Verify build output
+          ls -la apps/web/dist/
+          echo "Build complete. Files in dist:"
+          find apps/web/dist -type f | head -10
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
