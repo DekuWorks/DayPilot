@@ -4,6 +4,7 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/', // For custom domain on GitHub Pages
   plugins: [
     react({
       jsxRuntime: 'automatic',
