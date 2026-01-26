@@ -63,7 +63,9 @@ function wasReminderSent(eventId: string, reminderMinutes: number): boolean {
 function cleanOldReminders(): void {
   const reminders = getSentReminders();
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const filtered = reminders.filter(r => new Date(r.sentAt).getTime() > sevenDaysAgo);
+  const filtered = reminders.filter(
+    r => new Date(r.sentAt).getTime() > sevenDaysAgo
+  );
   localStorage.setItem(SENT_REMINDERS_KEY, JSON.stringify(filtered));
 }
 
@@ -81,7 +83,9 @@ export async function sendReminderForEvent(
 
   const eventStart = new Date(event.start);
   const now = new Date();
-  const minutesUntil = Math.floor((eventStart.getTime() - now.getTime()) / (1000 * 60));
+  const minutesUntil = Math.floor(
+    (eventStart.getTime() - now.getTime()) / (1000 * 60)
+  );
 
   if (minutesUntil < 0 || minutesUntil > reminderMinutes + 5) {
     return; // Too early or too late
@@ -105,7 +109,7 @@ export async function sendReminderForEvent(
     });
 
     const result = await sendEmail(attendeeEmail, template);
-    
+
     if (result.success) {
       saveSentReminder({
         eventId: event.id,
@@ -123,7 +127,7 @@ export async function sendReminderForEvent(
  */
 export async function checkAndSendReminders(): Promise<void> {
   const preferences = getUserEmailPreferences();
-  
+
   if (!preferences.remindersEnabled) {
     return; // Reminders disabled
   }
@@ -137,10 +141,10 @@ export async function checkAndSendReminders(): Promise<void> {
   // Get upcoming events within reminder window
   const upcomingEvents = events.filter(event => {
     if (event.all_day || event.status !== 'scheduled') return false;
-    
+
     const eventStart = new Date(event.start);
     const minutesUntil = (eventStart.getTime() - now.getTime()) / (1000 * 60);
-    
+
     return minutesUntil > 0 && minutesUntil <= reminderWindow;
   });
 
@@ -159,7 +163,7 @@ export async function checkAndSendReminders(): Promise<void> {
 export function startReminderScheduler(): () => void {
   // Run immediately
   checkAndSendReminders();
-  
+
   // Then run periodically
   const interval = setInterval(() => {
     checkAndSendReminders();

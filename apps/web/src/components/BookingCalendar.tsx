@@ -1,6 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@daypilot/ui';
-import type { BookingLink, AvailabilityRule, BookingExcludedDate, Booking } from '@daypilot/types';
+import type {
+  BookingLink,
+  AvailabilityRule,
+  BookingExcludedDate,
+  Booking,
+} from '@daypilot/types';
 import { scoreAndSortSlots } from '../utils/slotScoring';
 
 interface BookingCalendarProps {
@@ -26,14 +31,14 @@ export function BookingCalendar({
 
   // Get excluded date strings for quick lookup
   const excludedDateStrings = useMemo(
-    () => new Set(excludedDates.map((ed) => ed.excluded_date)),
+    () => new Set(excludedDates.map(ed => ed.excluded_date)),
     [excludedDates]
   );
 
   // Get existing bookings grouped by date
   const bookingsByDate = useMemo(() => {
     const map = new Map<string, Booking[]>();
-    existingBookings.forEach((booking) => {
+    existingBookings.forEach(booking => {
       const date = new Date(booking.start_time).toISOString().split('T')[0];
       if (!map.has(date)) {
         map.set(date, []);
@@ -62,12 +67,17 @@ export function BookingCalendar({
 
     // Check max bookings per day
     const bookingsForDate = bookingsByDate.get(dateString) || [];
-    if (bookingLink.max_per_day && bookingsForDate.length >= bookingLink.max_per_day) {
+    if (
+      bookingLink.max_per_day &&
+      bookingsForDate.length >= bookingLink.max_per_day
+    ) {
       return [];
     }
 
     // Find availability rule for this day
-    const rule = availabilityRules.find((r) => r.day_of_week === dayOfWeek && r.is_available);
+    const rule = availabilityRules.find(
+      r => r.day_of_week === dayOfWeek && r.is_available
+    );
     if (!rule) {
       return [];
     }
@@ -92,7 +102,7 @@ export function BookingCalendar({
       // Check if slot fits before end time
       if (slotEnd <= endTime) {
         // Check for conflicts with existing bookings
-        const hasConflict = bookingsForDate.some((booking) => {
+        const hasConflict = bookingsForDate.some(booking => {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);
 
@@ -103,11 +113,15 @@ export function BookingCalendar({
           );
 
           const slotEndWithBuffer = new Date(slotEnd);
-          slotEndWithBuffer.setMinutes(slotEndWithBuffer.getMinutes() + bookingLink.buffer_after);
+          slotEndWithBuffer.setMinutes(
+            slotEndWithBuffer.getMinutes() + bookingLink.buffer_after
+          );
 
           return (
-            (slotStartWithBuffer < bookingEnd && slotEndWithBuffer > bookingStart) ||
-            (bookingStart < slotEndWithBuffer && bookingEnd > slotStartWithBuffer)
+            (slotStartWithBuffer < bookingEnd &&
+              slotEndWithBuffer > bookingStart) ||
+            (bookingStart < slotEndWithBuffer &&
+              bookingEnd > slotStartWithBuffer)
           );
         });
 
@@ -130,7 +144,7 @@ export function BookingCalendar({
         start: new Date(booking.start_time),
         end: new Date(booking.end_time),
       }));
-      
+
       const scored = scoreAndSortSlots(
         slots,
         date,
@@ -138,7 +152,7 @@ export function BookingCalendar({
         bookingLink.buffer_before,
         bookingLink.buffer_after
       );
-      
+
       return scored.map(s => s.time);
     }
 
@@ -235,8 +249,11 @@ export function BookingCalendar({
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1 mb-4">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div
+            key={day}
+            className="text-center text-sm font-medium text-gray-600 py-2"
+          >
             {day}
           </div>
         ))}
@@ -269,7 +286,9 @@ export function BookingCalendar({
             >
               {date.getDate()}
               {hasSlots && !isExcluded && !isPast && (
-                <div className="text-xs mt-0.5 text-[#4FB3B3]">{slots.length}</div>
+                <div className="text-xs mt-0.5 text-[#4FB3B3]">
+                  {slots.length}
+                </div>
               )}
             </button>
           );
@@ -280,22 +299,24 @@ export function BookingCalendar({
       {selectedDate && (
         <div className="mt-6">
           <h4 className="text-sm font-semibold mb-3 text-[#2B3448]">
-            Available Times for {selectedDate.toLocaleDateString('en-US', {
+            Available Times for{' '}
+            {selectedDate.toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
             })}
           </h4>
           <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-            {getAvailableSlots(selectedDate).map((time) => (
+            {getAvailableSlots(selectedDate).map(time => (
               <button
                 key={time}
                 onClick={() => onTimeSelect(selectedDate, time)}
                 className={`
                   px-4 py-2 text-sm rounded-lg border transition-colors
-                  ${selectedTime === time
-                    ? 'bg-[#4FB3B3] text-white border-[#4FB3B3]'
-                    : 'border-gray-300 hover:border-[#4FB3B3] hover:bg-[#4FB3B3]/10'
+                  ${
+                    selectedTime === time
+                      ? 'bg-[#4FB3B3] text-white border-[#4FB3B3]'
+                      : 'border-gray-300 hover:border-[#4FB3B3] hover:bg-[#4FB3B3]/10'
                   }
                 `}
               >

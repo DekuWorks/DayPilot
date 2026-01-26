@@ -12,11 +12,14 @@ interface AttendeeManagerProps {
   organizerEmail: string;
 }
 
-export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProps) {
+export function AttendeeManager({
+  eventId,
+  organizerEmail,
+}: AttendeeManagerProps) {
   const { data: attendees = [], isLoading } = useEventAttendees(eventId);
   const addAttendee = useAddAttendee();
   const removeAttendee = useRemoveAttendee();
-  
+
   const [emailInput, setEmailInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -47,7 +50,7 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
         name: nameInput.trim() || undefined,
         role: 'attendee',
       });
-      
+
       // Send invite email via Edge Function
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -57,10 +60,10 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             },
             body: JSON.stringify({ attendeeId: newAttendee.id }),
-          }).catch((err) => {
+          }).catch(err => {
             console.error('Error triggering invite email:', err);
             // Don't block attendee addition if email fails
           });
@@ -69,7 +72,7 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
         console.error('Failed to send invite email:', emailError);
         // Don't block attendee addition if email fails
       }
-      
+
       setEmailInput('');
       setNameInput('');
       setIsAdding(false);
@@ -101,7 +104,9 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
   };
 
   if (isLoading) {
-    return <div className="text-sm text-[var(--muted)]">Loading attendees...</div>;
+    return (
+      <div className="text-sm text-[var(--muted)]">Loading attendees...</div>
+    );
   }
 
   return (
@@ -124,13 +129,16 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
 
       {/* Add Attendee Form */}
       {isAdding && (
-        <form onSubmit={handleAddAttendee} className="p-3 bg-[var(--surface-2)] rounded-lg space-y-2">
+        <form
+          onSubmit={handleAddAttendee}
+          className="p-3 bg-[var(--surface-2)] rounded-lg space-y-2"
+        >
           <div>
             <Input
               type="email"
               placeholder="Email address"
               value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
+              onChange={e => setEmailInput(e.target.value)}
               required
               className="text-sm"
             />
@@ -140,7 +148,7 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
               type="text"
               placeholder="Name (optional)"
               value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
+              onChange={e => setNameInput(e.target.value)}
               className="text-sm"
             />
           </div>
@@ -176,25 +184,40 @@ export function AttendeeManager({ eventId, organizerEmail }: AttendeeManagerProp
             <Badge variant="default" className="!text-xs">
               Organizer
             </Badge>
-            <Badge className={`!text-xs ${getRSVPBadgeColor(organizer.rsvpStatus)}`}>
-              {organizer.rsvpStatus === 'going' ? 'Going' :
-               organizer.rsvpStatus === 'maybe' ? 'Maybe' :
-               organizer.rsvpStatus === 'declined' ? 'Declined' : 'Pending'}
+            <Badge
+              className={`!text-xs ${getRSVPBadgeColor(organizer.rsvpStatus)}`}
+            >
+              {organizer.rsvpStatus === 'going'
+                ? 'Going'
+                : organizer.rsvpStatus === 'maybe'
+                  ? 'Maybe'
+                  : organizer.rsvpStatus === 'declined'
+                    ? 'Declined'
+                    : 'Pending'}
             </Badge>
           </div>
         </div>
 
         {/* Other Attendees */}
-        {otherAttendees.map((attendee) => (
-          <div key={attendee.id} className="flex items-center justify-between p-2 bg-[var(--surface-2)] rounded-lg">
+        {otherAttendees.map(attendee => (
+          <div
+            key={attendee.id}
+            className="flex items-center justify-between p-2 bg-[var(--surface-2)] rounded-lg"
+          >
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-sm text-[var(--text)] truncate">
                 {attendee.name || attendee.email}
               </span>
-              <Badge className={`!text-xs ${getRSVPBadgeColor(attendee.rsvpStatus)}`}>
-                {attendee.rsvpStatus === 'going' ? 'Going' :
-                 attendee.rsvpStatus === 'maybe' ? 'Maybe' :
-                 attendee.rsvpStatus === 'declined' ? 'Declined' : 'Pending'}
+              <Badge
+                className={`!text-xs ${getRSVPBadgeColor(attendee.rsvpStatus)}`}
+              >
+                {attendee.rsvpStatus === 'going'
+                  ? 'Going'
+                  : attendee.rsvpStatus === 'maybe'
+                    ? 'Maybe'
+                    : attendee.rsvpStatus === 'declined'
+                      ? 'Declined'
+                      : 'Pending'}
               </Badge>
             </div>
             <Button

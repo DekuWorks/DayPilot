@@ -22,6 +22,7 @@ supabase secrets set RESEND_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 These are automatically available to Edge Functions:
+
 - `SUPABASE_URL` (auto-provided)
 - `SUPABASE_SERVICE_ROLE_KEY` (auto-provided)
 

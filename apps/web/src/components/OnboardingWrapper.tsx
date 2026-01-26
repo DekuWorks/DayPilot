@@ -24,8 +24,3 @@ export function OnboardingWrapper() {
   // User has organizations or skipped onboarding, show the app
   return <Outlet />;
 }
-
-
-
-
-

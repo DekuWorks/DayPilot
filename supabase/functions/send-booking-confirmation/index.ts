@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@daypilot.app';
+const RESEND_FROM_EMAIL =
+  Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@daypilot.app';
 
 interface BookingData {
   id: string;
@@ -24,23 +25,23 @@ interface BookingData {
   };
 }
 
-serve(async (req) => {
+serve(async req => {
   try {
     // Only allow POST requests
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const { bookingId } = await req.json();
 
     if (!bookingId) {
-      return new Response(
-        JSON.stringify({ error: 'bookingId is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'bookingId is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -51,7 +52,8 @@ serve(async (req) => {
     // Fetch booking details
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         id,
         booking_link_id,
         booker_name,
@@ -69,13 +71,17 @@ serve(async (req) => {
           owner_user_id,
           organization_id
         )
-      `)
+      `
+      )
       .eq('id', bookingId)
       .single();
 
     if (bookingError || !booking) {
       return new Response(
-        JSON.stringify({ error: 'Booking not found', details: bookingError?.message }),
+        JSON.stringify({
+          error: 'Booking not found',
+          details: bookingError?.message,
+        }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -93,7 +99,7 @@ serve(async (req) => {
         .select('email, name')
         .eq('id', bookingLink.owner_user_id)
         .single();
-      
+
       if (owner) {
         ownerEmail = owner.email;
         ownerName = owner.name || '';
@@ -107,7 +113,7 @@ serve(async (req) => {
         .in('role', ['owner', 'admin'])
         .limit(1)
         .single();
-      
+
       if (member && (member as any).profiles) {
         ownerEmail = (member as any).profiles.email;
         ownerName = (member as any).profiles.name || '';
@@ -118,7 +124,7 @@ serve(async (req) => {
     const startTime = new Date(bookingData.start_time);
     const endTime = new Date(bookingData.end_time);
     const timezone = bookingData.timezone || 'UTC';
-    
+
     const formattedStart = startTime.toLocaleString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -128,7 +134,7 @@ serve(async (req) => {
       minute: '2-digit',
       timeZone: timezone,
     });
-    
+
     const formattedEnd = endTime.toLocaleString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
@@ -202,7 +208,7 @@ We look forward to meeting with you!
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
         from: RESEND_FROM_EMAIL,
@@ -275,7 +281,7 @@ ${bookingData.notes ? `\nNotes: ${bookingData.notes}\n` : ''}
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
           from: RESEND_FROM_EMAIL,
@@ -300,7 +306,10 @@ ${bookingData.notes ? `\nNotes: ${bookingData.notes}\n` : ''}
   } catch (error: any) {
     console.error('Error in send-booking-confirmation function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

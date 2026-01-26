@@ -23,7 +23,13 @@ import {
   getTasks,
   saveTasks,
 } from '@daypilot/lib';
-import type { Event, Category, Task, TaskPriority, TaskStatus } from '@daypilot/types';
+import type {
+  Event,
+  Category,
+  Task,
+  TaskPriority,
+  TaskStatus,
+} from '@daypilot/types';
 import type { User } from '@supabase/supabase-js';
 
 // Enhanced event type with recurrence support for localStorage
@@ -119,7 +125,7 @@ export function DashboardPage() {
         getTasks(),
         getCategories(),
       ]);
-      
+
       setEvents(savedEvents as LocalEvent[]);
       setTasks(savedTasks);
       setCategories(savedCategories);
@@ -127,10 +133,38 @@ export function DashboardPage() {
       // Create default categories if none exist
       if (savedCategories.length === 0) {
         const defaultCategories: Category[] = [
-          { id: '1', user_id: 'local', name: 'Work', color: '#3B82F6', icon: '💼', created_at: new Date().toISOString() },
-          { id: '2', user_id: 'local', name: 'Personal', color: '#10B981', icon: '🏠', created_at: new Date().toISOString() },
-          { id: '3', user_id: 'local', name: 'Health', color: '#EF4444', icon: '❤️', created_at: new Date().toISOString() },
-          { id: '4', user_id: 'local', name: 'Education', color: '#8B5CF6', icon: '📚', created_at: new Date().toISOString() },
+          {
+            id: '1',
+            user_id: 'local',
+            name: 'Work',
+            color: '#3B82F6',
+            icon: '💼',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            user_id: 'local',
+            name: 'Personal',
+            color: '#10B981',
+            icon: '🏠',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: '3',
+            user_id: 'local',
+            name: 'Health',
+            color: '#EF4444',
+            icon: '❤️',
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: '4',
+            user_id: 'local',
+            name: 'Education',
+            color: '#8B5CF6',
+            icon: '📚',
+            created_at: new Date().toISOString(),
+          },
         ];
         setCategories(defaultCategories);
         await saveCategories(defaultCategories);
@@ -163,8 +197,10 @@ export function DashboardPage() {
   const viewStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const viewEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
 
-  const calendarEvents: any[] = events.flatMap((event) => {
-    const category: Category | null = event.category_id ? categories.find((c) => c.id === event.category_id) || null : null;
+  const calendarEvents: any[] = events.flatMap(event => {
+    const category: Category | null = event.category_id
+      ? categories.find(c => c.id === event.category_id) || null
+      : null;
     const baseTitle = event.icon ? `${event.icon} ${event.title}` : event.title;
     const pastelBg = getPastelColor(category);
     const textColor = getTextColor(category);
@@ -172,8 +208,12 @@ export function DashboardPage() {
 
     if (event.recurrence_rule && !event.is_recurring_instance) {
       // Expand recurring event
-      const instances = expandRecurringEvent(event as Event, viewStart, viewEnd);
-      return instances.map((instance) => ({
+      const instances = expandRecurringEvent(
+        event as Event,
+        viewStart,
+        viewEnd
+      );
+      return instances.map(instance => ({
         id: `${event.id}-${instance.start.getTime()}`,
         title: baseTitle,
         start: instance.start,
@@ -189,20 +229,22 @@ export function DashboardPage() {
       }));
     } else {
       // Regular event
-      return [{
-        id: event.id,
-        title: baseTitle,
-        start: new Date(event.start),
-        end: new Date(event.end),
-        allDay: event.all_day || false,
-        backgroundColor: pastelBg,
-        borderColor: eventColor,
-        textColor: textColor,
-        extendedProps: {
-          ...event,
-          isRecurringInstance: false,
+      return [
+        {
+          id: event.id,
+          title: baseTitle,
+          start: new Date(event.start),
+          end: new Date(event.end),
+          allDay: event.all_day || false,
+          backgroundColor: pastelBg,
+          borderColor: eventColor,
+          textColor: textColor,
+          extendedProps: {
+            ...event,
+            isRecurringInstance: false,
+          },
         },
-      }];
+      ];
     }
   });
 
@@ -212,7 +254,9 @@ export function DashboardPage() {
   // Get upcoming event
   const upcomingEvent = events
     .filter(e => new Date(e.start) > new Date())
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())[0];
+    .sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
+    )[0];
 
   // Calculate time breakdown
   const todayEvents = events.filter(e => {
@@ -222,10 +266,18 @@ export function DashboardPage() {
   });
 
   const breakdown = {
-    meetings: todayEvents.filter(e => e.category_id === categories.find(c => c.name === 'Work')?.id).length,
-    projects: todayEvents.filter(e => e.category_id === categories.find(c => c.name === 'Personal')?.id).length,
-    education: todayEvents.filter(e => e.category_id === categories.find(c => c.name === 'Education')?.id).length,
-    events: todayEvents.filter(e => e.category_id === categories.find(c => c.name === 'Health')?.id).length,
+    meetings: todayEvents.filter(
+      e => e.category_id === categories.find(c => c.name === 'Work')?.id
+    ).length,
+    projects: todayEvents.filter(
+      e => e.category_id === categories.find(c => c.name === 'Personal')?.id
+    ).length,
+    education: todayEvents.filter(
+      e => e.category_id === categories.find(c => c.name === 'Education')?.id
+    ).length,
+    events: todayEvents.filter(
+      e => e.category_id === categories.find(c => c.name === 'Health')?.id
+    ).length,
     reviews: todayEvents.length - todayEvents.filter(e => e.category_id).length,
   };
   const total = todayEvents.length || 1;
@@ -238,7 +290,7 @@ export function DashboardPage() {
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     const start = selectInfo.start;
     const end = selectInfo.end || new Date(start.getTime() + 3600000);
-    
+
     setFormData({
       title: '',
       description: '',
@@ -261,7 +313,7 @@ export function DashboardPage() {
 
   const handleEventClick = (clickInfo: EventClickArg) => {
     const eventId = clickInfo.event.id.split('-')[0];
-    const event = events.find((e) => e.id === eventId);
+    const event = events.find(e => e.id === eventId);
     if (event) {
       setSelectedEvent(event);
       const startDate = new Date(event.start);
@@ -289,7 +341,7 @@ export function DashboardPage() {
   const handleCreateEvent = () => {
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 3600000);
-    
+
     setFormData({
       title: '',
       description: '',
@@ -337,11 +389,12 @@ export function DashboardPage() {
 
     if (isNewEvent) {
       setEvents([...events, eventData]);
-      
+
       // Auto-add organizer as attendee for new events
       if (user?.email) {
         try {
-          const { getAttendees, saveAttendees, generateInviteToken } = await import('@daypilot/lib');
+          const { getAttendees, saveAttendees, generateInviteToken } =
+            await import('@daypilot/lib');
           const allAttendees = await getAttendees();
           const inviteToken = await generateInviteToken();
           const organizerAttendee = {
@@ -361,7 +414,7 @@ export function DashboardPage() {
         }
       }
     } else {
-      setEvents(events.map((e) => (e.id === eventData.id ? eventData : e)));
+      setEvents(events.map(e => (e.id === eventData.id ? eventData : e)));
     }
 
     setIsEventModalOpen(false);
@@ -369,21 +422,22 @@ export function DashboardPage() {
 
   const handleDelete = () => {
     if (selectedEvent) {
-      setEvents(events.filter((e) => e.id !== selectedEvent.id));
+      setEvents(events.filter(e => e.id !== selectedEvent.id));
       setIsEventModalOpen(false);
     }
   };
 
   const handleEventDrop = (dropInfo: any) => {
     const eventId = dropInfo.event.id.split('-')[0];
-    const event = events.find((e) => e.id === eventId);
+    const event = events.find(e => e.id === eventId);
     if (event && dropInfo.event.start) {
-      const duration = new Date(event.end).getTime() - new Date(event.start).getTime();
+      const duration =
+        new Date(event.end).getTime() - new Date(event.start).getTime();
       const newStart = dropInfo.event.start;
       const newEnd = new Date(newStart.getTime() + duration);
-      
+
       setEvents(
-        events.map((e) =>
+        events.map(e =>
           e.id === event.id
             ? {
                 ...e,
@@ -398,10 +452,10 @@ export function DashboardPage() {
 
   const handleEventResize = (resizeInfo: any) => {
     const eventId = resizeInfo.event.id.split('-')[0];
-    const event = events.find((e) => e.id === eventId);
+    const event = events.find(e => e.id === eventId);
     if (event && resizeInfo.event.start && resizeInfo.event.end) {
       setEvents(
-        events.map((e) =>
+        events.map(e =>
           e.id === event.id
             ? {
                 ...e,
@@ -430,8 +484,16 @@ export function DashboardPage() {
   }, []);
 
   // Mini calendar helpers
-  const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-  const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+  const monthStart = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    1
+  );
+  const monthEnd = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth() + 1,
+    0
+  );
   const startDate = new Date(monthStart);
   startDate.setDate(startDate.getDate() - startDate.getDay());
   const endDate = new Date(monthEnd);
@@ -449,7 +511,10 @@ export function DashboardPage() {
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   };
 
   // Calculate insights summary
@@ -463,7 +528,7 @@ export function DashboardPage() {
       <div className="container-width section-padding">
         <MigrationBanner />
       </div>
-      
+
       {/* Dashboard Shell */}
       <div className="dashboard-shell">
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 h-[calc(100vh-120px)]">
@@ -473,11 +538,15 @@ export function DashboardPage() {
             <Card className="sidebar-card p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#EFBF4D] to-[#4FB3B3] flex items-center justify-center text-white font-semibold text-lg shadow-sm">
-                  {user?.user_metadata?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  {user?.user_metadata?.name?.charAt(0)?.toUpperCase() ||
+                    user?.email?.charAt(0)?.toUpperCase() ||
+                    'U'}
                 </div>
                 <div>
                   <h3 className="font-semibold text-[var(--text)]">
-                    {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}
+                    {user?.user_metadata?.name ||
+                      user?.email?.split('@')[0] ||
+                      'User'}
                   </h3>
                   <p className="text-sm text-[var(--muted)]">Calendar</p>
                 </div>
@@ -492,16 +561,26 @@ export function DashboardPage() {
 
             {/* Upcoming Event Card */}
             {upcomingEvent && (
-              <Card className="sidebar-card p-4 border-l-2" style={{
-                borderLeftColor: categories.find(c => c.id === upcomingEvent.category_id)?.color || '#059669',
-              }}>
-                <p className="text-xs font-medium text-[var(--muted)] mb-2 uppercase tracking-wide">Upcoming event</p>
+              <Card
+                className="sidebar-card p-4 border-l-2"
+                style={{
+                  borderLeftColor:
+                    categories.find(c => c.id === upcomingEvent.category_id)
+                      ?.color || '#059669',
+                }}
+              >
+                <p className="text-xs font-medium text-[var(--muted)] mb-2 uppercase tracking-wide">
+                  Upcoming event
+                </p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm"
                       style={{
-                        backgroundColor: categories.find(c => c.id === upcomingEvent.category_id)?.color || '#059669',
+                        backgroundColor:
+                          categories.find(
+                            c => c.id === upcomingEvent.category_id
+                          )?.color || '#059669',
                       }}
                     />
                     <span className="text-sm font-medium text-[var(--text)] truncate">
@@ -544,28 +623,36 @@ export function DashboardPage() {
               </div>
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                  <div key={i} className="text-xs text-center text-[var(--muted)] font-semibold py-1">
+                  <div
+                    key={i}
+                    className="text-xs text-center text-[var(--muted)] font-semibold py-1"
+                  >
                     {day}
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-7 gap-1">
                 {days.map((day, i) => {
-                  const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                  const isToday = day.toDateString() === new Date().toDateString();
-                  const isSelected = day.toDateString() === selectedDate.toDateString();
+                  const isCurrentMonth =
+                    day.getMonth() === selectedDate.getMonth();
+                  const isToday =
+                    day.toDateString() === new Date().toDateString();
+                  const isSelected =
+                    day.toDateString() === selectedDate.toDateString();
                   return (
                     <button
                       key={i}
                       onClick={() => setSelectedDate(day)}
                       className={`text-xs py-1.5 rounded transition-all ${
-                        !isCurrentMonth ? 'text-[var(--muted)] opacity-40' : 'text-[var(--text)]'
+                        !isCurrentMonth
+                          ? 'text-[var(--muted)] opacity-40'
+                          : 'text-[var(--text)]'
                       } ${
                         isToday
                           ? 'bg-[var(--text)] text-white font-bold shadow-sm'
                           : isSelected
-                          ? 'bg-[var(--border)] font-semibold'
-                          : 'hover:bg-[var(--border)]'
+                            ? 'bg-[var(--border)] font-semibold'
+                            : 'hover:bg-[var(--border)]'
                       }`}
                     >
                       {day.getDate()}
@@ -580,19 +667,49 @@ export function DashboardPage() {
 
             {/* Time Breakdown */}
             <Card className="sidebar-card">
-              <h4 className="text-sm font-bold text-[var(--text)] mb-4">Time Breakdown</h4>
+              <h4 className="text-sm font-bold text-[var(--text)] mb-4">
+                Time Breakdown
+              </h4>
               <div className="space-y-3">
                 {[
-                  { label: 'Meetings', value: breakdown.meetings, color: '#3B82F6' },
-                  { label: 'Projects', value: breakdown.projects, color: '#10B981' },
-                  { label: 'Education', value: breakdown.education, color: '#8B5CF6' },
-                  { label: 'Events', value: breakdown.events, color: '#EF4444' },
-                  { label: 'Reviews', value: breakdown.reviews, color: '#F59E0B' },
+                  {
+                    label: 'Meetings',
+                    value: breakdown.meetings,
+                    color: '#3B82F6',
+                  },
+                  {
+                    label: 'Projects',
+                    value: breakdown.projects,
+                    color: '#10B981',
+                  },
+                  {
+                    label: 'Education',
+                    value: breakdown.education,
+                    color: '#8B5CF6',
+                  },
+                  {
+                    label: 'Events',
+                    value: breakdown.events,
+                    color: '#EF4444',
+                  },
+                  {
+                    label: 'Reviews',
+                    value: breakdown.reviews,
+                    color: '#F59E0B',
+                  },
                 ].map((item, index) => (
-                  <div key={item.label} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                  <div
+                    key={item.label}
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-[var(--muted)] font-medium">{item.label}</span>
-                      <span className="text-[var(--text)] font-semibold">{item.value}</span>
+                      <span className="text-[var(--muted)] font-medium">
+                        {item.label}
+                      </span>
+                      <span className="text-[var(--text)] font-semibold">
+                        {item.value}
+                      </span>
                     </div>
                     <div className="h-2 bg-[var(--border)] rounded-full overflow-hidden">
                       <div
@@ -656,10 +773,7 @@ export function DashboardPage() {
             {/* Calendar */}
             <div className="flex-1 overflow-hidden">
               <FullCalendar
-                plugins={[
-                  dayGridPlugin,
-                  timeGridPlugin,
-                ]}
+                plugins={[dayGridPlugin, timeGridPlugin]}
                 initialView={currentView}
                 headerToolbar={false}
                 events={filteredEvents}
@@ -694,8 +808,14 @@ export function DashboardPage() {
 
       {/* Event Modal */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4" onClick={() => setIsEventModalOpen(false)}>
-          <div className="modal-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-8" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+          onClick={() => setIsEventModalOpen(false)}
+        >
+          <div
+            className="modal-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-8"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-[var(--text)]">
                 {isNewEvent ? 'Add Event' : 'Edit Event'}
@@ -710,13 +830,16 @@ export function DashboardPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="title" className="text-sm font-semibold text-[var(--text)] mb-2 block">
+                <Label
+                  htmlFor="title"
+                  className="text-sm font-semibold text-[var(--text)] mb-2 block"
+                >
                   Title
                 </Label>
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, title: e.target.value })
                   }
                   required
@@ -726,14 +849,17 @@ export function DashboardPage() {
               </div>
 
               <div>
-                <Label htmlFor="description" className="text-sm font-semibold text-[var(--text)] mb-2 block">
+                <Label
+                  htmlFor="description"
+                  className="text-sm font-semibold text-[var(--text)] mb-2 block"
+                >
                   Description
                 </Label>
                 <textarea
                   id="description"
                   className="w-full mt-1 px-4 py-3 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4FB3B3] bg-[var(--surface)] transition-all resize-none"
                   value={formData.description}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, description: e.target.value })
                   }
                   rows={3}
@@ -743,14 +869,17 @@ export function DashboardPage() {
 
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <Label htmlFor="start" className="text-sm font-semibold text-[var(--text)] mb-2 block">
+                  <Label
+                    htmlFor="start"
+                    className="text-sm font-semibold text-[var(--text)] mb-2 block"
+                  >
                     {formData.all_day ? 'Date' : 'Start'}
                   </Label>
                   <Input
                     id="start"
                     type={formData.all_day ? 'date' : 'datetime-local'}
                     value={formData.start}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, start: e.target.value })
                     }
                     required
@@ -758,14 +887,17 @@ export function DashboardPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <Label htmlFor="end" className="text-sm font-semibold text-[var(--text)] mb-2 block">
+                  <Label
+                    htmlFor="end"
+                    className="text-sm font-semibold text-[var(--text)] mb-2 block"
+                  >
                     {formData.all_day ? 'End Date' : 'End'}
                   </Label>
                   <Input
                     id="end"
                     type={formData.all_day ? 'date' : 'datetime-local'}
                     value={formData.end}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, end: e.target.value })
                     }
                     required
@@ -779,24 +911,32 @@ export function DashboardPage() {
                   type="checkbox"
                   id="all_day"
                   checked={formData.all_day}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, all_day: e.target.checked })
                   }
                   className="w-4 h-4 rounded border-[var(--border)]"
                 />
-                <Label htmlFor="all_day" className="text-sm text-[var(--text)] font-medium cursor-pointer">
+                <Label
+                  htmlFor="all_day"
+                  className="text-sm text-[var(--text)] font-medium cursor-pointer"
+                >
                   All-day event
                 </Label>
               </div>
 
               <div>
-                <Label htmlFor="category" className="text-sm font-semibold text-[var(--text)] mb-3 block">
+                <Label
+                  htmlFor="category"
+                  className="text-sm font-semibold text-[var(--text)] mb-3 block"
+                >
                   Category
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, category_id: null })}
+                    onClick={() =>
+                      setFormData({ ...formData, category_id: null })
+                    }
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                       formData.category_id === null
                         ? 'bg-[var(--text)] text-white shadow-sm'
@@ -805,11 +945,13 @@ export function DashboardPage() {
                   >
                     None
                   </button>
-                  {categories.map((category) => (
+                  {categories.map(category => (
                     <button
                       key={category.id}
                       type="button"
-                      onClick={() => setFormData({ ...formData, category_id: category.id })}
+                      onClick={() =>
+                        setFormData({ ...formData, category_id: category.id })
+                      }
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                         formData.category_id === category.id
                           ? 'bg-[var(--text)] text-white shadow-sm'
@@ -878,19 +1020,20 @@ export function DashboardPage() {
           tasks={tasks}
           setTasks={setTasks}
           onClose={() => setIsTaskPanelOpen(false)}
-          onConvertToEvent={(task) => {
+          onConvertToEvent={task => {
             const duration = task.duration || 60;
             const start = task.due_date ? new Date(task.due_date) : new Date();
             const end = new Date(start.getTime() + duration * 60000);
-            
+
             setFormData({
               title: task.title,
               description: task.description || '',
               start: start.toISOString().slice(0, 16),
               end: end.toISOString().slice(0, 16),
               all_day: false,
-              color: task.category_id 
-                ? categories.find((c) => c.id === task.category_id)?.color || '#059669'
+              color: task.category_id
+                ? categories.find(c => c.id === task.category_id)?.color ||
+                  '#059669'
                 : '#059669',
               category_id: task.category_id,
               recurrence_rule: null,
@@ -957,12 +1100,14 @@ function TaskPanel({
   };
 
   const handleCompleteTask = (taskId: string) => {
-    setTasks(tasks.map((t) => 
-      t.id === taskId ? { ...t, status: 'completed' as TaskStatus } : t
-    ));
+    setTasks(
+      tasks.map(t =>
+        t.id === taskId ? { ...t, status: 'completed' as TaskStatus } : t
+      )
+    );
   };
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
+  const pendingTasks = tasks.filter(t => t.status !== 'completed');
 
   return (
     <div className="fixed right-0 top-0 h-full w-80 bg-[var(--surface)] border-l border-[var(--border)] z-40 overflow-y-auto shadow-lg">
@@ -989,7 +1134,9 @@ function TaskPanel({
                 <Input
                   id="task-title"
                   value={taskForm.title}
-                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  onChange={e =>
+                    setTaskForm({ ...taskForm, title: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -999,7 +1146,9 @@ function TaskPanel({
                   id="task-due"
                   type="datetime-local"
                   value={taskForm.due_date}
-                  onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                  onChange={e =>
+                    setTaskForm({ ...taskForm, due_date: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -1008,7 +1157,9 @@ function TaskPanel({
                   id="task-duration"
                   type="number"
                   value={taskForm.duration}
-                  onChange={(e) => setTaskForm({ ...taskForm, duration: e.target.value })}
+                  onChange={e =>
+                    setTaskForm({ ...taskForm, duration: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -1016,7 +1167,12 @@ function TaskPanel({
                 <select
                   id="task-priority"
                   value={taskForm.priority}
-                  onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
+                  onChange={e =>
+                    setTaskForm({
+                      ...taskForm,
+                      priority: e.target.value as TaskPriority,
+                    })
+                  }
                   className="w-full px-4 py-2 border border-[var(--border)] rounded-lg bg-[var(--surface)]"
                 >
                   <option value="low">Low</option>
@@ -1025,7 +1181,9 @@ function TaskPanel({
                 </select>
               </div>
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">Create</Button>
+                <Button type="submit" className="flex-1">
+                  Create
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -1041,18 +1199,27 @@ function TaskPanel({
 
         <div className="space-y-2">
           {pendingTasks.length === 0 ? (
-            <p className="text-sm text-[var(--muted)] text-center py-4">No pending tasks</p>
+            <p className="text-sm text-[var(--muted)] text-center py-4">
+              No pending tasks
+            </p>
           ) : (
-            pendingTasks.map((task) => (
+            pendingTasks.map(task => (
               <Card key={task.id} className="p-3 bg-[var(--surface-2)]">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full ${
-                        task.priority === 'high' ? 'bg-red-500' :
-                        task.priority === 'medium' ? 'bg-yellow-500' : 'bg-gray-400'
-                      }`} />
-                      <h4 className="font-medium text-[var(--text)]">{task.title}</h4>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          task.priority === 'high'
+                            ? 'bg-red-500'
+                            : task.priority === 'medium'
+                              ? 'bg-yellow-500'
+                              : 'bg-gray-400'
+                        }`}
+                      />
+                      <h4 className="font-medium text-[var(--text)]">
+                        {task.title}
+                      </h4>
                     </div>
                     {task.due_date && (
                       <p className="text-xs text-[var(--muted)]">

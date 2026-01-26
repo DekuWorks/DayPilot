@@ -7,15 +7,16 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'DayPilot <noreply@daypilot.app>';
+const RESEND_FROM_EMAIL =
+  Deno.env.get('RESEND_FROM_EMAIL') || 'DayPilot <noreply@daypilot.app>';
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -34,7 +35,8 @@ serve(async (req) => {
     // Fetch attendee and event details
     const { data: attendee, error: attendeeError } = await supabase
       .from('attendees')
-      .select(`
+      .select(
+        `
         id,
         email,
         name,
@@ -50,7 +52,8 @@ serve(async (req) => {
             email
           )
         )
-      `)
+      `
+      )
       .eq('id', attendeeId)
       .single();
 
@@ -132,9 +135,15 @@ Time: ${eventTime}
 
     // Send email via Resend
     if (!RESEND_API_KEY) {
-      console.log('[Email not sent - no API key]', { to: organizer.email, subject: `${attendee.name || attendee.email} ${statusLabels[rsvpStatus as keyof typeof statusLabels]} - ${event.title}` });
+      console.log('[Email not sent - no API key]', {
+        to: organizer.email,
+        subject: `${attendee.name || attendee.email} ${statusLabels[rsvpStatus as keyof typeof statusLabels]} - ${event.title}`,
+      });
       return new Response(
-        JSON.stringify({ success: true, message: 'Email logged (not configured)' }),
+        JSON.stringify({
+          success: true,
+          message: 'Email logged (not configured)',
+        }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -142,7 +151,7 @@ Time: ${eventTime}
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -159,20 +168,26 @@ Time: ${eventTime}
       console.error('Resend API error:', error);
       return new Response(
         JSON.stringify({ error: 'Failed to send email', details: error }),
-        { status: resendResponse.status, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: resendResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
 
     const result = await resendResponse.json();
 
-    return new Response(
-      JSON.stringify({ success: true, emailId: result.id }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, emailId: result.id }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Error sending RSVP update email:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        message: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

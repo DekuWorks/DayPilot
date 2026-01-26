@@ -28,18 +28,19 @@ export interface AISchedule {
  */
 export function parseNaturalLanguage(input: string): AITask[] {
   const tasks: AITask[] = [];
-  
+
   // Simple parsing - split by common delimiters
   const sentences = input
     .split(/[.,;!?]\s*/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
 
-  sentences.forEach((sentence) => {
+  sentences.forEach(sentence => {
     // Extract duration if mentioned
     const durationMatch = sentence.match(/(\d+)\s*(min|minute|hour|hr|h)/i);
     const duration = durationMatch
-      ? parseInt(durationMatch[1]) * (durationMatch[2].toLowerCase().startsWith('h') ? 60 : 1)
+      ? parseInt(durationMatch[1]) *
+        (durationMatch[2].toLowerCase().startsWith('h') ? 60 : 1)
       : 60; // Default 1 hour
 
     // Extract priority keywords
@@ -50,7 +51,9 @@ export function parseNaturalLanguage(input: string): AITask[] {
         : 'medium';
 
     // Extract category
-    const category = sentence.match(/(work|personal|meeting|call|task|project)/i)?.[1]?.toLowerCase();
+    const category = sentence
+      .match(/(work|personal|meeting|call|task|project)/i)?.[1]
+      ?.toLowerCase();
 
     tasks.push({
       title: sentence,
@@ -86,7 +89,7 @@ export function generateAISchedule(
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return priorityOrder[b.priority] - priorityOrder[a.priority];
     })
-    .forEach((task) => {
+    .forEach(task => {
       // Find next available slot
       let taskStart = new Date(currentTime);
       let slotFound = false;
@@ -96,11 +99,14 @@ export function generateAISchedule(
         const potentialStartTime = new Date(currentTime);
         potentialStartTime.setHours(potentialStartTime.getHours() + hoursAhead);
         const potentialEndTime = new Date(potentialStartTime);
-        potentialEndTime.setMinutes(potentialEndTime.getMinutes() + task.duration);
+        potentialEndTime.setMinutes(
+          potentialEndTime.getMinutes() + task.duration
+        );
 
-        const hasConflict = existingEvents.some((event) => {
+        const hasConflict = existingEvents.some(event => {
           return (
-            (potentialStartTime >= event.start && potentialStartTime < event.end) ||
+            (potentialStartTime >= event.start &&
+              potentialStartTime < event.end) ||
             (potentialEndTime > event.start && potentialEndTime <= event.end) ||
             (potentialStartTime <= event.start && potentialEndTime >= event.end)
           );
@@ -115,7 +121,9 @@ export function generateAISchedule(
 
       if (!slotFound) {
         conflicts.push(`Could not find slot for: ${task.title}`);
-        suggestions.push(`Consider rescheduling existing events or breaking "${task.title}" into smaller tasks`);
+        suggestions.push(
+          `Consider rescheduling existing events or breaking "${task.title}" into smaller tasks`
+        );
       }
 
       const taskEnd = new Date(taskStart);
@@ -135,7 +143,9 @@ export function generateAISchedule(
 
   // Add suggestions
   if (schedule.length > 0) {
-    suggestions.push('Schedule looks good! Consider adding breaks between tasks.');
+    suggestions.push(
+      'Schedule looks good! Consider adding breaks between tasks.'
+    );
   }
 
   return { tasks: schedule, conflicts, suggestions };
@@ -159,7 +169,11 @@ export function parseEventCommand(input: string): {
   const lower = input.toLowerCase();
 
   // Check for recurring patterns
-  if (lower.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday|m\/w\/f|daily|weekly|monthly)/i)) {
+  if (
+    lower.match(
+      /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|m\/w\/f|daily|weekly|monthly)/i
+    )
+  ) {
     return {
       type: 'recurring',
       title: input,
@@ -169,14 +183,18 @@ export function parseEventCommand(input: string): {
 
   // Check for time mentions
   const timeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
-  const dateMatch = input.match(/(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+  const dateMatch = input.match(
+    /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i
+  );
 
   if (timeMatch || dateMatch) {
     return {
       type: 'event',
       title: input,
       date: dateMatch ? new Date() : undefined, // Simplified
-      time: timeMatch ? `${timeMatch[1]}:${timeMatch[2] || '00'} ${timeMatch[3]}` : undefined,
+      time: timeMatch
+        ? `${timeMatch[1]}:${timeMatch[2] || '00'} ${timeMatch[3]}`
+        : undefined,
     };
   }
 
@@ -194,8 +212,3 @@ export function parseEventCommand(input: string): {
     title: input,
   };
 }
-
-
-
-
-

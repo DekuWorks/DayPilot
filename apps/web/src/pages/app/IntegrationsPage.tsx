@@ -10,7 +10,10 @@ import {
   canSyncCalendars,
 } from '@daypilot/lib';
 // Helper function to format relative time
-function formatDistanceToNow(date: Date, options?: { addSuffix?: boolean }): string {
+function formatDistanceToNow(
+  date: Date,
+  options?: { addSuffix?: boolean }
+): string {
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -34,24 +37,37 @@ function formatDistanceToNow(date: Date, options?: { addSuffix?: boolean }): str
 }
 
 export function IntegrationsPage() {
-  const { data: connectedAccounts = [], isLoading: accountsLoading } = useConnectedAccounts();
-  const { data: calendarMappings = [], isLoading: mappingsLoading } = useCalendarMappings();
+  const { data: connectedAccounts = [], isLoading: accountsLoading } =
+    useConnectedAccounts();
+  const { data: calendarMappings = [], isLoading: mappingsLoading } =
+    useCalendarMappings();
   const { data: entitlements } = useEntitlements();
   const connectGoogle = useConnectGoogle();
   const disconnectAccount = useDisconnectAccount();
   const syncCalendar = useSyncCalendar();
 
-  const [syncingCalendarId, setSyncingCalendarId] = useState<string | null>(null);
+  const [syncingCalendarId, setSyncingCalendarId] = useState<string | null>(
+    null
+  );
 
-  const googleAccount = connectedAccounts.find((acc) => acc.provider === 'google');
-  const canConnectMore = canSyncCalendars(entitlements, connectedAccounts.length);
+  const googleAccount = connectedAccounts.find(
+    acc => acc.provider === 'google'
+  );
+  const canConnectMore = canSyncCalendars(
+    entitlements,
+    connectedAccounts.length
+  );
 
   const handleConnectGoogle = () => {
     connectGoogle.mutate();
   };
 
   const handleDisconnect = async (accountId: string) => {
-    if (confirm('Are you sure you want to disconnect this account? This will stop syncing all calendars.')) {
+    if (
+      confirm(
+        'Are you sure you want to disconnect this account? This will stop syncing all calendars.'
+      )
+    ) {
       await disconnectAccount.mutateAsync(accountId);
     }
   };
@@ -111,8 +127,12 @@ export function IntegrationsPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[#2B3448]">Google Calendar</h2>
-              <p className="text-sm text-gray-600">Sync your Google Calendar events</p>
+              <h2 className="text-xl font-semibold text-[#2B3448]">
+                Google Calendar
+              </h2>
+              <p className="text-sm text-gray-600">
+                Sync your Google Calendar events
+              </p>
             </div>
           </div>
           {!googleAccount ? (
@@ -121,7 +141,9 @@ export function IntegrationsPage() {
               disabled={connectGoogle.isPending || !canConnectMore}
               variant="primary"
             >
-              {connectGoogle.isPending ? 'Connecting...' : 'Connect Google Calendar'}
+              {connectGoogle.isPending
+                ? 'Connecting...'
+                : 'Connect Google Calendar'}
             </Button>
           ) : (
             <div className="flex items-center gap-2">
@@ -141,7 +163,8 @@ export function IntegrationsPage() {
         {!canConnectMore && !googleAccount && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              You've reached your calendar connection limit. Upgrade your plan to connect more calendars.
+              You've reached your calendar connection limit. Upgrade your plan
+              to connect more calendars.
             </p>
           </div>
         )}
@@ -149,50 +172,79 @@ export function IntegrationsPage() {
         {googleAccount && (
           <div className="mt-4 space-y-3">
             <div className="text-sm text-gray-600">
-              <p>Connected as: <span className="font-medium">{googleAccount.email}</span></p>
+              <p>
+                Connected as:{' '}
+                <span className="font-medium">{googleAccount.email}</span>
+              </p>
               {googleAccount.token_expires_at && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Token expires: {formatDistanceToNow(new Date(googleAccount.token_expires_at), { addSuffix: true })}
+                  Token expires:{' '}
+                  {formatDistanceToNow(
+                    new Date(googleAccount.token_expires_at),
+                    { addSuffix: true }
+                  )}
                 </p>
               )}
             </div>
 
             {/* Calendar Mappings */}
-            {calendarMappings.filter((m) => {
+            {calendarMappings.filter(m => {
               // Filter mappings for this account
-              return connectedAccounts.some((acc) => acc.id === m.connected_account_id);
+              return connectedAccounts.some(
+                acc => acc.id === m.connected_account_id
+              );
             }).length > 0 ? (
               <div className="border-t pt-4 mt-4">
-                <h3 className="font-semibold mb-3 text-[#2B3448]">Synced Calendars</h3>
+                <h3 className="font-semibold mb-3 text-[#2B3448]">
+                  Synced Calendars
+                </h3>
                 <div className="space-y-2">
                   {calendarMappings
-                    .filter((m) => {
-                      return connectedAccounts.some((acc) => acc.id === m.connected_account_id);
+                    .filter(m => {
+                      return connectedAccounts.some(
+                        acc => acc.id === m.connected_account_id
+                      );
                     })
-                    .map((mapping) => (
+                    .map(mapping => (
                       <div
                         key={mapping.id}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                       >
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{mapping.provider_calendar_name || 'Untitled Calendar'}</p>
+                          <p className="font-medium text-sm">
+                            {mapping.provider_calendar_name ||
+                              'Untitled Calendar'}
+                          </p>
                           {mapping.last_synced_at && (
                             <p className="text-xs text-gray-500 mt-1">
-                              Last synced: {formatDistanceToNow(new Date(mapping.last_synced_at), { addSuffix: true })}
+                              Last synced:{' '}
+                              {formatDistanceToNow(
+                                new Date(mapping.last_synced_at),
+                                { addSuffix: true }
+                              )}
                             </p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant={mapping.sync_enabled ? 'success' : 'default'}>
+                          <Badge
+                            variant={
+                              mapping.sync_enabled ? 'success' : 'default'
+                            }
+                          >
                             {mapping.sync_enabled ? 'Enabled' : 'Disabled'}
                           </Badge>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleSync(mapping.id)}
-                            disabled={syncingCalendarId === mapping.id || syncCalendar.isPending}
+                            disabled={
+                              syncingCalendarId === mapping.id ||
+                              syncCalendar.isPending
+                            }
                           >
-                            {syncingCalendarId === mapping.id ? 'Syncing...' : 'Sync Now'}
+                            {syncingCalendarId === mapping.id
+                              ? 'Syncing...'
+                              : 'Sync Now'}
                           </Button>
                         </div>
                       </div>
@@ -202,7 +254,8 @@ export function IntegrationsPage() {
             ) : (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  No calendars synced yet. After connecting, your calendars will appear here.
+                  No calendars synced yet. After connecting, your calendars will
+                  appear here.
                 </p>
               </div>
             )}
@@ -212,7 +265,9 @@ export function IntegrationsPage() {
 
       {/* Coming Soon */}
       <Card>
-        <h2 className="text-xl font-semibold mb-2 text-[#2B3448]">Coming Soon</h2>
+        <h2 className="text-xl font-semibold mb-2 text-[#2B3448]">
+          Coming Soon
+        </h2>
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 opacity-50">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-gray-200">
@@ -220,7 +275,9 @@ export function IntegrationsPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-medium">Microsoft Outlook</h3>
-              <p className="text-sm text-gray-600">Sync with Outlook Calendar</p>
+              <p className="text-sm text-gray-600">
+                Sync with Outlook Calendar
+              </p>
             </div>
             <Button variant="outline" disabled>
               Coming Soon

@@ -27,7 +27,8 @@ export function useOrganizationMembers(organizationId: string | null) {
 
       const { data, error } = await supabaseClient
         .from('organization_members')
-        .select(`
+        .select(
+          `
           *,
           profiles:user_id (
             id,
@@ -35,12 +36,20 @@ export function useOrganizationMembers(organizationId: string | null) {
             name,
             avatar_url
           )
-        `)
+        `
+        )
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as (OrganizationMember & { profiles: { id: string; email: string; name: string | null; avatar_url: string | null } })[];
+      return data as (OrganizationMember & {
+        profiles: {
+          id: string;
+          email: string;
+          name: string | null;
+          avatar_url: string | null;
+        };
+      })[];
     },
     enabled: !!organizationId,
   });
@@ -228,7 +237,3 @@ export function useRemoveOrganizationMember() {
     },
   });
 }
-
-
-
-

@@ -340,6 +340,7 @@ supabase functions deploy send-reminders --version [previous-version]
 ## Support
 
 For issues or questions:
+
 1. Check logs first
 2. Review documentation
 3. Check GitHub issues

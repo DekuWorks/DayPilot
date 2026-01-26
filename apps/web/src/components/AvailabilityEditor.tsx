@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Input, Label } from '@daypilot/ui';
-import {
-  useAvailabilityRules,
-} from '@daypilot/lib';
+import { useAvailabilityRules } from '@daypilot/lib';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@daypilot/lib';
 import type { AvailabilityRule } from '@daypilot/types';
@@ -36,9 +34,9 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
     field: 'start_time' | 'end_time' | 'is_available',
     value: string | boolean
   ) => {
-    setRules((prevRules) => {
+    setRules(prevRules => {
       const existingRuleIndex = prevRules.findIndex(
-        (rule) => rule.day_of_week === dayOfWeek
+        rule => rule.day_of_week === dayOfWeek
       );
 
       if (existingRuleIndex >= 0) {
@@ -76,19 +74,17 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
         .eq('booking_link_id', bookingLinkId);
 
       // Insert new rules (only available ones)
-      const rulesToSave = rules.filter((rule) => rule.is_available);
+      const rulesToSave = rules.filter(rule => rule.is_available);
       if (rulesToSave.length > 0) {
-        await supabaseClient
-          .from('availability_rules')
-          .insert(
-            rulesToSave.map((rule) => ({
-              booking_link_id: bookingLinkId,
-              day_of_week: rule.day_of_week,
-              start_time: rule.start_time,
-              end_time: rule.end_time,
-              is_available: true,
-            }))
-          );
+        await supabaseClient.from('availability_rules').insert(
+          rulesToSave.map(rule => ({
+            booking_link_id: bookingLinkId,
+            day_of_week: rule.day_of_week,
+            start_time: rule.start_time,
+            end_time: rule.end_time,
+            is_available: true,
+          }))
+        );
       }
 
       queryClient.invalidateQueries({
@@ -103,7 +99,7 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
   };
 
   const getRuleForDay = (dayOfWeek: number): AvailabilityRule | null => {
-    return rules.find((rule) => rule.day_of_week === dayOfWeek) || null;
+    return rules.find(rule => rule.day_of_week === dayOfWeek) || null;
   };
 
   return (
@@ -120,7 +116,7 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
       </p>
 
       <div className="space-y-3">
-        {DAYS_OF_WEEK.map((day) => {
+        {DAYS_OF_WEEK.map(day => {
           const rule = getRuleForDay(day.value);
           const isAvailable = rule?.is_available ?? false;
           const startTime = rule?.start_time || '09:00:00';
@@ -136,12 +132,15 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
                   type="checkbox"
                   id={`day-${day.value}`}
                   checked={isAvailable}
-                  onChange={(e) =>
+                  onChange={e =>
                     updateRule(day.value, 'is_available', e.target.checked)
                   }
                   className="w-4 h-4"
                 />
-                <Label htmlFor={`day-${day.value}`} className="mb-0 font-medium">
+                <Label
+                  htmlFor={`day-${day.value}`}
+                  className="mb-0 font-medium"
+                >
                   {day.label}
                 </Label>
               </div>
@@ -151,8 +150,12 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
                   <Input
                     type="time"
                     value={startTime.slice(0, 5)}
-                    onChange={(e) =>
-                      updateRule(day.value, 'start_time', e.target.value + ':00')
+                    onChange={e =>
+                      updateRule(
+                        day.value,
+                        'start_time',
+                        e.target.value + ':00'
+                      )
                     }
                     className="flex-1"
                   />
@@ -160,7 +163,7 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
                   <Input
                     type="time"
                     value={endTime.slice(0, 5)}
-                    onChange={(e) =>
+                    onChange={e =>
                       updateRule(day.value, 'end_time', e.target.value + ':00')
                     }
                     className="flex-1"
@@ -176,4 +179,3 @@ export function AvailabilityEditor({ bookingLinkId }: AvailabilityEditorProps) {
     </div>
   );
 }
-

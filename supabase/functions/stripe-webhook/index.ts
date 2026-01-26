@@ -14,13 +14,13 @@ const stripe = new Stripe(stripeSecretKey, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Get raw body for signature verification
@@ -40,10 +40,10 @@ serve(async (req) => {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err.message);
-      return new Response(
-        JSON.stringify({ error: 'Invalid signature' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -54,33 +54,51 @@ serve(async (req) => {
     // Handle event
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, supabase, stripe);
+        await handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          supabase,
+          stripe
+        );
         break;
 
       case 'customer.subscription.created':
-        await handleSubscriptionCreated(event.data.object as Stripe.Subscription, supabase, stripe);
+        await handleSubscriptionCreated(
+          event.data.object as Stripe.Subscription,
+          supabase,
+          stripe
+        );
         break;
 
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, supabase, stripe);
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription,
+          supabase,
+          stripe
+        );
         break;
 
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, supabase);
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription,
+          supabase
+        );
         break;
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return new Response(
-      JSON.stringify({ received: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Error in stripe-webhook function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -91,13 +109,23 @@ async function handleCheckoutSessionCompleted(
   supabase: any,
   stripe: Stripe
 ): Promise<void> {
-  if (session.mode !== 'subscription' || !session.customer || !session.subscription) {
+  if (
+    session.mode !== 'subscription' ||
+    !session.customer ||
+    !session.subscription
+  ) {
     return;
   }
 
   const userId = session.metadata?.user_id;
-  const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id;
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+  const customerId =
+    typeof session.customer === 'string'
+      ? session.customer
+      : session.customer.id;
+  const subscriptionId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription.id;
 
   if (!userId) {
     console.error('No user_id in checkout session metadata');
@@ -105,14 +133,15 @@ async function handleCheckoutSessionCompleted(
   }
 
   // Upsert stripe customer
-  await supabase
-    .from('stripe_customers')
-    .upsert({
+  await supabase.from('stripe_customers').upsert(
+    {
       user_id: userId,
       stripe_customer_id: customerId,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -157,18 +186,19 @@ async function handleSubscriptionDeleted(
     .eq('stripe_subscription_id', subscription.id);
 
   // Reset entitlements to free tier
-  await supabase
-    .from('entitlements')
-    .upsert({
+  await supabase.from('entitlements').upsert(
+    {
       user_id: userId,
       tier: 'free',
       ai_enabled: false,
       ai_credits: 0,
       max_connected_calendars: 1,
       sync_frequency_minutes: 60,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 }
 
 async function upsertSubscription(
@@ -186,36 +216,43 @@ async function upsertSubscription(
   const entitlements = getEntitlementsForTier(tier);
 
   // Upsert subscription
-  await supabase
-    .from('subscriptions')
-    .upsert({
+  await supabase.from('subscriptions').upsert(
+    {
       user_id: userId,
       stripe_subscription_id: subscription.id,
       status: subscription.status,
       tier,
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_end: new Date(
+        subscription.current_period_end * 1000
+      ).toISOString(),
       cancel_at_period_end: subscription.cancel_at_period_end,
-    }, {
+    },
+    {
       onConflict: 'stripe_subscription_id',
-    });
+    }
+  );
 
   // Upsert entitlements
-  await supabase
-    .from('entitlements')
-    .upsert({
+  await supabase.from('entitlements').upsert(
+    {
       user_id: userId,
       tier,
       ...entitlements,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 }
 
 async function getUserIdFromSubscription(
   subscription: Stripe.Subscription,
   supabase: any
 ): Promise<string | null> {
-  const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+  const customerId =
+    typeof subscription.customer === 'string'
+      ? subscription.customer
+      : subscription.customer.id;
 
   const { data } = await supabase
     .from('stripe_customers')

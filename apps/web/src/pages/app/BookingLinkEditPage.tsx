@@ -16,7 +16,7 @@ export function BookingLinkEditPage() {
   const isNew = id === 'new';
 
   const { data: bookingLinks = [] } = useBookingLinks();
-  const existingBookingLink = bookingLinks.find((bl) => bl.id === id);
+  const existingBookingLink = bookingLinks.find(bl => bl.id === id);
 
   const createBookingLink = useCreateBookingLink();
   const updateBookingLink = useUpdateBookingLink();
@@ -101,7 +101,10 @@ export function BookingLinkEditPage() {
         <h1 className="text-3xl font-bold">
           {isNew ? 'Create Booking Link' : 'Edit Booking Link'}
         </h1>
-        <Button variant="outline" onClick={() => navigate('/app/booking-links')}>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/app/booking-links')}
+        >
           Back to List
         </Button>
       </div>
@@ -116,7 +119,9 @@ export function BookingLinkEditPage() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="e.g., 30-Minute Consultation"
                 required
               />
@@ -129,7 +134,9 @@ export function BookingLinkEditPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 rows={3}
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="What will this booking be about?"
               />
             </div>
@@ -140,7 +147,7 @@ export function BookingLinkEditPage() {
                 <select
                   id="type"
                   value={formData.type}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({
                       ...formData,
                       type: e.target.value as 'one-on-one' | 'group',
@@ -158,7 +165,7 @@ export function BookingLinkEditPage() {
                   type="checkbox"
                   id="is_active"
                   checked={formData.is_active}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, is_active: e.target.checked })
                   }
                   className="w-4 h-4"
@@ -183,8 +190,11 @@ export function BookingLinkEditPage() {
                 min="5"
                 step="5"
                 value={formData.duration}
-                onChange={(e) =>
-                  setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    duration: parseInt(e.target.value) || 30,
+                  })
                 }
                 required
               />
@@ -195,14 +205,18 @@ export function BookingLinkEditPage() {
               <select
                 id="timezone"
                 value={formData.timezone}
-                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, timezone: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {((Intl as any).supportedValuesOf('timeZone') as string[]).map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </option>
-                ))}
+                {((Intl as any).supportedValuesOf('timeZone') as string[]).map(
+                  tz => (
+                    <option key={tz} value={tz}>
+                      {tz.replace(/_/g, ' ')}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
@@ -213,8 +227,11 @@ export function BookingLinkEditPage() {
                 type="number"
                 min="0"
                 value={formData.buffer_before}
-                onChange={(e) =>
-                  setFormData({ ...formData, buffer_before: parseInt(e.target.value) || 0 })
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    buffer_before: parseInt(e.target.value) || 0,
+                  })
                 }
               />
             </div>
@@ -226,8 +243,11 @@ export function BookingLinkEditPage() {
                 type="number"
                 min="0"
                 value={formData.buffer_after}
-                onChange={(e) =>
-                  setFormData({ ...formData, buffer_after: parseInt(e.target.value) || 0 })
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    buffer_after: parseInt(e.target.value) || 0,
+                  })
                 }
               />
             </div>
@@ -239,8 +259,11 @@ export function BookingLinkEditPage() {
                 type="number"
                 min="0"
                 value={formData.min_notice}
-                onChange={(e) =>
-                  setFormData({ ...formData, min_notice: parseInt(e.target.value) || 0 })
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    min_notice: parseInt(e.target.value) || 0,
+                  })
                 }
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -255,10 +278,12 @@ export function BookingLinkEditPage() {
                 type="number"
                 min="1"
                 value={formData.max_per_day || ''}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({
                     ...formData,
-                    max_per_day: e.target.value ? parseInt(e.target.value) : null,
+                    max_per_day: e.target.value
+                      ? parseInt(e.target.value)
+                      : null,
                   })
                 }
                 placeholder="Unlimited"
@@ -284,7 +309,9 @@ export function BookingLinkEditPage() {
         <div className="flex gap-4">
           <Button
             type="submit"
-            disabled={createBookingLink.isPending || updateBookingLink.isPending}
+            disabled={
+              createBookingLink.isPending || updateBookingLink.isPending
+            }
             className="flex-1"
           >
             {isNew
@@ -308,4 +335,3 @@ export function BookingLinkEditPage() {
     </div>
   );
 }
-

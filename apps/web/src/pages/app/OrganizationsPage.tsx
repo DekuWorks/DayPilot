@@ -49,7 +49,7 @@ export function OrganizationsPage() {
               <Input
                 id="newOrgName"
                 value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
+                onChange={e => setOrgName(e.target.value)}
                 placeholder="e.g., Acme Corp"
               />
             </div>
@@ -69,7 +69,7 @@ export function OrganizationsPage() {
       )}
 
       <div className="grid md:grid-cols-2 gap-4">
-        {organizations?.map((org) => (
+        {organizations?.map(org => (
           <Card key={org.id} className="hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -95,15 +95,12 @@ export function OrganizationsPage() {
             <p className="text-[#4f4f4f] mb-4">
               You don't have any organizations yet.
             </p>
-            <Button onClick={() => setShowForm(true)}>Create Your First Organization</Button>
+            <Button onClick={() => setShowForm(true)}>
+              Create Your First Organization
+            </Button>
           </div>
         </Card>
       )}
     </div>
   );
 }
-
-
-
-
-

@@ -49,7 +49,7 @@ export function useEntitlements() {
  */
 export function canUseAI(entitlements: Entitlements | undefined): boolean {
   if (!entitlements) return false;
-  return entitlements.ai_enabled || (entitlements.ai_credits > 0);
+  return entitlements.ai_enabled || entitlements.ai_credits > 0;
 }
 
 /**
@@ -83,7 +83,9 @@ export function hasCredits(entitlements: Entitlements | undefined): boolean {
 /**
  * Get remaining credits
  */
-export function remainingCredits(entitlements: Entitlements | undefined): number {
+export function remainingCredits(
+  entitlements: Entitlements | undefined
+): number {
   if (!entitlements) return 0;
   if (entitlements.ai_enabled) return -1; // Unlimited
   return entitlements.ai_credits;
@@ -92,7 +94,9 @@ export function remainingCredits(entitlements: Entitlements | undefined): number
 /**
  * Check if user can use booking links (premium feature)
  */
-export function canUseBookingLinks(entitlements: Entitlements | undefined): boolean {
+export function canUseBookingLinks(
+  entitlements: Entitlements | undefined
+): boolean {
   if (!entitlements) return false;
   return entitlements.booking_links_enabled || entitlements.tier !== 'free';
 }

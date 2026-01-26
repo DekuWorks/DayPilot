@@ -9,11 +9,15 @@ import {
 import type { ShareMode } from '@daypilot/types';
 
 export function ShareLinksPage() {
-  const { data: shareLinks = [], isLoading, error: shareLinksError } = useShareLinks();
+  const {
+    data: shareLinks = [],
+    isLoading,
+    error: shareLinksError,
+  } = useShareLinks();
   const createShareLink = useCreateShareLink();
   const updateShareLink = useUpdateShareLink();
   const revokeShareLink = useRevokeShareLink();
-  
+
   const [copied, setCopied] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -92,15 +96,17 @@ export function ShareLinksPage() {
         <h1 className="text-3xl font-bold mb-6">Share Links</h1>
         <Card>
           <div className="p-6">
-            <p className="text-red-600 font-semibold mb-2">Error loading share links</p>
+            <p className="text-red-600 font-semibold mb-2">
+              Error loading share links
+            </p>
             <p className="text-red-500 text-sm">
-              {shareLinksError instanceof Error 
-                ? shareLinksError.message 
+              {shareLinksError instanceof Error
+                ? shareLinksError.message
                 : 'Failed to load share links. Please refresh the page.'}
             </p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
               className="mt-4"
             >
               Retry
@@ -117,7 +123,8 @@ export function ShareLinksPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">Share Links</h1>
           <p className="text-gray-600">
-            Share your calendar with other DayPilot users to coordinate schedules
+            Share your calendar with other DayPilot users to coordinate
+            schedules
           </p>
         </div>
       </div>
@@ -126,25 +133,29 @@ export function ShareLinksPage() {
         {/* Share Link Management */}
         <Card>
           <h2 className="text-xl font-semibold mb-4">Your Share Link</h2>
-          
+
           <div className="space-y-4">
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
                 <p className="font-medium text-[#2B3448]">Share Link Status</p>
                 <p className="text-sm text-gray-600">
-                  {isEnabled ? 'Active - Others can view your calendar' : 'Inactive - Link is disabled'}
+                  {isEnabled
+                    ? 'Active - Others can view your calendar'
+                    : 'Inactive - Link is disabled'}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isEnabled}
-                  onChange={(e) => handleToggle(e.target.checked)}
+                  onChange={e => handleToggle(e.target.checked)}
                   disabled={isCreating}
                   className="sr-only peer"
                 />
-                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4FB3B3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4FB3B3] ${isCreating ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <div
+                  className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4FB3B3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4FB3B3] ${isCreating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
                   {isCreating && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -174,7 +185,8 @@ export function ShareLinksPage() {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Send this link to other DayPilot users to let them view your calendar
+                  Send this link to other DayPilot users to let them view your
+                  calendar
                 </p>
               </div>
             )}
@@ -258,7 +270,8 @@ export function ShareLinksPage() {
               <div>
                 <p className="font-medium mb-1">Share with DayPilot Users</p>
                 <p className="text-sm text-gray-600">
-                  Send the link to other DayPilot users who want to coordinate with you
+                  Send the link to other DayPilot users who want to coordinate
+                  with you
                 </p>
               </div>
             </div>
@@ -269,7 +282,8 @@ export function ShareLinksPage() {
               <div>
                 <p className="font-medium mb-1">They View Your Calendar</p>
                 <p className="text-sm text-gray-600">
-                  Recipients can see your availability and coordinate meetings accordingly
+                  Recipients can see your availability and coordinate meetings
+                  accordingly
                 </p>
               </div>
             </div>
@@ -277,7 +291,9 @@ export function ShareLinksPage() {
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-900">
-              <strong>Note:</strong> Share links are for DayPilot users. For public booking links (where anyone can book time with you), upgrade to a premium plan.
+              <strong>Note:</strong> Share links are for DayPilot users. For
+              public booking links (where anyone can book time with you),
+              upgrade to a premium plan.
             </p>
           </div>
         </Card>
@@ -289,7 +305,8 @@ export function ShareLinksPage() {
           <Card className="max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold mb-2">Revoke Share Link?</h3>
             <p className="text-gray-600 mb-6">
-              This will immediately disable the share link. Anyone with the link will no longer be able to view your calendar.
+              This will immediately disable the share link. Anyone with the link
+              will no longer be able to view your calendar.
             </p>
             <div className="flex gap-3">
               <Button

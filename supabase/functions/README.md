@@ -5,15 +5,18 @@ This directory contains Supabase Edge Functions for DayPilot.
 ## Functions
 
 ### `create-checkout-session`
+
 Creates a Stripe Checkout Session for subscription upgrades.
 
 **Environment Variables Required:**
+
 - `STRIPE_SECRET_KEY` - Your Stripe secret key
 - `FRONTEND_URL` - Your frontend URL (for redirects)
 - `SUPABASE_URL` - Auto-provided
 - `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
 
 **Request Body:**
+
 ```json
 {
   "priceId": "price_xxxxx",
@@ -22,6 +25,7 @@ Creates a Stripe Checkout Session for subscription upgrades.
 ```
 
 **Response:**
+
 ```json
 {
   "url": "https://checkout.stripe.com/..."
@@ -29,18 +33,22 @@ Creates a Stripe Checkout Session for subscription upgrades.
 ```
 
 **Deployment:**
+
 ```bash
 supabase functions deploy create-checkout-session
 ```
 
 ### `create-portal-session`
+
 Creates a Stripe Customer Portal Session for subscription management.
 
 **Environment Variables Required:**
+
 - `STRIPE_SECRET_KEY` - Your Stripe secret key
 - `FRONTEND_URL` - Your frontend URL (for redirects)
 
 **Request Body:**
+
 ```json
 {
   "customerId": "cus_xxxxx"
@@ -48,6 +56,7 @@ Creates a Stripe Customer Portal Session for subscription management.
 ```
 
 **Response:**
+
 ```json
 {
   "url": "https://billing.stripe.com/..."
@@ -55,46 +64,55 @@ Creates a Stripe Customer Portal Session for subscription management.
 ```
 
 **Deployment:**
+
 ```bash
 supabase functions deploy create-portal-session
 ```
 
 ### `stripe-webhook`
+
 Handles Stripe webhook events for subscription lifecycle.
 
 **Environment Variables Required:**
+
 - `STRIPE_SECRET_KEY` - Your Stripe secret key
 - `STRIPE_WEBHOOK_SECRET` - Webhook signing secret from Stripe
 - `SUPABASE_URL` - Auto-provided
 - `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
 
 **Events Handled:**
+
 - `checkout.session.completed` - Creates customer and subscription
 - `customer.subscription.created` - Updates entitlements
 - `customer.subscription.updated` - Updates entitlements
 - `customer.subscription.deleted` - Resets to free tier
 
 **Deployment:**
+
 ```bash
 supabase functions deploy stripe-webhook
 ```
 
 **Webhook Setup:**
+
 1. Go to Stripe Dashboard → Webhooks
 2. Add endpoint: `https://YOUR_PROJECT.supabase.co/functions/v1/stripe-webhook`
 3. Select events listed above
 4. Copy webhook secret → Set as `STRIPE_WEBHOOK_SECRET`
 
 ### `generate-day`
+
 Generates an AI-powered schedule for a user's day based on existing events and backlog tasks.
 
 **Environment Variables Required:**
+
 - `SUPABASE_URL` - Auto-provided
 - `SUPABASE_SERVICE_ROLE_KEY` - Auto-provided
 - `OPENAI_API_KEY` - Optional (for future AI integration)
 - `ANTHROPIC_API_KEY` - Optional (for future AI integration)
 
 **Request Body:**
+
 ```json
 {
   "date": "2024-01-15", // Optional, defaults to today
@@ -110,6 +128,7 @@ Generates an AI-powered schedule for a user's day based on existing events and b
 ```
 
 **Response:**
+
 ```json
 {
   "action_id": "uuid",
@@ -130,6 +149,7 @@ Generates an AI-powered schedule for a user's day based on existing events and b
 ```
 
 **Features:**
+
 - Validates AI entitlement (ai_enabled OR ai_credits > 0)
 - Considers existing events
 - Respects working hours
@@ -137,38 +157,45 @@ Generates an AI-powered schedule for a user's day based on existing events and b
 - Creates draft AI action
 
 **Deployment:**
+
 ```bash
 supabase functions deploy generate-day
 ```
 
 ### `send-reminders`
+
 Sends email reminders for events that are due. This function should be called periodically (via cron job) to check for reminders that need to be sent.
 
 **Environment Variables Required:**
+
 - `RESEND_API_KEY` - Your Resend API key
 - `RESEND_FROM_EMAIL` - Email address to send from (e.g., `noreply@daypilot.app`)
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key (for bypassing RLS)
 
 **How it works:**
+
 1. Queries all unsent reminders
 2. Filters reminders that are due (event start time - minutes_before <= now)
 3. Sends email notifications via Resend
 4. Marks reminders as sent
 
 **Deployment:**
+
 ```bash
 supabase functions deploy send-reminders
 ```
 
 **Set up cron job:**
 You can use Supabase Cron (pg_cron) or an external service like:
+
 - GitHub Actions (scheduled workflows)
 - Vercel Cron Jobs
 - Inngest
 - Trigger.dev
 
 Example cron schedule: Every 5 minutes
+
 ```sql
 SELECT cron.schedule(
   'send-reminders',
@@ -184,21 +211,25 @@ SELECT cron.schedule(
 ```
 
 ### `send-booking-confirmation`
+
 Sends confirmation emails when a booking is created. This function is called automatically when a booking is confirmed.
 
 **Environment Variables Required:**
+
 - `RESEND_API_KEY` - Your Resend API key
 - `RESEND_FROM_EMAIL` - Email address to send from
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
 
 **How it works:**
+
 1. Receives booking ID in request body
 2. Fetches booking details including booker and owner information
 3. Sends confirmation email to booker
 4. Sends notification email to booking link owner
 
 **Deployment:**
+
 ```bash
 supabase functions deploy send-booking-confirmation
 ```
@@ -209,22 +240,27 @@ This function is called automatically from the `useCreateBooking` hook when a bo
 ## Setup Instructions
 
 ### 1. Install Supabase CLI
+
 ```bash
 npm install -g supabase
 ```
 
 ### 2. Login to Supabase
+
 ```bash
 supabase login
 ```
 
 ### 3. Link your project
+
 ```bash
 supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 ### 4. Set environment variables
+
 Set the following secrets in your Supabase project:
+
 ```bash
 supabase secrets set RESEND_API_KEY=your_resend_api_key
 supabase secrets set RESEND_FROM_EMAIL=noreply@daypilot.app
@@ -233,6 +269,7 @@ supabase secrets set RESEND_FROM_EMAIL=noreply@daypilot.app
 Note: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are automatically available in Edge Functions.
 
 ### 5. Deploy functions
+
 ```bash
 supabase functions deploy send-reminders
 supabase functions deploy send-booking-confirmation
@@ -242,6 +279,7 @@ supabase functions deploy send-booking-confirmation
 
 **Option A: Using Supabase SQL Editor**
 Run this SQL in your Supabase SQL Editor (requires pg_cron extension):
+
 ```sql
 -- Enable pg_cron extension (if not already enabled)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -265,11 +303,12 @@ SELECT cron.schedule(
 
 **Option B: Using GitHub Actions**
 Create `.github/workflows/send-reminders.yml`:
+
 ```yaml
 name: Send Reminders
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
+    - cron: '*/5 * * * *' # Every 5 minutes
   workflow_dispatch:
 
 jobs:
@@ -287,12 +326,15 @@ jobs:
 
 **Option C: Using Vercel Cron**
 Add to `vercel.json`:
+
 ```json
 {
-  "crons": [{
-    "path": "/api/cron/send-reminders",
-    "schedule": "*/5 * * * *"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
 ```
 
@@ -306,11 +348,13 @@ Add to `vercel.json`:
 ## Testing
 
 ### Test send-reminders function locally:
+
 ```bash
 supabase functions serve send-reminders
 ```
 
 Then in another terminal:
+
 ```bash
 curl -X POST http://localhost:54321/functions/v1/send-reminders \
   -H "Content-Type: application/json" \
@@ -318,6 +362,7 @@ curl -X POST http://localhost:54321/functions/v1/send-reminders \
 ```
 
 ### Test send-booking-confirmation function:
+
 ```bash
 curl -X POST http://localhost:54321/functions/v1/send-booking-confirmation \
   -H "Content-Type: application/json" \

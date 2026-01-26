@@ -38,6 +38,7 @@ This guide walks you through setting up a new Supabase project from scratch for 
 ## Step 3: Set Up Local Development
 
 1. **Install Supabase CLI**
+
    ```bash
    # macOS
    brew install supabase/tap/supabase
@@ -47,16 +48,20 @@ This guide walks you through setting up a new Supabase project from scratch for 
    ```
 
 2. **Login to Supabase CLI**
+
    ```bash
    supabase login
    ```
+
    - This opens browser to authenticate
 
 3. **Link Your Project**
+
    ```bash
    cd /path/to/DayPilot
    supabase link --project-ref your-project-ref
    ```
+
    - Find project ref in Supabase dashboard URL: `https://supabase.com/dashboard/project/xxxxx`
    - Or run: `supabase projects list` to see all projects
 
@@ -64,6 +69,7 @@ This guide walks you through setting up a new Supabase project from scratch for 
    ```bash
    supabase db remote commit
    ```
+
    - Should show current database state
 
 ## Step 4: Run Database Migrations
@@ -73,9 +79,11 @@ This guide walks you through setting up a new Supabase project from scratch for 
    - Files are numbered: `001_initial_schema.sql`, `002_...`, etc.
 
 2. **Run All Migrations**
+
    ```bash
    supabase db push
    ```
+
    - This applies all migrations to your Supabase database
    - Or run individually via Supabase SQL Editor
 
@@ -122,6 +130,7 @@ This guide walks you through setting up a new Supabase project from scratch for 
    - Already included with Supabase CLI
 
 2. **Deploy Functions**
+
    ```bash
    # Deploy all functions
    supabase functions deploy
@@ -136,6 +145,7 @@ This guide walks you through setting up a new Supabase project from scratch for 
    ```
 
 3. **Set Function Secrets**
+
    ```bash
    # Set secrets for Edge Functions
    supabase secrets set STRIPE_SECRET_KEY=sk_test_xxxxx
@@ -153,10 +163,11 @@ This guide walks you through setting up a new Supabase project from scratch for 
 ## Step 7: Configure Frontend Environment
 
 1. **Create `.env.local` in `apps/web/`**
+
    ```env
    VITE_SUPABASE_URL=https://xxxxx.supabase.co
    VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   
+
    # Stripe (optional, for billing)
    VITE_STRIPE_PRICE_ID_STUDENT=price_xxxxx
    VITE_STRIPE_PRICE_ID_TEAM=price_xxxxx
@@ -208,16 +219,20 @@ RLS policies are already in migrations, but verify:
 ## Step 11: Set Up Local Development Database (Optional)
 
 1. **Start Local Supabase**
+
    ```bash
    supabase start
    ```
+
    - This starts local Postgres, Auth, Storage, etc.
    - Useful for offline development
 
 2. **Reset Local Database**
+
    ```bash
    supabase db reset
    ```
+
    - Applies all migrations to local DB
 
 3. **Stop Local Supabase**
@@ -273,26 +288,31 @@ supabase link --project-ref xxxx    # Link to project
 ## Troubleshooting
 
 ### "Project not found" Error
+
 - Verify project ref is correct
 - Check you're logged in: `supabase login`
 - List projects: `supabase projects list`
 
 ### "Migration failed" Error
+
 - Check migration file syntax
 - Verify previous migrations ran successfully
 - Check for conflicting changes in database
 
 ### "Function deployment failed" Error
+
 - Check Deno syntax in function files
 - Verify imports are correct
 - Check function logs for errors
 
 ### "RLS policy error" Error
+
 - Verify user is authenticated
 - Check policy conditions match your query
 - Test with service role key (bypasses RLS)
 
 ### "Connection refused" Error
+
 - Check Supabase project is active (not paused)
 - Verify URL and keys are correct
 - Check network/firewall settings
@@ -327,6 +347,7 @@ After setup is complete:
 ---
 
 **Important Notes:**
+
 - Never commit `.env` files or secrets to git
 - Use different projects for dev/staging/production
 - Keep service role key secret (never expose to frontend)

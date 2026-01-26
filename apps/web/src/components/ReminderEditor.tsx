@@ -8,7 +8,10 @@ interface ReminderEditorProps {
   onRemindersChange?: () => void;
 }
 
-export function ReminderEditor({ eventId, onRemindersChange }: ReminderEditorProps) {
+export function ReminderEditor({
+  eventId,
+  onRemindersChange,
+}: ReminderEditorProps) {
   const [reminders, setReminders] = useState<EventReminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newReminder, setNewReminder] = useState({
@@ -92,7 +95,7 @@ export function ReminderEditor({ eventId, onRemindersChange }: ReminderEditorPro
         {reminders.length === 0 && (
           <p className="text-sm text-gray-500 mt-1">No reminders set</p>
         )}
-        {reminders.map((reminder) => (
+        {reminders.map(reminder => (
           <div
             key={reminder.id}
             className="flex items-center justify-between p-2 bg-gray-50 rounded mt-2"
@@ -121,7 +124,7 @@ export function ReminderEditor({ eventId, onRemindersChange }: ReminderEditorPro
         <div className="flex gap-2">
           <select
             value={newReminder.reminder_type}
-            onChange={(e) =>
+            onChange={e =>
               setNewReminder({
                 ...newReminder,
                 reminder_type: e.target.value as EventReminder['reminder_type'],
@@ -139,7 +142,7 @@ export function ReminderEditor({ eventId, onRemindersChange }: ReminderEditorPro
             type="number"
             min="0"
             value={newReminder.minutes_before}
-            onChange={(e) =>
+            onChange={e =>
               setNewReminder({
                 ...newReminder,
                 minutes_before: parseInt(e.target.value) || 0,
@@ -159,8 +162,3 @@ export function ReminderEditor({ eventId, onRemindersChange }: ReminderEditorPro
     </div>
   );
 }
-
-
-
-
-

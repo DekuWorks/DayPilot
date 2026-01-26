@@ -12,7 +12,7 @@ export function AIRescheduler() {
   // Find events that might need rescheduling
   const now = new Date();
   const upcomingEvents = events
-    .filter((e) => {
+    .filter(e => {
       const start = new Date(e.start);
       return start > now && start.getTime() - now.getTime() < 3600000; // Next hour
     })
@@ -20,8 +20,16 @@ export function AIRescheduler() {
 
   // Check for conflicts
   const conflicts: Array<{ event1: Event; event2: Event }> = [];
-  for (let firstEventIndex = 0; firstEventIndex < events.length; firstEventIndex++) {
-    for (let secondEventIndex = firstEventIndex + 1; secondEventIndex < events.length; secondEventIndex++) {
+  for (
+    let firstEventIndex = 0;
+    firstEventIndex < events.length;
+    firstEventIndex++
+  ) {
+    for (
+      let secondEventIndex = firstEventIndex + 1;
+      secondEventIndex < events.length;
+      secondEventIndex++
+    ) {
       const firstEvent = events[firstEventIndex];
       const secondEvent = events[secondEventIndex];
       const firstEventStart = new Date(firstEvent.start);
@@ -30,7 +38,8 @@ export function AIRescheduler() {
       const secondEventEnd = new Date(secondEvent.end);
 
       if (
-        (firstEventStart < secondEventEnd && firstEventEnd > secondEventStart) &&
+        firstEventStart < secondEventEnd &&
+        firstEventEnd > secondEventStart &&
         firstEvent.calendar_id === secondEvent.calendar_id
       ) {
         conflicts.push({ event1: firstEvent, event2: secondEvent });
@@ -63,8 +72,7 @@ export function AIRescheduler() {
     try {
       // Find next available slot (simplified - just move to next hour)
       const currentStart = new Date(event.start);
-      const duration =
-        new Date(event.end).getTime() - currentStart.getTime();
+      const duration = new Date(event.end).getTime() - currentStart.getTime();
       const newStart = new Date(currentStart);
       newStart.setHours(newStart.getHours() + 1, 0, 0);
 
@@ -135,7 +143,7 @@ export function AIRescheduler() {
           <div>
             <h3 className="font-medium mb-2">Upcoming Events</h3>
             <div className="space-y-2">
-              {upcomingEvents.slice(0, 3).map((event) => (
+              {upcomingEvents.slice(0, 3).map(event => (
                 <div
                   key={event.id}
                   className="p-3 bg-gray-50 border border-gray-200 rounded-lg"
@@ -168,7 +176,3 @@ export function AIRescheduler() {
     </Card>
   );
 }
-
-
-
-

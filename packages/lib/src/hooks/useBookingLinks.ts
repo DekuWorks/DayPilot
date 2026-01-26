@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '../supabaseClient';
-import type { BookingLink, AvailabilityRule, BookingExcludedDate, Booking } from '@daypilot/types';
+import type {
+  BookingLink,
+  AvailabilityRule,
+  BookingExcludedDate,
+  Booking,
+} from '@daypilot/types';
 
 // Fetch user's booking links
 export function useBookingLinks(organizationId?: string | null) {
@@ -15,9 +20,13 @@ export function useBookingLinks(organizationId?: string | null) {
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       } else {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
         if (user) {
-          query = query.eq('owner_user_id', user.id).is('organization_id', null);
+          query = query
+            .eq('owner_user_id', user.id)
+            .is('organization_id', null);
         }
       }
 
@@ -126,12 +135,17 @@ export function useCreateBookingLink() {
       type?: 'one-on-one' | 'group';
       organization_id?: string | null;
     }) => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Generate slug from title or use default
       const baseSlug = data.title
-        ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        ? data.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
         : `booking-${Date.now()}`;
 
       const slug = baseSlug || `booking-${Date.now()}`;
@@ -159,7 +173,9 @@ export function useCreateBookingLink() {
       return bookingLink as BookingLink;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['booking-links', variables.organization_id] });
+      queryClient.invalidateQueries({
+        queryKey: ['booking-links', variables.organization_id],
+      });
     },
   });
 }
@@ -189,7 +205,9 @@ export function useUpdateBookingLink() {
       return data as BookingLink;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['booking-links', variables.organizationId] });
+      queryClient.invalidateQueries({
+        queryKey: ['booking-links', variables.organizationId],
+      });
       queryClient.invalidateQueries({ queryKey: ['booking-link'] });
     },
   });
@@ -215,7 +233,9 @@ export function useDeleteBookingLink() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['booking-links', variables.organizationId] });
+      queryClient.invalidateQueries({
+        queryKey: ['booking-links', variables.organizationId],
+      });
     },
   });
 }
@@ -263,10 +283,10 @@ export function useCreateBooking() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             },
             body: JSON.stringify({ bookingId: booking.id }),
-          }).catch((err) => {
+          }).catch(err => {
             console.error('Error triggering booking confirmation email:', err);
             // Don't throw - booking was created successfully
           });
@@ -279,12 +299,9 @@ export function useCreateBooking() {
       return booking as Booking;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['bookings', variables.booking_link_id] });
+      queryClient.invalidateQueries({
+        queryKey: ['bookings', variables.booking_link_id],
+      });
     },
   });
 }
-
-
-
-
-

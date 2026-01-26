@@ -55,12 +55,40 @@ function App() {
             </Route>
 
             {/* Public booking page (no auth required) */}
-            <Route path="/book/:slug" element={<ErrorBoundary><BookingPage /></ErrorBoundary>} />
-            <Route path="/book/:slug/confirmed" element={<ErrorBoundary><BookingConfirmationPage /></ErrorBoundary>} />
+            <Route
+              path="/book/:slug"
+              element={
+                <ErrorBoundary>
+                  <BookingPage />
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/book/:slug/confirmed"
+              element={
+                <ErrorBoundary>
+                  <BookingConfirmationPage />
+                </ErrorBoundary>
+              }
+            />
             {/* Public share page (no auth required) */}
-            <Route path="/share/:token" element={<ErrorBoundary><SharePage /></ErrorBoundary>} />
+            <Route
+              path="/share/:token"
+              element={
+                <ErrorBoundary>
+                  <SharePage />
+                </ErrorBoundary>
+              }
+            />
             {/* Public RSVP page (no auth required) */}
-            <Route path="/rsvp/:token" element={<ErrorBoundary><RSVPPage /></ErrorBoundary>} />
+            <Route
+              path="/rsvp/:token"
+              element={
+                <ErrorBoundary>
+                  <RSVPPage />
+                </ErrorBoundary>
+              }
+            />
 
             {/* App routes (protected) */}
             <Route
@@ -77,9 +105,15 @@ function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="billing" element={<BillingPage />} />
                 <Route path="integrations" element={<IntegrationsPage />} />
-                <Route path="integrations/google/callback" element={<GoogleOAuthCallback />} />
+                <Route
+                  path="integrations/google/callback"
+                  element={<GoogleOAuthCallback />}
+                />
                 <Route path="organizations" element={<OrganizationsPage />} />
-                <Route path="organization/:orgId" element={<OrganizationPage />} />
+                <Route
+                  path="organization/:orgId"
+                  element={<OrganizationPage />}
+                />
                 <Route path="share-links" element={<ShareLinksPage />} />
                 <Route
                   path="booking-links"

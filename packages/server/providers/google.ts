@@ -7,7 +7,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5174/app/integrations/google/callback';
+const GOOGLE_REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI ||
+  'http://localhost:5174/app/integrations/google/callback';
 
 /**
  * Create OAuth2 client for Google
@@ -25,7 +27,7 @@ export function createGoogleOAuthClient() {
  */
 export function getGoogleAuthUrl(userId: string, state?: string): string {
   const oauth2Client = createGoogleOAuthClient();
-  
+
   const scopes = [
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events',
@@ -51,13 +53,15 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   scope?: string;
 }> {
   const oauth2Client = createGoogleOAuthClient();
-  
+
   const { tokens } = await oauth2Client.getToken(code);
-  
+
   return {
     access_token: tokens.access_token!,
     refresh_token: tokens.refresh_token,
-    expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : undefined,
+    expires_in: tokens.expiry_date
+      ? Math.floor((tokens.expiry_date - Date.now()) / 1000)
+      : undefined,
     scope: tokens.scope,
   };
 }
@@ -83,7 +87,9 @@ export async function getAccessToken(
   }
 
   // Check if token is expired
-  const expiresAt = account.token_expires_at ? new Date(account.token_expires_at) : null;
+  const expiresAt = account.token_expires_at
+    ? new Date(account.token_expires_at)
+    : null;
   const isExpired = expiresAt && expiresAt.getTime() < Date.now() + 60000; // 1 minute buffer
 
   if (!isExpired && account.access_token) {
@@ -92,7 +98,9 @@ export async function getAccessToken(
 
   // Refresh token
   if (!account.refresh_token) {
-    throw new Error('No refresh token available. Please reconnect your account.');
+    throw new Error(
+      'No refresh token available. Please reconnect your account.'
+    );
   }
 
   const oauth2Client = createGoogleOAuthClient();
@@ -155,9 +163,8 @@ export async function storeConnectedAccount(
     ? new Date(Date.now() + expiresIn * 1000).toISOString()
     : null;
 
-  await supabase
-    .from('connected_accounts')
-    .upsert({
+  await supabase.from('connected_accounts').upsert(
+    {
       user_id: userId,
       provider: 'google',
       provider_account_id: providerAccountId,
@@ -167,7 +174,9 @@ export async function storeConnectedAccount(
       token_expires_at: tokenExpiresAt,
       scope,
       is_active: true,
-    }, {
+    },
+    {
       onConflict: 'user_id,provider,provider_account_id',
-    });
+    }
+  );
 }

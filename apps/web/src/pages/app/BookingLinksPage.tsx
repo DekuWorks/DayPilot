@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge } from '@daypilot/ui';
-import {
-  useBookingLinks,
-  useDeleteBookingLink,
-} from '@daypilot/lib';
+import { useBookingLinks, useDeleteBookingLink } from '@daypilot/lib';
 import type { BookingLink } from '@daypilot/types';
 
 export function BookingLinksPage() {
@@ -13,7 +10,11 @@ export function BookingLinksPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (bookingLink: BookingLink): Promise<void> => {
-    if (!confirm(`Are you sure you want to delete "${bookingLink.title || bookingLink.slug}"?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${bookingLink.title || bookingLink.slug}"?`
+      )
+    ) {
       return;
     }
 
@@ -51,23 +52,30 @@ export function BookingLinksPage() {
   }
 
   if (error) {
-    let errorMessage = 'Failed to load booking links. Please check your connection and try again.';
+    let errorMessage =
+      'Failed to load booking links. Please check your connection and try again.';
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'object' && error !== null && 'message' in error) {
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error
+    ) {
       errorMessage = String((error as { message: unknown }).message);
     }
-    
+
     return (
       <div>
         <h1 className="text-3xl font-bold mb-6">Booking Links</h1>
         <Card>
           <div className="p-6">
-            <p className="text-red-600 font-semibold mb-2">Error loading booking links</p>
+            <p className="text-red-600 font-semibold mb-2">
+              Error loading booking links
+            </p>
             <p className="text-red-500 text-sm">{errorMessage}</p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
               className="mt-4"
             >
               Retry
@@ -100,19 +108,26 @@ export function BookingLinksPage() {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bookingLinks.map((bookingLink) => (
-            <Card key={bookingLink.id} className="hover:shadow-lg transition-shadow">
+          {bookingLinks.map(bookingLink => (
+            <Card
+              key={bookingLink.id}
+              className="hover:shadow-lg transition-shadow"
+            >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-1">
                     {bookingLink.title || 'Untitled Booking Link'}
                   </h3>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant={bookingLink.is_active ? 'success' : 'default'}>
+                    <Badge
+                      variant={bookingLink.is_active ? 'success' : 'default'}
+                    >
                       {bookingLink.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                     <Badge variant="default">
-                      {bookingLink.type === 'one-on-one' ? 'One-on-One' : 'Group'}
+                      {bookingLink.type === 'one-on-one'
+                        ? 'One-on-One'
+                        : 'Group'}
                     </Badge>
                   </div>
                 </div>
@@ -127,13 +142,17 @@ export function BookingLinksPage() {
               <div className="space-y-2 mb-4 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Duration:</span>
-                  <span className="font-medium">{bookingLink.duration} minutes</span>
+                  <span className="font-medium">
+                    {bookingLink.duration} minutes
+                  </span>
                 </div>
-                {(bookingLink.buffer_before > 0 || bookingLink.buffer_after > 0) && (
+                {(bookingLink.buffer_before > 0 ||
+                  bookingLink.buffer_after > 0) && (
                   <div className="flex justify-between">
                     <span>Buffers:</span>
                     <span className="font-medium">
-                      {bookingLink.buffer_before}min before, {bookingLink.buffer_after}min after
+                      {bookingLink.buffer_before}min before,{' '}
+                      {bookingLink.buffer_after}min after
                     </span>
                   </div>
                 )}
@@ -148,7 +167,9 @@ export function BookingLinksPage() {
                 {bookingLink.max_per_day && (
                   <div className="flex justify-between">
                     <span>Max per Day:</span>
-                    <span className="font-medium">{bookingLink.max_per_day}</span>
+                    <span className="font-medium">
+                      {bookingLink.max_per_day}
+                    </span>
                   </div>
                 )}
               </div>
@@ -194,4 +215,3 @@ export function BookingLinksPage() {
     </div>
   );
 }
-

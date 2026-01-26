@@ -8,7 +8,8 @@ export function TodayPage() {
       <Card className="glass-effect">
         <div className="p-6">
           <p className="text-[#4f4f4f]">
-            Welcome to DayPilot! The calendar is ready. Events will be available once the database is fully set up.
+            Welcome to DayPilot! The calendar is ready. Events will be available
+            once the database is fully set up.
           </p>
         </div>
       </Card>

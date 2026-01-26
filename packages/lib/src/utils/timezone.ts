@@ -15,7 +15,9 @@ export function toLocalTime(date: string | Date, timezone?: string): Date {
   }
 
   // Convert to the specified timezone
-  const localString = dateObject.toLocaleString('en-US', { timeZone: timezone });
+  const localString = dateObject.toLocaleString('en-US', {
+    timeZone: timezone,
+  });
   return new Date(localString);
 }
 
@@ -40,8 +42,3 @@ export function formatInTimezone(
 export function isTimezoneFrozen(userTimezoneFrozen?: boolean): boolean {
   return userTimezoneFrozen === true;
 }
-
-
-
-
-

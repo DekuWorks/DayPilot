@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import {
-  useCalendars,
-  useCreateCalendar,
-} from '@daypilot/lib';
+import { useCalendars, useCreateCalendar } from '@daypilot/lib';
 import { Button, Card, Input, Label } from '@daypilot/ui';
 import { supabaseClient } from '@daypilot/lib';
 import type { Calendar } from '@daypilot/types';
@@ -110,7 +107,7 @@ export function CalendarManager() {
       </div>
 
       <div className="space-y-2">
-        {calendars.map((calendar) => (
+        {calendars.map(calendar => (
           <Card key={calendar.id} className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
@@ -122,8 +119,8 @@ export function CalendarManager() {
                   <input
                     type="text"
                     value={calendar.name}
-                    onChange={(e) => handleRename(calendar, e.target.value)}
-                    onBlur={(e) => {
+                    onChange={e => handleRename(calendar, e.target.value)}
+                    onBlur={e => {
                       if (e.target.value !== calendar.name) {
                         handleRename(calendar, e.target.value);
                       }
@@ -131,7 +128,9 @@ export function CalendarManager() {
                     className="font-semibold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-1"
                   />
                   {calendar.is_default && (
-                    <span className="text-xs text-gray-500 ml-2">(Default)</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Default)
+                    </span>
                   )}
                 </div>
               </div>
@@ -179,7 +178,7 @@ export function CalendarManager() {
                 <Input
                   id="calendar-name"
                   value={formData.name}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, name: e.target.value })
                   }
                   required
@@ -192,7 +191,7 @@ export function CalendarManager() {
                     id="calendar-color"
                     type="color"
                     value={formData.color}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, color: e.target.value })
                     }
                     className="w-20 h-10"
@@ -200,7 +199,7 @@ export function CalendarManager() {
                   <Input
                     type="text"
                     value={formData.color}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, color: e.target.value })
                     }
                     className="flex-1"
@@ -227,8 +226,3 @@ export function CalendarManager() {
     </div>
   );
 }
-
-
-
-
-

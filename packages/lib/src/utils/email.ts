@@ -22,14 +22,14 @@ export async function sendEmail(
 ): Promise<{ success: boolean; error?: string }> {
   // For MVP, log the email instead of actually sending
   // In production, this would call a server endpoint that uses Resend
-  
+
   if (!EMAIL_API_URL || !EMAIL_API_KEY) {
     console.log('[Email (not sent - no API configured)]', {
       to,
       subject: template.subject,
       // Don't log full HTML in console
     });
-    
+
     // In development, you might want to show a toast or notification
     // that emails are not configured
     return { success: true }; // Return success so app doesn't break
@@ -40,14 +40,17 @@ export async function sendEmail(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${EMAIL_API_KEY}`,
+        Authorization: `Bearer ${EMAIL_API_KEY}`,
       },
       body: JSON.stringify({
         to,
         subject: template.subject,
         html: template.html,
         text: template.text,
-        from: options?.from || import.meta.env.VITE_EMAIL_FROM || 'noreply@daypilot.app',
+        from:
+          options?.from ||
+          import.meta.env.VITE_EMAIL_FROM ||
+          'noreply@daypilot.app',
         replyTo: options?.replyTo,
       }),
     });
@@ -87,7 +90,7 @@ export function getUserEmailPreferences(): {
   } catch (err) {
     console.error('Failed to load email preferences:', err);
   }
-  
+
   return {
     remindersEnabled: true,
     defaultReminderMinutes: 30,
@@ -102,7 +105,10 @@ export function saveUserEmailPreferences(preferences: {
   defaultReminderMinutes: number;
 }): void {
   try {
-    localStorage.setItem('daypilot-email-preferences', JSON.stringify(preferences));
+    localStorage.setItem(
+      'daypilot-email-preferences',
+      JSON.stringify(preferences)
+    );
   } catch (err) {
     console.error('Failed to save email preferences:', err);
   }

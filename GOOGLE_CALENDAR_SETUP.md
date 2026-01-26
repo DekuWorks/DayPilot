@@ -45,7 +45,9 @@ This guide explains how to set up Google Calendar OAuth and sync for DayPilot.
 ## Step 4: Set Environment Variables
 
 ### Supabase Edge Functions
+
 Set these as Supabase secrets:
+
 ```bash
 supabase secrets set GOOGLE_CLIENT_ID=your_client_id_here
 supabase secrets set GOOGLE_CLIENT_SECRET=your_client_secret_here
@@ -53,7 +55,9 @@ supabase secrets set FRONTEND_URL=https://yourdomain.com
 ```
 
 ### Local Development
+
 Create `.env.local` in `supabase/functions/`:
+
 ```env
 GOOGLE_CLIENT_ID=your_client_id_here
 GOOGLE_CLIENT_SECRET=your_client_secret_here
@@ -63,11 +67,13 @@ FRONTEND_URL=http://localhost:5174
 ## Step 5: Run Database Migration
 
 Run the migration in Supabase SQL Editor:
+
 ```sql
 -- Run: supabase/migrations/007_google_calendar_sync.sql
 ```
 
 Or via CLI:
+
 ```bash
 supabase db push
 ```
@@ -90,6 +96,7 @@ supabase functions deploy google-sync
 ## How It Works
 
 ### OAuth Flow
+
 1. User clicks "Connect Google Calendar"
 2. Redirected to Google OAuth consent screen
 3. User authorizes DayPilot
@@ -98,6 +105,7 @@ supabase functions deploy google-sync
 6. Tokens stored in `connected_accounts` table
 
 ### Sync Flow
+
 1. User clicks "Sync Now" on a calendar
 2. Edge function fetches events from Google Calendar API
 3. Events are mapped to DayPilot events
@@ -105,6 +113,7 @@ supabase functions deploy google-sync
 5. Sync token stored for incremental syncs
 
 ### Token Refresh
+
 - Access tokens expire after 1 hour
 - Refresh tokens are used to get new access tokens
 - Automatic refresh happens before API calls
@@ -113,26 +122,31 @@ supabase functions deploy google-sync
 ## Troubleshooting
 
 ### "OAuth not configured" Error
+
 - Check that `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set
 - Verify secrets are set in Supabase: `supabase secrets list`
 
 ### "Redirect URI mismatch" Error
+
 - Verify redirect URI in Google Cloud Console matches exactly
 - Check for trailing slashes or protocol differences
 - Development: `http://localhost:5174/app/integrations/google/callback`
 - Production: `https://yourdomain.com/app/integrations/google/callback`
 
 ### "Token exchange failed" Error
+
 - Check that authorization code hasn't expired (codes expire quickly)
 - Verify client ID and secret are correct
 - Check Google Cloud Console for API quota limits
 
 ### "No calendars synced" Message
+
 - Calendar mappings are created automatically on first sync
 - Check that user has calendars in Google Calendar
 - Verify sync is enabled in calendar mapping
 
 ### Sync Not Working
+
 - Check `sync_state` table for error messages
 - Verify access token is valid (not expired)
 - Check Google Calendar API quota limits
@@ -164,6 +178,7 @@ supabase functions deploy google-sync
 ## Next Steps
 
 After Google Calendar is working:
+
 1. Implement automatic periodic sync (based on `sync_frequency_minutes` in entitlements)
 2. Add bidirectional sync (DayPilot → Google)
 3. Handle conflict resolution

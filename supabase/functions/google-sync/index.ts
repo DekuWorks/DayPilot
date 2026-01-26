@@ -5,13 +5,13 @@ import { google } from 'https://esm.sh/googleapis@126.0.1';
 const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -22,20 +22,23 @@ serve(async (req) => {
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const body = await req.json();
@@ -44,7 +47,8 @@ serve(async (req) => {
     // Get calendar mapping
     const { data: mapping, error: mappingError } = await supabase
       .from('calendar_mappings')
-      .select(`
+      .select(
+        `
         id,
         connected_account_id,
         daypilot_calendar_id,
@@ -56,7 +60,8 @@ serve(async (req) => {
           refresh_token,
           token_expires_at
         )
-      `)
+      `
+      )
       .eq('id', calendarMappingId)
       .single();
 
@@ -71,7 +76,9 @@ serve(async (req) => {
 
     // Check and refresh token if needed
     let accessToken = account.access_token;
-    const expiresAt = account.token_expires_at ? new Date(account.token_expires_at) : null;
+    const expiresAt = account.token_expires_at
+      ? new Date(account.token_expires_at)
+      : null;
     const isExpired = expiresAt && expiresAt.getTime() < Date.now() + 60000;
 
     if (isExpired && account.refresh_token) {
@@ -194,14 +201,12 @@ serve(async (req) => {
           .single();
 
         if (newEvent) {
-          await supabase
-            .from('event_mappings')
-            .insert({
-              calendar_mapping_id: mapping.id,
-              daypilot_event_id: newEvent.id,
-              provider_event_id: event.id,
-              provider_etag: event.etag,
-            });
+          await supabase.from('event_mappings').insert({
+            calendar_mapping_id: mapping.id,
+            daypilot_event_id: newEvent.id,
+            provider_event_id: event.id,
+            provider_etag: event.etag,
+          });
 
           imported++;
         }
@@ -210,16 +215,17 @@ serve(async (req) => {
 
     // Update sync state
     if (nextSyncToken) {
-      await supabase
-        .from('sync_state')
-        .upsert({
+      await supabase.from('sync_state').upsert(
+        {
           calendar_mapping_id: mapping.id,
           sync_token: nextSyncToken,
           last_sync_at: new Date().toISOString(),
           sync_status: 'idle',
-        }, {
+        },
+        {
           onConflict: 'calendar_mapping_id',
-        });
+        }
+      );
     }
 
     // Update calendar mapping
@@ -240,7 +246,10 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in google-sync function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

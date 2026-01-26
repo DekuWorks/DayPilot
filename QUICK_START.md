@@ -71,6 +71,7 @@ Use the local URL and anon key in your `.env` file.
 ## ✅ Verify It Works
 
 After setting up `.env`, you should be able to:
+
 - Click "Get Started" without the error
 - Sign up for a new account
 - Log in

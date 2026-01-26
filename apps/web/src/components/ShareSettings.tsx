@@ -13,7 +13,7 @@ export function ShareSettings() {
   const createShareLink = useCreateShareLink();
   const updateShareLink = useUpdateShareLink();
   const revokeShareLink = useRevokeShareLink();
-  
+
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -74,12 +74,14 @@ export function ShareSettings() {
     <>
       <Card className="sidebar-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-[var(--text)]">Calendar Sharing</h3>
+          <h3 className="text-lg font-bold text-[var(--text)]">
+            Calendar Sharing
+          </h3>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={isEnabled}
-              onChange={(e) => handleToggle(e.target.checked)}
+              onChange={e => handleToggle(e.target.checked)}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4FB3B3]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4FB3B3]"></div>
@@ -173,13 +175,14 @@ export function ShareSettings() {
         >
           <div
             className="modal-card w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-[var(--text)] mb-4">
               Revoke Share Link?
             </h3>
             <p className="text-sm text-[var(--muted)] mb-6">
-              This will immediately disable the share link. Anyone with the link will no longer be able to view your calendar.
+              This will immediately disable the share link. Anyone with the link
+              will no longer be able to view your calendar.
             </p>
             <div className="flex gap-3">
               <Button

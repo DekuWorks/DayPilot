@@ -6,7 +6,8 @@ import { supabaseClient } from '@daypilot/lib';
 const PRICE_IDS = {
   student: import.meta.env.VITE_STRIPE_PRICE_ID_STUDENT || 'price_student',
   team: import.meta.env.VITE_STRIPE_PRICE_ID_TEAM || 'price_team',
-  enterprise: import.meta.env.VITE_STRIPE_PRICE_ID_ENTERPRISE || 'price_enterprise',
+  enterprise:
+    import.meta.env.VITE_STRIPE_PRICE_ID_ENTERPRISE || 'price_enterprise',
 };
 
 export function BillingPage() {
@@ -33,17 +34,20 @@ export function BillingPage() {
       }
 
       // Call backend to create checkout session
-      const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          priceId: PRICE_IDS[tier],
-          tier,
-        }),
-      });
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            priceId: PRICE_IDS[tier],
+            tier,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -83,16 +87,19 @@ export function BillingPage() {
       }
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          customerId: customer.stripe_customer_id,
-        }),
-      });
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            customerId: customer.stripe_customer_id,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -131,7 +138,9 @@ export function BillingPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2 text-[#2B3448]">Current Plan</h2>
+            <h2 className="text-xl font-semibold mb-2 text-[#2B3448]">
+              Current Plan
+            </h2>
             <Badge variant={currentTier === 'free' ? 'default' : 'success'}>
               {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}
             </Badge>
@@ -161,7 +170,9 @@ export function BillingPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Max Calendars:</span>
-            <span className="font-medium">{entitlements?.max_connected_calendars || 1}</span>
+            <span className="font-medium">
+              {entitlements?.max_connected_calendars || 1}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Sync Frequency:</span>
@@ -177,8 +188,12 @@ export function BillingPage() {
         {/* Student */}
         <Card className="text-center">
           <h3 className="text-2xl font-bold mb-2 text-[#2B3448]">Student</h3>
-          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">$5<span className="text-lg">/mo</span></p>
-          <p className="text-sm text-gray-500 mb-4">Perfect for college students</p>
+          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">
+            $5<span className="text-lg">/mo</span>
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            Perfect for college students
+          </p>
           <ul className="space-y-2 text-sm text-gray-600 mb-6 text-left">
             <li>✓ 20 AI credits/month</li>
             <li>✓ 2 connected calendars</li>
@@ -191,18 +206,28 @@ export function BillingPage() {
             variant={currentTier === 'student' ? 'outline' : 'primary'}
             className="w-full"
           >
-            {loading === 'student' ? 'Loading...' : currentTier === 'student' ? 'Current Plan' : 'Upgrade'}
+            {loading === 'student'
+              ? 'Loading...'
+              : currentTier === 'student'
+                ? 'Current Plan'
+                : 'Upgrade'}
           </Button>
         </Card>
 
         {/* Team */}
         <Card className="text-center border-2 border-[#4FB3B3]">
           <div className="mb-2">
-            <Badge variant="success" className="mb-2">Popular</Badge>
+            <Badge variant="success" className="mb-2">
+              Popular
+            </Badge>
           </div>
           <h3 className="text-2xl font-bold mb-2 text-[#2B3448]">Team</h3>
-          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">$19<span className="text-lg">/mo</span></p>
-          <p className="text-sm text-gray-500 mb-4">For small teams & franchises</p>
+          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">
+            $19<span className="text-lg">/mo</span>
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            For small teams & franchises
+          </p>
           <ul className="space-y-2 text-sm text-gray-600 mb-6 text-left">
             <li>✓ AI scheduling enabled</li>
             <li>✓ 200 AI credits/month</li>
@@ -215,14 +240,20 @@ export function BillingPage() {
             variant={currentTier === 'team' ? 'outline' : 'primary'}
             className="w-full"
           >
-            {loading === 'team' ? 'Loading...' : currentTier === 'team' ? 'Current Plan' : 'Upgrade'}
+            {loading === 'team'
+              ? 'Loading...'
+              : currentTier === 'team'
+                ? 'Current Plan'
+                : 'Upgrade'}
           </Button>
         </Card>
 
         {/* Enterprise */}
         <Card className="text-center">
           <h3 className="text-2xl font-bold mb-2 text-[#2B3448]">Enterprise</h3>
-          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">$79<span className="text-lg">/mo</span></p>
+          <p className="text-4xl font-bold mb-4 text-[#4FB3B3]">
+            $79<span className="text-lg">/mo</span>
+          </p>
           <p className="text-sm text-gray-500 mb-4">For large companies</p>
           <ul className="space-y-2 text-sm text-gray-600 mb-6 text-left">
             <li>✓ AI scheduling enabled</li>
@@ -236,7 +267,11 @@ export function BillingPage() {
             variant={currentTier === 'enterprise' ? 'outline' : 'primary'}
             className="w-full"
           >
-            {loading === 'enterprise' ? 'Loading...' : currentTier === 'enterprise' ? 'Current Plan' : 'Upgrade'}
+            {loading === 'enterprise'
+              ? 'Loading...'
+              : currentTier === 'enterprise'
+                ? 'Current Plan'
+                : 'Upgrade'}
           </Button>
         </Card>
       </div>

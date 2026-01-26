@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button } from '@daypilot/ui';
-import {
-  useAttendeeByToken,
-  useUpdateRSVP,
-  getEvents,
-} from '@daypilot/lib';
+import { useAttendeeByToken, useUpdateRSVP, getEvents } from '@daypilot/lib';
 import type { RSVPStatus } from '@daypilot/types';
 
 type LocalEvent = {
@@ -21,7 +17,11 @@ type LocalEvent = {
 export function RSVPPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { data: attendee, isLoading, error } = useAttendeeByToken(token || null);
+  const {
+    data: attendee,
+    isLoading,
+    error,
+  } = useAttendeeByToken(token || null);
   const updateRSVP = useUpdateRSVP();
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +43,10 @@ export function RSVPPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5E6D3' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
         <Card>
           <div className="animate-pulse space-y-4 p-8">
             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -56,10 +59,15 @@ export function RSVPPage() {
 
   if (error || !attendee) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5E6D3' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
         <Card>
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">Invalid RSVP Link</h1>
+            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">
+              Invalid RSVP Link
+            </h1>
             <p className="text-gray-600 mb-6">
               This RSVP link is invalid or has expired.
             </p>
@@ -79,7 +87,7 @@ export function RSVPPage() {
         rsvpStatus: status,
       });
       setRsvpStatus(status);
-      
+
       // Notify organizer of RSVP update via Edge Function
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -89,13 +97,13 @@ export function RSVPPage() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             },
             body: JSON.stringify({
               attendeeId: attendee.id,
               rsvpStatus: status,
             }),
-          }).catch((err) => {
+          }).catch(err => {
             console.error('Error triggering RSVP update email:', err);
             // Don't block RSVP update if email fails
           });
@@ -126,7 +134,10 @@ export function RSVPPage() {
   const currentStatus = rsvpStatus || attendee.rsvpStatus;
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: '#F5E6D3' }}>
+    <div
+      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
+      style={{ background: '#F5E6D3' }}
+    >
       <div className="max-w-2xl mx-auto">
         <Card className="p-8">
           <div className="text-center mb-8">
@@ -139,7 +150,9 @@ export function RSVPPage() {
           {/* Event Details */}
           {event && (
             <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              <h2 className="text-xl font-semibold text-[#2B3448] mb-4">Event Details</h2>
+              <h2 className="text-xl font-semibold text-[#2B3448] mb-4">
+                Event Details
+              </h2>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Event</p>
@@ -148,7 +161,9 @@ export function RSVPPage() {
                 {event.description && (
                   <div>
                     <p className="text-sm text-gray-600">Description</p>
-                    <p className="font-medium text-[#2B3448]">{event.description}</p>
+                    <p className="font-medium text-[#2B3448]">
+                      {event.description}
+                    </p>
                   </div>
                 )}
                 <div>
@@ -170,9 +185,14 @@ export function RSVPPage() {
           {currentStatus !== 'pending' && (
             <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
               <p className="text-sm font-semibold text-blue-800">
-                Current Status: {currentStatus === 'going' ? 'Going' :
-                                 currentStatus === 'maybe' ? 'Maybe' :
-                                 currentStatus === 'declined' ? 'Declined' : 'Pending'}
+                Current Status:{' '}
+                {currentStatus === 'going'
+                  ? 'Going'
+                  : currentStatus === 'maybe'
+                    ? 'Maybe'
+                    : currentStatus === 'declined'
+                      ? 'Declined'
+                      : 'Pending'}
               </p>
             </div>
           )}
@@ -238,7 +258,9 @@ export function RSVPPage() {
                   />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-[#2B3448] mb-2">RSVP Updated!</h2>
+              <h2 className="text-xl font-bold text-[#2B3448] mb-2">
+                RSVP Updated!
+              </h2>
               <p className="text-gray-600 mb-6">
                 Your response has been recorded.
               </p>

@@ -17,7 +17,7 @@ import type { OrganizationMemberRole } from '@daypilot/types';
 export function OrganizationPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const { data: organizations } = useOrganizations();
-  const organization = organizations?.find((org) => org.id === orgId);
+  const organization = organizations?.find(org => org.id === orgId);
 
   const { data: members } = useOrganizationMembers(orgId || null);
   const { data: locations } = useLocations(orgId || null);
@@ -111,7 +111,10 @@ export function OrganizationPage() {
     if (!orgId || !confirm('Are you sure you want to delete this location?'))
       return;
     try {
-      await deleteLocation.mutateAsync({ id: locationId, organizationId: orgId });
+      await deleteLocation.mutateAsync({
+        id: locationId,
+        organizationId: orgId,
+      });
     } catch (error: any) {
       alert('Failed to delete location: ' + error.message);
     }
@@ -163,7 +166,7 @@ export function OrganizationPage() {
             <Input
               id="orgName"
               value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
+              onChange={e => setOrgName(e.target.value)}
             />
           </div>
           <div>
@@ -184,7 +187,7 @@ export function OrganizationPage() {
       <Card>
         <h2 className="text-xl font-semibold mb-4 text-[#2B3448]">Members</h2>
         <div className="space-y-3">
-          {members?.map((member) => (
+          {members?.map(member => (
             <div
               key={member.id}
               className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
@@ -193,12 +196,14 @@ export function OrganizationPage() {
                 <p className="font-medium text-[#2B3448]">
                   {member.profiles?.name || member.profiles?.email}
                 </p>
-                <p className="text-sm text-[#4f4f4f]">{member.profiles?.email}</p>
+                <p className="text-sm text-[#4f4f4f]">
+                  {member.profiles?.email}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <select
                   value={member.role}
-                  onChange={(e) =>
+                  onChange={e =>
                     handleUpdateMemberRole(
                       member.id,
                       e.target.value as OrganizationMemberRole
@@ -259,7 +264,7 @@ export function OrganizationPage() {
                 <Input
                   id="locName"
                   value={locationForm.name}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({ ...locationForm, name: e.target.value })
                   }
                   required
@@ -270,7 +275,7 @@ export function OrganizationPage() {
                 <Input
                   id="locTimezone"
                   value={locationForm.timezone}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({
                       ...locationForm,
                       timezone: e.target.value,
@@ -283,7 +288,7 @@ export function OrganizationPage() {
                 <Input
                   id="locAddress"
                   value={locationForm.address}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({
                       ...locationForm,
                       address: e.target.value,
@@ -296,7 +301,7 @@ export function OrganizationPage() {
                 <Input
                   id="locCity"
                   value={locationForm.city}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({ ...locationForm, city: e.target.value })
                   }
                 />
@@ -306,7 +311,7 @@ export function OrganizationPage() {
                 <Input
                   id="locState"
                   value={locationForm.state}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({ ...locationForm, state: e.target.value })
                   }
                 />
@@ -316,7 +321,7 @@ export function OrganizationPage() {
                 <Input
                   id="locCountry"
                   value={locationForm.country}
-                  onChange={(e) =>
+                  onChange={e =>
                     setLocationForm({
                       ...locationForm,
                       country: e.target.value,
@@ -356,7 +361,7 @@ export function OrganizationPage() {
         )}
 
         <div className="space-y-3">
-          {locations?.map((location) => (
+          {locations?.map(location => (
             <div
               key={location.id}
               className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
@@ -409,8 +414,3 @@ export function OrganizationPage() {
     </div>
   );
 }
-
-
-
-
-

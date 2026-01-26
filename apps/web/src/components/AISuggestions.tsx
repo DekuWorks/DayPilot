@@ -28,7 +28,8 @@ export function AISuggestions() {
     for (const event of sortedEvents) {
       const eventStart = new Date(event.start);
       if (eventStart > currentTime) {
-        const duration = (eventStart.getTime() - currentTime.getTime()) / (1000 * 60);
+        const duration =
+          (eventStart.getTime() - currentTime.getTime()) / (1000 * 60);
         if (duration >= 30) {
           gaps.push({ start: new Date(currentTime), duration });
         }
@@ -45,12 +46,9 @@ export function AISuggestions() {
   const generateSuggestions = useCallback(() => {
     const newSuggestions: AISuggestion[] = [];
     const now = new Date();
-    const todayEvents = events.filter((e) => {
+    const todayEvents = events.filter(e => {
       const start = new Date(e.start);
-      return (
-        start.toDateString() === now.toDateString() &&
-        start >= now
-      );
+      return start.toDateString() === now.toDateString() && start >= now;
     });
 
     // Check for overloaded day
@@ -63,7 +61,7 @@ export function AISuggestions() {
     }
 
     // Check for long meeting blocks
-    const longBlocks = todayEvents.filter((e) => {
+    const longBlocks = todayEvents.filter(e => {
       const duration =
         (new Date(e.end).getTime() - new Date(e.start).getTime()) / (1000 * 60);
       return duration > 120; // 2 hours
@@ -73,14 +71,16 @@ export function AISuggestions() {
       newSuggestions.push({
         type: 'break',
         title: 'Add breaks between long meetings',
-        description: 'Consider adding 15-minute breaks after long sessions to maintain focus.',
+        description:
+          'Consider adding 15-minute breaks after long sessions to maintain focus.',
       });
     }
 
     // Check for focus time
-    const hasFocusTime = todayEvents.some((e) =>
-      e.title.toLowerCase().includes('focus') ||
-      e.title.toLowerCase().includes('deep work')
+    const hasFocusTime = todayEvents.some(
+      e =>
+        e.title.toLowerCase().includes('focus') ||
+        e.title.toLowerCase().includes('deep work')
     );
 
     if (!hasFocusTime && todayEvents.length > 3) {
@@ -102,7 +102,8 @@ export function AISuggestions() {
         newSuggestions.push({
           type: 'wrap_up',
           title: 'Plan your wrap-up',
-          description: 'Your day ends late. Consider scheduling time to review and plan tomorrow.',
+          description:
+            'Your day ends late. Consider scheduling time to review and plan tomorrow.',
         });
       }
     }
@@ -153,7 +154,9 @@ export function AISuggestions() {
                   </Badge>
                   <h3 className="font-medium">{suggestion.title}</h3>
                 </div>
-                <p className="text-sm text-gray-600">{suggestion.description}</p>
+                <p className="text-sm text-gray-600">
+                  {suggestion.description}
+                </p>
               </div>
             </div>
           </div>
@@ -162,7 +165,3 @@ export function AISuggestions() {
     </Card>
   );
 }
-
-
-
-

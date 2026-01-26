@@ -24,7 +24,7 @@ export function useEvents(calendarId?: string) {
           const errorCode = error.code || 'UNKNOWN';
           throw new Error(`${errorMessage} (Code: ${errorCode})`);
         }
-        
+
         return (data || []) as Event[];
       } catch (err) {
         // Re-throw with better error message
@@ -42,7 +42,9 @@ export function useCreateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (event: Omit<Event, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (
+      event: Omit<Event, 'id' | 'created_at' | 'updated_at'>
+    ) => {
       const { data, error } = await supabaseClient
         .from('events')
         .insert(event)
@@ -62,10 +64,7 @@ export function useUpdateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      ...updates
-    }: Partial<Event> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Event> & { id: string }) => {
       const { data, error } = await supabaseClient
         .from('events')
         .update(updates)
@@ -87,7 +86,10 @@ export function useDeleteEvent() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabaseClient.from('events').delete().eq('id', id);
+      const { error } = await supabaseClient
+        .from('events')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
     },

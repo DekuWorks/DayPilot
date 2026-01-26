@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAttendees, saveAttendees, generateInviteToken } from '../storage/storageAdapter';
+import {
+  getAttendees,
+  saveAttendees,
+  generateInviteToken,
+} from '../storage/storageAdapter';
 import type { Attendee, RSVPStatus } from '@daypilot/types';
 
 // Get attendees for an event
@@ -28,9 +32,9 @@ export function useAttendeeByToken(token: string | null) {
         .select('*')
         .eq('invite_token', token)
         .single();
-      
+
       if (error || !data) return null;
-      
+
       return {
         id: data.id,
         eventId: data.event_id,
@@ -59,10 +63,12 @@ export function useAddAttendee() {
       role?: 'organizer' | 'attendee';
     }) => {
       const allAttendees = await getAttendees();
-      
+
       // Check for duplicates
       const existing = allAttendees.find(
-        a => a.eventId === data.eventId && a.email.toLowerCase() === data.email.toLowerCase()
+        a =>
+          a.eventId === data.eventId &&
+          a.email.toLowerCase() === data.email.toLowerCase()
       );
       if (existing) {
         throw new Error('Attendee already added to this event');
@@ -85,7 +91,9 @@ export function useAddAttendee() {
       return newAttendee;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['attendees', variables.eventId] });
+      queryClient.invalidateQueries({
+        queryKey: ['attendees', variables.eventId],
+      });
     },
   });
 }
@@ -98,7 +106,7 @@ export function useRemoveAttendee() {
     mutationFn: async (data: { attendeeId: string; eventId: string }) => {
       const allAttendees = await getAttendees();
       const attendee = allAttendees.find(a => a.id === data.attendeeId);
-      
+
       // Prevent removing organizer
       if (attendee?.role === 'organizer') {
         throw new Error('Cannot remove organizer');
@@ -108,7 +116,9 @@ export function useRemoveAttendee() {
       await saveAttendees(updated);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['attendees', variables.eventId] });
+      queryClient.invalidateQueries({
+        queryKey: ['attendees', variables.eventId],
+      });
     },
   });
 }
@@ -126,14 +136,20 @@ export function useUpdateRSVP() {
       const allAttendees = await getAttendees();
       const updated = allAttendees.map(a =>
         a.id === data.attendeeId
-          ? { ...a, rsvpStatus: data.rsvpStatus, updatedAt: new Date().toISOString() }
+          ? {
+              ...a,
+              rsvpStatus: data.rsvpStatus,
+              updatedAt: new Date().toISOString(),
+            }
           : a
       );
       await saveAttendees(updated);
       return updated.find(a => a.id === data.attendeeId)!;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['attendees', variables.eventId] });
+      queryClient.invalidateQueries({
+        queryKey: ['attendees', variables.eventId],
+      });
       queryClient.invalidateQueries({ queryKey: ['attendee'] });
     },
   });

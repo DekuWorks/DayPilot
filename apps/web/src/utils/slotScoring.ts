@@ -44,9 +44,13 @@ export function scoreSlot(
   slotEnd.setMinutes(slotEnd.getMinutes() + 30); // Assume 30 min duration for scoring
 
   const nearbyBookings = existingBookings.filter(booking => {
-    const gapBefore = (slotStart.getTime() - booking.end.getTime()) / (1000 * 60);
-    const gapAfter = (booking.start.getTime() - slotEnd.getTime()) / (1000 * 60);
-    return (gapBefore >= 0 && gapBefore < 30) || (gapAfter >= 0 && gapAfter < 30);
+    const gapBefore =
+      (slotStart.getTime() - booking.end.getTime()) / (1000 * 60);
+    const gapAfter =
+      (booking.start.getTime() - slotEnd.getTime()) / (1000 * 60);
+    return (
+      (gapBefore >= 0 && gapBefore < 30) || (gapAfter >= 0 && gapAfter < 30)
+    );
   });
 
   if (nearbyBookings.length > 0) {

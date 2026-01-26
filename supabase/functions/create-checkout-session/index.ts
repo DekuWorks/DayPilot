@@ -14,13 +14,13 @@ const stripe = new Stripe(stripeSecretKey, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -31,30 +31,33 @@ serve(async (req) => {
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user || !user.email) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Parse request body
     const { priceId, tier } = await req.json();
 
     if (!priceId) {
-      return new Response(
-        JSON.stringify({ error: 'priceId is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'priceId is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Get or create Stripe customer
@@ -80,12 +83,10 @@ serve(async (req) => {
       customerId = customer.id;
 
       // Save to database
-      await supabase
-        .from('stripe_customers')
-        .insert({
-          user_id: user.id,
-          stripe_customer_id: customerId,
-        });
+      await supabase.from('stripe_customers').insert({
+        user_id: user.id,
+        stripe_customer_id: customerId,
+      });
     }
 
     // Create checkout session
@@ -107,14 +108,17 @@ serve(async (req) => {
       cancel_url: `${frontendUrl}/billing?canceled=true`,
     });
 
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ url: session.url }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Error in create-checkout-session function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

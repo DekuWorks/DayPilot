@@ -102,6 +102,7 @@ supabase secrets set FRONTEND_URL=http://localhost:5174
 ## 🎉 You're Done!
 
 Your Supabase project is now set up. You can:
+
 - Develop locally
 - Test all features
 - Deploy to production when ready
@@ -109,14 +110,17 @@ Your Supabase project is now set up. You can:
 ## Common Issues
 
 **"Project not found"**
+
 - Make sure you're logged in: `supabase login`
 - Verify project ref is correct
 
 **"Migration failed"**
+
 - Check you're in the right directory
 - Verify Supabase project is active (not paused)
 
 **"Can't connect"**
+
 - Verify `.env.local` has correct URL and key
 - Check project is not paused in dashboard
 

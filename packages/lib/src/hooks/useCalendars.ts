@@ -21,9 +21,7 @@ export function useCreateCalendar() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      calendar: Omit<Calendar, 'id' | 'created_at'>
-    ) => {
+    mutationFn: async (calendar: Omit<Calendar, 'id' | 'created_at'>) => {
       const { data, error } = await supabaseClient
         .from('calendars')
         .insert(calendar)

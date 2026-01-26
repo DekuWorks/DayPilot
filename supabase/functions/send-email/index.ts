@@ -7,7 +7,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'DayPilot <noreply@daypilot.app>';
+const RESEND_FROM_EMAIL =
+  Deno.env.get('RESEND_FROM_EMAIL') || 'DayPilot <noreply@daypilot.app>';
 
 interface EmailRequest {
   to: string;
@@ -18,13 +19,13 @@ interface EmailRequest {
   replyTo?: string;
 }
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     if (!RESEND_API_KEY) {
@@ -49,7 +50,7 @@ serve(async (req) => {
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -67,20 +68,26 @@ serve(async (req) => {
       console.error('Resend API error:', error);
       return new Response(
         JSON.stringify({ error: 'Failed to send email', details: error }),
-        { status: resendResponse.status, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: resendResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
 
     const result = await resendResponse.json();
 
-    return new Response(
-      JSON.stringify({ success: true, id: result.id }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, id: result.id }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Error sending email:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        message: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -36,7 +36,7 @@ export async function listGoogleCalendars(
   const calendar = await getCalendarClient(userId, providerAccountId);
   const { data } = await calendar.calendarList.list();
 
-  return (data.items || []).map((cal) => ({
+  return (data.items || []).map(cal => ({
     id: cal.id!,
     summary: cal.summary || 'Untitled Calendar',
     primary: cal.primary || false,
@@ -182,14 +182,12 @@ export async function importGoogleCalendar(
         .single();
 
       if (newEvent) {
-        await supabase
-          .from('event_mappings')
-          .insert({
-            calendar_mapping_id: mapping.id,
-            daypilot_event_id: newEvent.id,
-            provider_event_id: event.id,
-            provider_etag: event.etag,
-          });
+        await supabase.from('event_mappings').insert({
+          calendar_mapping_id: mapping.id,
+          daypilot_event_id: newEvent.id,
+          provider_event_id: event.id,
+          provider_etag: event.etag,
+        });
 
         imported++;
       }
@@ -198,16 +196,17 @@ export async function importGoogleCalendar(
 
   // Update sync state
   if (nextSyncToken) {
-    await supabase
-      .from('sync_state')
-      .upsert({
+    await supabase.from('sync_state').upsert(
+      {
         calendar_mapping_id: mapping.id,
         sync_token: nextSyncToken,
         last_sync_at: new Date().toISOString(),
         sync_status: 'idle',
-      }, {
+      },
+      {
         onConflict: 'calendar_mapping_id',
-      });
+      }
+    );
   }
 
   // Update calendar mapping last_synced_at
@@ -278,7 +277,9 @@ export async function syncAllCalendars(userId: string): Promise<{
           totalImported += result.imported;
           totalUpdated += result.updated;
         } catch (error: any) {
-          errors.push(`Calendar ${mapping.provider_calendar_id}: ${error.message}`);
+          errors.push(
+            `Calendar ${mapping.provider_calendar_id}: ${error.message}`
+          );
         }
       }
     } catch (error: any) {

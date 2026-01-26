@@ -18,7 +18,7 @@ export function eventInviteTemplate(data: {
   eventDescription?: string;
 }): EmailTemplate {
   const subject = `You're invited: ${data.eventTitle}`;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -47,7 +47,7 @@ export function eventInviteTemplate(data: {
     </body>
     </html>
   `;
-  
+
   const text = `
 You're Invited
 
@@ -61,7 +61,7 @@ RSVP: ${data.rsvpLink}
 
 This invitation was sent from DayPilot.
   `.trim();
-  
+
   return { subject, html, text };
 }
 
@@ -81,15 +81,15 @@ export function rsvpUpdateTemplate(data: {
     maybe: 'Maybe',
     declined: "Can't Attend",
   };
-  
+
   const statusColors = {
     going: '#10B981',
     maybe: '#F59E0B',
     declined: '#EF4444',
   };
-  
+
   const subject = `${data.attendeeName || data.attendeeEmail} ${statusLabels[data.rsvpStatus]} - ${data.eventTitle}`;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -116,7 +116,7 @@ export function rsvpUpdateTemplate(data: {
     </body>
     </html>
   `;
-  
+
   const text = `
 RSVP Update
 
@@ -126,7 +126,7 @@ Event: ${data.eventTitle}
 Date: ${data.eventDate}
 Time: ${data.eventTime}
   `.trim();
-  
+
   return { subject, html, text };
 }
 
@@ -141,12 +141,13 @@ export function reminderTemplate(data: {
   eventDescription?: string;
   organizerName?: string;
 }): EmailTemplate {
-  const timeText = data.minutesUntil < 60 
-    ? `in ${data.minutesUntil} minute${data.minutesUntil !== 1 ? 's' : ''}`
-    : `in ${Math.floor(data.minutesUntil / 60)} hour${Math.floor(data.minutesUntil / 60) !== 1 ? 's' : ''}`;
-  
+  const timeText =
+    data.minutesUntil < 60
+      ? `in ${data.minutesUntil} minute${data.minutesUntil !== 1 ? 's' : ''}`
+      : `in ${Math.floor(data.minutesUntil / 60)} hour${Math.floor(data.minutesUntil / 60) !== 1 ? 's' : ''}`;
+
   const subject = `Reminder: ${data.eventTitle} starting ${timeText}`;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -174,7 +175,7 @@ export function reminderTemplate(data: {
     </body>
     </html>
   `;
-  
+
   const text = `
 Event Reminder
 
@@ -187,7 +188,7 @@ ${data.organizerName ? `Organizer: ${data.organizerName}` : ''}
 
 This reminder was sent from DayPilot.
   `.trim();
-  
+
   return { subject, html, text };
 }
 
@@ -205,7 +206,7 @@ export function bookingConfirmationTemplate(data: {
   calendarLink?: string;
 }): EmailTemplate {
   const subject = `Booking Confirmed: ${data.bookingTitle}`;
-  
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -228,11 +229,15 @@ export function bookingConfirmationTemplate(data: {
         ${data.notes ? `<p style="margin: 10px 0;"><strong>Notes:</strong> ${data.notes}</p>` : ''}
       </div>
       
-      ${data.calendarLink ? `
+      ${
+        data.calendarLink
+          ? `
       <div style="text-align: center; margin: 30px 0;">
         <a href="${data.calendarLink}" style="display: inline-block; background: #4FB3B3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Add to Calendar</a>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
         This confirmation was sent from DayPilot.
@@ -240,7 +245,7 @@ export function bookingConfirmationTemplate(data: {
     </body>
     </html>
   `;
-  
+
   const text = `
 Booking Confirmed
 
@@ -258,6 +263,6 @@ ${data.calendarLink ? `Add to Calendar: ${data.calendarLink}` : ''}
 
 This confirmation was sent from DayPilot.
   `.trim();
-  
+
   return { subject, html, text };
 }

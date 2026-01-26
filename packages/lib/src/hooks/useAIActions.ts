@@ -129,7 +129,7 @@ export function useApplyAIAction() {
       }
 
       // Create events from blocks (only tasks, not existing events)
-      const eventsToCreate = blocks.filter((block) => block.type === 'task');
+      const eventsToCreate = blocks.filter(block => block.type === 'task');
       const createdEventIds: string[] = [];
 
       for (const block of eventsToCreate) {
@@ -138,7 +138,8 @@ export function useApplyAIAction() {
           .insert({
             calendar_id: targetCalendarId,
             title: block.title,
-            description: block.description || `AI-generated: ${block.reason || ''}`,
+            description:
+              block.description || `AI-generated: ${block.reason || ''}`,
             start: block.start,
             end: block.end,
             status: 'scheduled',
@@ -181,7 +182,9 @@ export function useApplyAIAction() {
           .single();
 
         if (profile && !profile.ai_enabled) {
-          await supabaseClient.rpc('decrement_ai_credits', { user_uuid: user.id });
+          await supabaseClient.rpc('decrement_ai_credits', {
+            user_uuid: user.id,
+          });
         }
       }
 

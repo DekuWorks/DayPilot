@@ -47,10 +47,12 @@ export function useCalendarMappings() {
 
       const { data, error } = await supabaseClient
         .from('calendar_mappings')
-        .select(`
+        .select(
+          `
           *,
           connected_accounts!inner(user_id)
-        `)
+        `
+        )
         .eq('connected_accounts.user_id', user.id)
         .order('created_at', { ascending: false });
 

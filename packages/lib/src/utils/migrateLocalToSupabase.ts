@@ -3,7 +3,7 @@
  * Run once per user to migrate their data
  */
 
-import { 
+import {
   getEvents as getLocalEvents,
   getTasks as getLocalTasks,
   getCategories as getLocalCategories,
@@ -70,7 +70,9 @@ export async function migrateLocalToSupabase(): Promise<{
 
   try {
     // Check if user is authenticated
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error('User must be authenticated to migrate data');
     }
@@ -138,7 +140,9 @@ export async function migrateLocalToSupabase(): Promise<{
         emailRemindersEnabled: true,
         defaultReminderMinutes: 30,
         workingHours: localPrefs.workingHours || { start: 480, end: 1020 },
-        timezone: localPrefs.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone:
+          localPrefs.timezone ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
     } catch (err: any) {
       errors.push(`Preferences: ${err.message}`);

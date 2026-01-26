@@ -5,6 +5,7 @@ This guide explains how to set up the notification system for DayPilot, includin
 ## Overview
 
 DayPilot uses two Supabase Edge Functions for notifications:
+
 1. **send-reminders** - Sends email reminders for upcoming events
 2. **send-booking-confirmation** - Sends confirmation emails when bookings are created
 
@@ -24,23 +25,27 @@ DayPilot uses two Supabase Edge Functions for notifications:
 ## Step 2: Deploy Edge Functions
 
 ### Install Supabase CLI
+
 ```bash
 npm install -g supabase
 ```
 
 ### Login and Link Project
+
 ```bash
 supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 ### Set Environment Variables
+
 ```bash
 supabase secrets set RESEND_API_KEY=your_resend_api_key_here
 supabase secrets set RESEND_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ### Deploy Functions
+
 ```bash
 supabase functions deploy send-reminders
 supabase functions deploy send-booking-confirmation
@@ -53,11 +58,13 @@ The reminder function needs to run periodically to check for due reminders. Choo
 ### Option A: Supabase pg_cron (Recommended for Production)
 
 1. Enable pg_cron extension in Supabase SQL Editor:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 ```
 
 2. Schedule the job (runs every 5 minutes):
+
 ```sql
 SELECT cron.schedule(
   'send-reminders',
@@ -76,6 +83,7 @@ SELECT cron.schedule(
 ```
 
 Replace:
+
 - `YOUR_PROJECT_REF` with your Supabase project reference
 - `YOUR_ANON_KEY` with your Supabase anon key
 
@@ -87,7 +95,7 @@ Create `.github/workflows/send-reminders.yml`:
 name: Send Reminders
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
+    - cron: '*/5 * * * *' # Every 5 minutes
   workflow_dispatch:
 
 jobs:
@@ -103,6 +111,7 @@ jobs:
 ```
 
 Add secrets to GitHub:
+
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_PROJECT_REF`
 
@@ -112,10 +121,12 @@ If deploying to Vercel, add to `vercel.json`:
 
 ```json
 {
-  "crons": [{
-    "path": "/api/cron/send-reminders",
-    "schedule": "*/5 * * * *"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
 ```
 
@@ -134,7 +145,7 @@ export default async function handler(req: any, res: any) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`,
+      Authorization: `Bearer ${supabaseAnonKey}`,
     },
     body: JSON.stringify({}),
   });
@@ -162,6 +173,7 @@ export default async function handler(req: any, res: any) {
 You can manually trigger the functions:
 
 **Reminders:**
+
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
@@ -170,6 +182,7 @@ curl -X POST \
 ```
 
 **Booking Confirmation:**
+
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
@@ -196,6 +209,7 @@ curl -X POST \
 ### Function Errors
 
 Check function logs:
+
 ```bash
 supabase functions logs send-reminders --tail
 supabase functions logs send-booking-confirmation --tail
@@ -214,6 +228,7 @@ supabase functions logs send-booking-confirmation --tail
 ## Next Steps
 
 After setting up notifications:
+
 1. Test with real events and bookings
 2. Monitor email delivery rates
 3. Set up error alerts

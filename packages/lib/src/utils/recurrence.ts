@@ -31,7 +31,7 @@ export function expandRecurringEvent(
     const expandedRule = new RRule(options);
     const occurrences = expandedRule.between(startDate, endDate, true);
 
-    return occurrences.map((occurrenceStart) => ({
+    return occurrences.map(occurrenceStart => ({
       start: occurrenceStart,
       end: new Date(occurrenceStart.getTime() + duration),
       id: `${event.id}-${occurrenceStart.getTime()}`,
@@ -45,7 +45,9 @@ export function expandRecurringEvent(
 /**
  * Get a human-readable description of a recurrence rule
  */
-export function getRecurrenceDescription(recurrenceRule: string | null): string {
+export function getRecurrenceDescription(
+  recurrenceRule: string | null
+): string {
   if (!recurrenceRule) return '';
 
   try {
@@ -55,8 +57,3 @@ export function getRecurrenceDescription(recurrenceRule: string | null): string 
     return 'Recurring';
   }
 }
-
-
-
-
-

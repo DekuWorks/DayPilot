@@ -6,24 +6,27 @@ export function HomePage() {
     <div className="min-h-screen">
       {/* Navigation */}
       <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-white/20">
-        <Link to="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity">
+        <Link
+          to="/"
+          className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity"
+        >
           DayPilot
         </Link>
         <div className="hidden md:flex items-center gap-6">
-          <Link 
-            to="/features" 
+          <Link
+            to="/features"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Features
           </Link>
-          <Link 
-            to="/pricing" 
+          <Link
+            to="/pricing"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Pricing
           </Link>
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Sign In
@@ -34,8 +37,18 @@ export function HomePage() {
         </div>
         {/* Mobile menu button */}
         <button className="md:hidden p-2 text-[#2B3448]" aria-label="Menu">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       </nav>
@@ -44,11 +57,11 @@ export function HomePage() {
       <section className="container-width section-padding py-16 md:py-24 lg:py-32 text-center">
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#2B3448] leading-tight">
-            Pilot Your Day with{' '}
-            <span className="gradient-text">AI</span>
+            Pilot Your Day with <span className="gradient-text">AI</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-[#4f4f4f] max-w-3xl mx-auto leading-relaxed px-4">
-            Connect your calendars, let AI plan your day, and pilot your schedule with confidence.
+            Connect your calendars, let AI plan your day, and pilot your
+            schedule with confidence.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2 md:pt-4 px-4">
             <Link to="/signup" className="w-full sm:w-auto inline-block">
@@ -57,7 +70,11 @@ export function HomePage() {
               </Button>
             </Link>
             <Link to="/features" className="w-full sm:w-auto inline-block">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[180px]">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto min-w-[180px]"
+              >
                 Learn More
               </Button>
             </Link>
@@ -80,26 +97,35 @@ export function HomePage() {
             {
               icon: '🤖',
               title: 'AI-Powered Planning',
-              description: 'Let AI analyze your schedule and suggest optimal times for tasks and meetings.',
+              description:
+                'Let AI analyze your schedule and suggest optimal times for tasks and meetings.',
             },
             {
               icon: '📅',
               title: 'Multi-Calendar Sync',
-              description: 'Connect Google Calendar, Outlook, and Apple Calendar in one place.',
+              description:
+                'Connect Google Calendar, Outlook, and Apple Calendar in one place.',
             },
             {
               icon: '🔗',
               title: 'Booking Links',
-              description: 'Share your availability with clients and let them book time directly.',
+              description:
+                'Share your availability with clients and let them book time directly.',
             },
           ].map((feature, index) => (
             <div
               key={index}
               className="glass-effect rounded-2xl p-6 md:p-8 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="text-4xl md:text-5xl mb-4 md:mb-6">{feature.icon}</div>
-              <h3 className="text-lg md:text-xl font-semibold text-[#2B3448] mb-2 md:mb-3">{feature.title}</h3>
-              <p className="text-sm md:text-base text-[#4f4f4f] leading-relaxed">{feature.description}</p>
+              <div className="text-4xl md:text-5xl mb-4 md:mb-6">
+                {feature.icon}
+              </div>
+              <h3 className="text-lg md:text-xl font-semibold text-[#2B3448] mb-2 md:mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-sm md:text-base text-[#4f4f4f] leading-relaxed">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>
@@ -112,7 +138,8 @@ export function HomePage() {
             Ready to take control of your schedule?
           </h2>
           <p className="text-base md:text-lg lg:text-xl text-[#4f4f4f]">
-            Join thousands of professionals who use DayPilot to manage their time better.
+            Join thousands of professionals who use DayPilot to manage their
+            time better.
           </p>
           <Link to="/signup" className="inline-block">
             <Button size="lg">Get Started Free</Button>

@@ -72,24 +72,27 @@ export function PricingPage() {
     <div className="min-h-screen">
       {/* Navigation */}
       <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-white/20">
-        <Link to="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity">
+        <Link
+          to="/"
+          className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity"
+        >
           DayPilot
         </Link>
         <div className="hidden md:flex items-center gap-6">
-          <Link 
-            to="/features" 
+          <Link
+            to="/features"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Features
           </Link>
-          <Link 
-            to="/pricing" 
+          <Link
+            to="/pricing"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Pricing
           </Link>
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
           >
             Sign In
@@ -99,8 +102,18 @@ export function PricingPage() {
           </Link>
         </div>
         <button className="md:hidden p-2 text-[#2B3448]" aria-label="Menu">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
       </nav>
@@ -109,8 +122,7 @@ export function PricingPage() {
       <section className="container-width section-padding py-16 md:py-24 lg:py-32 text-center">
         <div className="max-w-3xl mx-auto space-y-4 md:space-y-6">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#2B3448] leading-tight px-4">
-            Simple, Transparent{' '}
-            <span className="gradient-text">Pricing</span>
+            Simple, Transparent <span className="gradient-text">Pricing</span>
           </h1>
           <p className="text-base md:text-lg lg:text-xl text-[#4f4f4f] leading-relaxed px-4">
             Choose the plan that works for you. All plans include a free trial.
@@ -138,19 +150,31 @@ export function PricingPage() {
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="text-xl md:text-2xl font-bold text-[#2B3448] mb-2">{plan.name}</h3>
+                <h3 className="text-xl md:text-2xl font-bold text-[#2B3448] mb-2">
+                  {plan.name}
+                </h3>
                 <div className="mb-2">
-                  <span className="text-3xl md:text-4xl font-bold text-[#2B3448]">{plan.price}</span>
+                  <span className="text-3xl md:text-4xl font-bold text-[#2B3448]">
+                    {plan.price}
+                  </span>
                   {plan.period && (
-                    <span className="text-[#4f4f4f] ml-2 text-base md:text-lg">/{plan.period}</span>
+                    <span className="text-[#4f4f4f] ml-2 text-base md:text-lg">
+                      /{plan.period}
+                    </span>
                   )}
                 </div>
-                <p className="text-sm text-[#4f4f4f] mb-6">{plan.description}</p>
+                <p className="text-sm text-[#4f4f4f] mb-6">
+                  {plan.description}
+                </p>
                 <ul className="space-y-2.5 md:space-y-3 mb-8">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-start">
-                      <span className="text-[#4FB3B3] mr-2 mt-0.5 font-bold">✓</span>
-                      <span className="text-sm md:text-base text-[#4f4f4f] leading-relaxed">{feature}</span>
+                      <span className="text-[#4FB3B3] mr-2 mt-0.5 font-bold">
+                        ✓
+                      </span>
+                      <span className="text-sm md:text-base text-[#4f4f4f] leading-relaxed">
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -5,7 +5,9 @@ import { supabaseClient } from '../supabaseClient';
 
 // Get current user ID (for localStorage MVP)
 async function getCurrentUserId(): Promise<string> {
-  const { data: { user } } = await supabaseClient.auth.getUser();
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
   return user?.id || 'local-user';
 }
 
@@ -14,7 +16,9 @@ export function useShareLinks() {
   return useQuery({
     queryKey: ['share-links'],
     queryFn: async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
       if (!user) return [];
 
       // Always query Supabase directly for share links
@@ -55,9 +59,9 @@ export function useShareLinkByToken(token: string | null) {
         .eq('token', token)
         .is('revoked_at', null)
         .single();
-      
+
       if (error || !data) return null;
-      
+
       return {
         id: data.id,
         userId: data.user_id,
@@ -87,7 +91,7 @@ export function useCreateShareLink() {
       const existingLink = allLinks.find(
         link => link.userId === userId && !link.revokedAt
       );
-      
+
       if (existingLink) {
         // Update existing link to unrevoke it and update mode
         const { data: updated, error } = await supabaseClient
@@ -102,7 +106,7 @@ export function useCreateShareLink() {
           .single();
 
         if (error) throw error;
-        
+
         return {
           id: updated.id,
           userId: updated.user_id,
@@ -112,7 +116,7 @@ export function useCreateShareLink() {
           revokedAt: updated.revoked_at,
         } as ShareLink;
       }
-      
+
       // Create new link directly in Supabase
       const token = await generateShareToken();
       const { data: newLink, error } = await supabaseClient
@@ -152,7 +156,7 @@ export function useUpdateShareLink() {
       const updates: any = {
         updated_at: new Date().toISOString(),
       };
-      
+
       if (data.mode) {
         updates.mode = data.mode;
       }

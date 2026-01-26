@@ -30,7 +30,7 @@ export function SettingsPage() {
 
     getUser();
 
-    const defaultCalendar = calendars.find((c) => c.is_default);
+    const defaultCalendar = calendars.find(c => c.is_default);
     if (defaultCalendar) {
       setDefaultCalendarId(defaultCalendar.id);
     }
@@ -78,7 +78,12 @@ export function SettingsPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={user?.email || ''} disabled />
+              <Input
+                id="email"
+                type="email"
+                value={user?.email || ''}
+                disabled
+              />
             </div>
             <div>
               <Label htmlFor="name">Display Name</Label>
@@ -87,7 +92,7 @@ export function SettingsPage() {
                   id="name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   className="flex-1"
                 />
                 <Button onClick={handleUpdateName}>Update</Button>
@@ -111,7 +116,7 @@ export function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={use24Hour}
-                  onChange={(e) => setUse24Hour(e.target.checked)}
+                  onChange={e => setUse24Hour(e.target.checked)}
                   className="sr-only"
                 />
                 <div
@@ -135,10 +140,10 @@ export function SettingsPage() {
               <select
                 id="default-calendar"
                 value={defaultCalendarId}
-                onChange={(e) => setDefaultCalendarId(e.target.value)}
+                onChange={e => setDefaultCalendarId(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {calendars.map((calendar) => (
+                {calendars.map(calendar => (
                   <option key={calendar.id} value={calendar.id}>
                     {calendar.name}
                   </option>
@@ -151,11 +156,13 @@ export function SettingsPage() {
                 <select
                   id="timezone"
                   value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
+                  onChange={e => setTimezone(e.target.value)}
                   disabled={timezoneFrozen}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
                 >
-                  {((Intl as any).supportedValuesOf('timeZone') as string[]).map((tz: string) => (
+                  {(
+                    (Intl as any).supportedValuesOf('timeZone') as string[]
+                  ).map((tz: string) => (
                     <option key={tz} value={tz}>
                       {tz.replace(/_/g, ' ')}
                     </option>
@@ -165,7 +172,7 @@ export function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={timezoneFrozen}
-                    onChange={async (e) => {
+                    onChange={async e => {
                       setTimezoneFrozen(e.target.checked);
                       if (user) {
                         await supabaseClient
@@ -221,7 +228,8 @@ export function SettingsPage() {
                 Connect your external calendars to sync events automatically.
               </p>
               <p className="text-sm text-[#4FB3B3] font-medium">
-                ✨ Premium Feature - Available with Pro, Team, or Enterprise plans
+                ✨ Premium Feature - Available with Pro, Team, or Enterprise
+                plans
               </p>
             </div>
             <Badge variant="success" className="ml-4">
@@ -244,12 +252,11 @@ export function SettingsPage() {
               Upgrade to unlock calendar connections
             </p>
             <p className="text-xs text-[#4f4f4f] mb-3">
-              Sync events from Google Calendar, Outlook, Apple Calendar, and more. Keep all your calendars in one place.
+              Sync events from Google Calendar, Outlook, Apple Calendar, and
+              more. Keep all your calendars in one place.
             </p>
             <Link to="/pricing">
-              <Button size="sm">
-                View Plans
-              </Button>
+              <Button size="sm">View Plans</Button>
             </Link>
           </div>
         </Card>

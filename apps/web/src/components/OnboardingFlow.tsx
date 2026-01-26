@@ -55,7 +55,13 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background:
+          'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)',
+      }}
+    >
       <Card className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2 text-[#2B3448]">
@@ -123,7 +129,7 @@ export function OnboardingFlow() {
               <Input
                 id="orgName"
                 value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
+                onChange={e => setOrgName(e.target.value)}
                 placeholder="e.g., Acme Corp"
                 required
               />
@@ -131,11 +137,13 @@ export function OnboardingFlow() {
 
             {choice === 'franchise' && (
               <div>
-                <Label htmlFor="locationName">First Location Name (optional)</Label>
+                <Label htmlFor="locationName">
+                  First Location Name (optional)
+                </Label>
                 <Input
                   id="locationName"
                   value={locationName}
-                  onChange={(e) => setLocationName(e.target.value)}
+                  onChange={e => setLocationName(e.target.value)}
                   placeholder="e.g., Downtown Office"
                 />
               </div>
@@ -144,16 +152,16 @@ export function OnboardingFlow() {
         )}
 
         <div className="flex justify-end gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/app')}
-          >
+          <Button variant="outline" onClick={() => navigate('/app')}>
             Skip for now
           </Button>
           {choice && (
             <Button
               onClick={handleSubmit}
-              disabled={createOrg.isPending || (choice !== 'personal' && !orgName.trim())}
+              disabled={
+                createOrg.isPending ||
+                (choice !== 'personal' && !orgName.trim())
+              }
             >
               {createOrg.isPending ? 'Creating...' : 'Continue'}
             </Button>
@@ -163,4 +171,3 @@ export function OnboardingFlow() {
     </div>
   );
 }
-

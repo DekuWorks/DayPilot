@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@daypilot/ui';
-import {
-  useExcludedDates,
-} from '@daypilot/lib';
+import { useExcludedDates } from '@daypilot/lib';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabaseClient } from '@daypilot/lib';
 
@@ -72,7 +70,8 @@ export function ExcludedDatesEditor({
     <div>
       <h2 className="text-xl font-semibold mb-4">Excluded Dates</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Add dates when this booking link should not be available (holidays, time off, etc.).
+        Add dates when this booking link should not be available (holidays, time
+        off, etc.).
       </p>
 
       <div className="space-y-4">
@@ -83,7 +82,7 @@ export function ExcludedDatesEditor({
               id="excluded-date"
               type="date"
               value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
+              onChange={e => setNewDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
             />
           </div>
@@ -92,7 +91,7 @@ export function ExcludedDatesEditor({
             <Input
               id="excluded-reason"
               value={newReason}
-              onChange={(e) => setNewReason(e.target.value)}
+              onChange={e => setNewReason(e.target.value)}
               placeholder="e.g., Holiday, Time off"
             />
           </div>
@@ -109,22 +108,27 @@ export function ExcludedDatesEditor({
 
         {excludedDates.length > 0 ? (
           <div className="space-y-2">
-            {excludedDates.map((excludedDate) => (
+            {excludedDates.map(excludedDate => (
               <div
                 key={excludedDate.id}
                 className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
               >
                 <div>
                   <p className="font-medium">
-                    {new Date(excludedDate.excluded_date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {new Date(excludedDate.excluded_date).toLocaleDateString(
+                      'en-US',
+                      {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )}
                   </p>
                   {excludedDate.reason && (
-                    <p className="text-sm text-gray-600">{excludedDate.reason}</p>
+                    <p className="text-sm text-gray-600">
+                      {excludedDate.reason}
+                    </p>
                   )}
                 </div>
                 <Button
@@ -148,4 +152,3 @@ export function ExcludedDatesEditor({
     </div>
   );
 }
-

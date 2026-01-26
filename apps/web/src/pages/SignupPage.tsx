@@ -59,7 +59,13 @@ export function SignupPage() {
 
   if (!isSupabaseConfigured()) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)' }}>
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          background:
+            'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)',
+        }}
+      >
         <Card className="max-w-md w-full">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
             <p className="font-semibold mb-2">Supabase not configured</p>
@@ -78,7 +84,13 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background:
+          'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)',
+      }}
+    >
       <Card className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-3">
@@ -162,7 +174,11 @@ export function SignupPage() {
                 className="w-full flex items-center justify-center gap-3"
                 onClick={() => handleSSO('apple')}
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                 </svg>
                 Continue with Apple
@@ -174,7 +190,9 @@ export function SignupPage() {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-[#4f4f4f]">Or continue with email</span>
+                <span className="px-2 bg-white text-[#4f4f4f]">
+                  Or continue with email
+                </span>
               </div>
             </div>
 
@@ -205,7 +223,7 @@ export function SignupPage() {
                   id="firstName"
                   type="text"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={e => setFirstName(e.target.value)}
                   required
                   placeholder="John"
                 />
@@ -216,7 +234,7 @@ export function SignupPage() {
                   id="lastName"
                   type="text"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={e => setLastName(e.target.value)}
                   required
                   placeholder="Doe"
                 />
@@ -228,7 +246,7 @@ export function SignupPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -238,7 +256,7 @@ export function SignupPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
               />
@@ -251,7 +269,10 @@ export function SignupPage() {
 
         <p className="text-center text-sm text-[#4f4f4f] mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#4FB3B3] hover:text-[#EFBF4D] font-medium">
+          <Link
+            to="/login"
+            className="text-[#4FB3B3] hover:text-[#EFBF4D] font-medium"
+          >
             Sign in
           </Link>
         </p>
@@ -259,4 +280,3 @@ export function SignupPage() {
     </div>
   );
 }
-

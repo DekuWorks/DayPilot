@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, Button } from '@daypilot/ui';
-import { isMigrationComplete, migrateLocalToSupabase, isUsingSupabaseStorage } from '@daypilot/lib';
+import {
+  isMigrationComplete,
+  migrateLocalToSupabase,
+  isUsingSupabaseStorage,
+} from '@daypilot/lib';
 
 export function MigrationBanner() {
   const [showBanner, setShowBanner] = useState(false);
@@ -15,7 +19,7 @@ export function MigrationBanner() {
     // Only show if Supabase storage is enabled and migration not complete
     const usingSupabase = isUsingSupabaseStorage();
     const completed = isMigrationComplete();
-    
+
     if (usingSupabase && !completed) {
       setShowBanner(true);
     }
@@ -50,17 +54,23 @@ export function MigrationBanner() {
             Migrate to Cloud Storage
           </h3>
           <p className="text-sm text-blue-800 mb-4">
-            Your data is currently stored locally. Migrate to Supabase to access your calendar from any device.
+            Your data is currently stored locally. Migrate to Supabase to access
+            your calendar from any device.
           </p>
           {migrationResult && (
-            <div className={`mb-4 p-3 rounded ${migrationResult.success ? 'bg-green-100' : 'bg-red-100'}`}>
+            <div
+              className={`mb-4 p-3 rounded ${migrationResult.success ? 'bg-green-100' : 'bg-red-100'}`}
+            >
               {migrationResult.success ? (
                 <p className="text-sm text-green-800">
-                  ✓ Migration complete! {migrationResult.migrated.events} events, {migrationResult.migrated.tasks} tasks migrated.
+                  ✓ Migration complete! {migrationResult.migrated.events}{' '}
+                  events, {migrationResult.migrated.tasks} tasks migrated.
                 </p>
               ) : (
                 <div>
-                  <p className="text-sm text-red-800 font-semibold mb-1">Migration had errors:</p>
+                  <p className="text-sm text-red-800 font-semibold mb-1">
+                    Migration had errors:
+                  </p>
                   <ul className="text-sm text-red-700 list-disc list-inside">
                     {migrationResult.errors.map((error, i) => (
                       <li key={i}>{error}</li>

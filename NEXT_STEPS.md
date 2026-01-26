@@ -13,10 +13,12 @@
 ## 🔴 **IMMEDIATE NEXT STEPS (Priority Order)**
 
 ### 1. **Booking Confirmation Page** ⚠️ CRITICAL
+
 **Status**: BookingPage redirects to `/book/:slug/confirmed` but page doesn't exist
 **Impact**: Users can't see booking confirmation after booking
 
 **What to Build**:
+
 - Create `apps/web/src/pages/BookingConfirmationPage.tsx`
 - Show booking details (date, time, booking link info)
 - Display confirmation token
@@ -28,15 +30,18 @@
 ---
 
 ### 2. **Email Notifications** 🔴 HIGH PRIORITY
+
 **Status**: No email system implemented
 **Impact**: Users don't get booking confirmations or reminders
 
 **Options**:
+
 - **Resend** (Recommended - Easy setup, great DX)
 - **SendGrid** (Reliable, enterprise-ready)
 - **Supabase Email** (Built-in, simpler but limited)
 
 **What to Build**:
+
 - Supabase Edge Function for sending emails
 - Booking confirmation emails (to booker + owner)
 - Reminder emails (if re-enabled)
@@ -47,8 +52,10 @@
 ---
 
 ### 3. **Test End-to-End Booking Flow** 🟡 MEDIUM
+
 **Status**: Need to verify everything works together
 **What to Test**:
+
 - Create booking link
 - Set availability
 - Book through public page
@@ -60,8 +67,10 @@
 ---
 
 ### 4. **Real AI Integration** 🟡 MEDIUM
+
 **Status**: Currently using placeholder/regex-based parsing
 **What to Build**:
+
 - Integrate OpenAI or Anthropic API
 - Replace `parseNaturalLanguage()` in `packages/lib/src/utils/ai.ts`
 - Replace `generateAISchedule()` with real AI
@@ -72,8 +81,10 @@
 ---
 
 ### 5. **External Calendar Sync** 🟢 LOW PRIORITY
+
 **Status**: UI placeholder exists
 **What to Build**:
+
 - Google Calendar OAuth
 - Outlook Calendar OAuth
 - Sync logic
@@ -90,6 +101,7 @@
 This is the quickest win and completes the booking flow. Users can currently book but don't see a confirmation, which creates a poor experience.
 
 **Quick Implementation**:
+
 1. Create confirmation page component
 2. Add route to App.tsx
 3. Show booking details and success message

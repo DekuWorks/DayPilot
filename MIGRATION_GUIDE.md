@@ -76,6 +76,7 @@ VITE_USE_SUPABASE_STORAGE=true
 ### 3. Run Data Migration
 
 The migration banner will appear in the dashboard when:
+
 - `VITE_USE_SUPABASE_STORAGE=true` is set
 - User is authenticated
 - Migration hasn't been completed
@@ -85,6 +86,7 @@ Users can click "Migrate Now" to move their localStorage data to Supabase.
 ### 4. Verify Migration
 
 Check that:
+
 - Events appear in Supabase `events` table
 - Tasks appear in `tasks` table
 - Attendees appear in `attendees` table
@@ -104,7 +106,7 @@ Components don't need to change - they use the same hooks (`getEvents`, `saveEve
 ### Email Flow
 
 1. **Event Invite**: When attendee is added → `send-event-invite` Edge Function
-2. **RSVP Update**: When RSVP changes → `send-rsvp-update` Edge Function  
+2. **RSVP Update**: When RSVP changes → `send-rsvp-update` Edge Function
 3. **Booking Confirmation**: When booking created → `send-booking-confirmation` Edge Function
 4. **Reminders**: Scheduled via `send-reminders` Edge Function (runs every 5 minutes)
 

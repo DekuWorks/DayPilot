@@ -5,6 +5,7 @@ Use this checklist to ensure everything is set up correctly before going live.
 ## Pre-Deployment
 
 ### Environment Setup
+
 - [ ] Production Supabase project created
 - [ ] All database migrations run on production
 - [ ] RLS policies verified
@@ -12,6 +13,7 @@ Use this checklist to ensure everything is set up correctly before going live.
 - [ ] Environment variables documented
 
 ### Code Quality
+
 - [ ] All tests passing (if applicable)
 - [ ] Linting passes: `pnpm lint`
 - [ ] Type checking passes: `pnpm type-check`
@@ -20,6 +22,7 @@ Use this checklist to ensure everything is set up correctly before going live.
 - [ ] No TypeScript errors
 
 ### Security
+
 - [ ] No API keys committed to repository
 - [ ] Environment variables set in hosting platform
 - [ ] RLS policies tested
@@ -29,6 +32,7 @@ Use this checklist to ensure everything is set up correctly before going live.
 ## Deployment
 
 ### Frontend
+
 - [ ] Deployed to hosting platform (Vercel/Netlify)
 - [ ] Environment variables configured
 - [ ] Custom domain configured (if applicable)
@@ -36,12 +40,14 @@ Use this checklist to ensure everything is set up correctly before going live.
 - [ ] Build artifacts correct
 
 ### Backend (Supabase)
+
 - [ ] Edge Functions deployed
 - [ ] Secrets configured (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`)
 - [ ] Database migrations applied
 - [ ] RLS policies active
 
 ### Cron Jobs
+
 - [ ] Reminder cron job configured (pg_cron or GitHub Actions)
 - [ ] Cron job tested and running
 - [ ] Monitoring set up for cron failures
@@ -49,12 +55,14 @@ Use this checklist to ensure everything is set up correctly before going live.
 ## Post-Deployment Testing
 
 ### Authentication
+
 - [ ] User signup works
 - [ ] User login works
 - [ ] Password reset works (if implemented)
 - [ ] Protected routes require authentication
 
 ### Core Features
+
 - [ ] Calendar view loads
 - [ ] Events can be created
 - [ ] Events can be edited
@@ -63,6 +71,7 @@ Use this checklist to ensure everything is set up correctly before going live.
 - [ ] Timezone handling correct
 
 ### Booking System
+
 - [ ] Booking links can be created
 - [ ] Availability rules work
 - [ ] Excluded dates work
@@ -72,12 +81,14 @@ Use this checklist to ensure everything is set up correctly before going live.
 - [ ] Booking confirmation emails sent
 
 ### Notifications
+
 - [ ] Reminder emails sent on schedule
 - [ ] Booking confirmation emails sent
 - [ ] Email templates render correctly
 - [ ] Email delivery successful
 
 ### Organizations
+
 - [ ] Organizations can be created
 - [ ] Members can be added
 - [ ] Permissions work correctly
@@ -86,16 +97,19 @@ Use this checklist to ensure everything is set up correctly before going live.
 ## Monitoring & Analytics
 
 ### Error Tracking
+
 - [ ] Error tracking service configured (Sentry, etc.)
 - [ ] Error alerts set up
 - [ ] Edge Function errors monitored
 
 ### Analytics
+
 - [ ] Analytics service configured (PostHog, etc.)
 - [ ] Key events tracked
 - [ ] User behavior tracked
 
 ### Performance
+
 - [ ] Page load times acceptable
 - [ ] API response times acceptable
 - [ ] Edge Function execution times monitored

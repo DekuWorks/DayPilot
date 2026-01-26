@@ -40,13 +40,15 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
       const tasks = parseNaturalLanguage(input);
 
       if (tasks.length === 0) {
-        setError('Could not parse any tasks from your input. Try being more specific.');
+        setError(
+          'Could not parse any tasks from your input. Try being more specific.'
+        );
         setIsGenerating(false);
         return;
       }
 
       // Get existing events for conflict detection
-      const existingEvents = events.map((e) => ({
+      const existingEvents = events.map(e => ({
         start: new Date(e.start),
         end: new Date(e.end),
       }));
@@ -66,7 +68,7 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
     if (!schedule) return;
 
     const defaultCalendarId =
-      calendars.find((c) => c.is_default)?.id || calendars[0]?.id;
+      calendars.find(c => c.is_default)?.id || calendars[0]?.id;
 
     if (!defaultCalendarId) {
       setError('No calendar available');
@@ -82,7 +84,12 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
           end: item.suggestedEnd.toISOString(),
           calendar_id: defaultCalendarId,
           status: 'scheduled',
-          color: item.task.priority === 'high' ? '#dc2626' : item.task.priority === 'medium' ? '#f59e0b' : '#059669',
+          color:
+            item.task.priority === 'high'
+              ? '#dc2626'
+              : item.task.priority === 'medium'
+                ? '#f59e0b'
+                : '#059669',
         });
       }
 
@@ -103,13 +110,14 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
           rows={4}
           placeholder="Describe what you need to do today... e.g., 'Team meeting at 2pm, finish report by 5pm, gym workout'"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={e => setInput(e.target.value)}
           disabled={isGenerating}
         />
         {!hasAIAccess ? (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 mb-2">
-              AI features require a subscription. Upgrade to enable AI scheduling.
+              AI features require a subscription. Upgrade to enable AI
+              scheduling.
             </p>
             <Link to="/app/billing">
               <Button className="w-full">Upgrade to Enable AI</Button>
@@ -201,9 +209,7 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
                         minute: '2-digit',
                       })}
                     </span>
-                    <span className="ml-2">
-                      ({item.task.duration} min)
-                    </span>
+                    <span className="ml-2">({item.task.duration} min)</span>
                   </div>
                 </div>
               ))}
@@ -214,8 +220,3 @@ export function AIQuickPlan({ onScheduleGenerated }: AIQuickPlanProps) {
     </Card>
   );
 }
-
-
-
-
-

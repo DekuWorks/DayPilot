@@ -29,7 +29,9 @@ export function verifyWebhookSignature(
 export async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
   switch (event.type) {
     case 'checkout.session.completed':
-      await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+      await handleCheckoutSessionCompleted(
+        event.data.object as Stripe.Checkout.Session
+      );
       break;
 
     case 'customer.subscription.created':
@@ -52,14 +54,26 @@ export async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
 /**
  * Handle checkout.session.completed
  */
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  if (session.mode !== 'subscription' || !session.customer || !session.subscription) {
+async function handleCheckoutSessionCompleted(
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  if (
+    session.mode !== 'subscription' ||
+    !session.customer ||
+    !session.subscription
+  ) {
     return;
   }
 
   const userId = session.metadata?.user_id;
-  const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id;
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+  const customerId =
+    typeof session.customer === 'string'
+      ? session.customer
+      : session.customer.id;
+  const subscriptionId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription.id;
 
   if (!userId) {
     console.error('No user_id in checkout session metadata');
@@ -67,14 +81,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   }
 
   // Upsert stripe customer
-  await supabase
-    .from('stripe_customers')
-    .upsert({
+  await supabase.from('stripe_customers').upsert(
+    {
       user_id: userId,
       stripe_customer_id: customerId,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -84,7 +99,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 /**
  * Handle customer.subscription.created
  */
-async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
+async function handleSubscriptionCreated(
+  subscription: Stripe.Subscription
+): Promise<void> {
   const userId = await getUserIdFromSubscription(subscription);
   if (!userId) return;
 
@@ -94,7 +111,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription): Pro
 /**
  * Handle customer.subscription.updated
  */
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription
+): Promise<void> {
   const userId = await getUserIdFromSubscription(subscription);
   if (!userId) return;
 
@@ -104,7 +123,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
 /**
  * Handle customer.subscription.deleted
  */
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription
+): Promise<void> {
   const userId = await getUserIdFromSubscription(subscription);
   if (!userId) return;
 
@@ -117,24 +138,28 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     .eq('stripe_subscription_id', subscription.id);
 
   // Reset entitlements to free tier
-  await supabase
-    .from('entitlements')
-    .upsert({
+  await supabase.from('entitlements').upsert(
+    {
       user_id: userId,
       tier: 'free',
       ai_enabled: false,
       ai_credits: 0,
       max_connected_calendars: 1,
       sync_frequency_minutes: 60,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 }
 
 /**
  * Upsert subscription and entitlements
  */
-async function upsertSubscription(subscription: Stripe.Subscription, userId: string): Promise<void> {
+async function upsertSubscription(
+  subscription: Stripe.Subscription,
+  userId: string
+): Promise<void> {
   // Get tier from price metadata or default
   const priceId = subscription.items.data[0]?.price.id;
   const price = priceId ? await stripe.prices.retrieve(priceId) : null;
@@ -144,36 +169,45 @@ async function upsertSubscription(subscription: Stripe.Subscription, userId: str
   const entitlements = getEntitlementsForTier(tier);
 
   // Upsert subscription
-  await supabase
-    .from('subscriptions')
-    .upsert({
+  await supabase.from('subscriptions').upsert(
+    {
       user_id: userId,
       stripe_subscription_id: subscription.id,
       status: subscription.status,
       tier,
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_end: new Date(
+        subscription.current_period_end * 1000
+      ).toISOString(),
       cancel_at_period_end: subscription.cancel_at_period_end,
-    }, {
+    },
+    {
       onConflict: 'stripe_subscription_id',
-    });
+    }
+  );
 
   // Upsert entitlements
-  await supabase
-    .from('entitlements')
-    .upsert({
+  await supabase.from('entitlements').upsert(
+    {
       user_id: userId,
       tier,
       ...entitlements,
-    }, {
+    },
+    {
       onConflict: 'user_id',
-    });
+    }
+  );
 }
 
 /**
  * Get user ID from subscription
  */
-async function getUserIdFromSubscription(subscription: Stripe.Subscription): Promise<string | null> {
-  const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+async function getUserIdFromSubscription(
+  subscription: Stripe.Subscription
+): Promise<string | null> {
+  const customerId =
+    typeof subscription.customer === 'string'
+      ? subscription.customer
+      : subscription.customer.id;
 
   // Get from stripe_customers table
   const { data } = await supabase

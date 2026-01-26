@@ -57,7 +57,9 @@ export function BookingForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {selectedDate && selectedTime && (
         <div className="mb-4 p-3 bg-[#4FB3B3]/10 border border-[#4FB3B3] rounded-lg">
-          <p className="text-sm font-medium text-[#2B3448] mb-1">Selected Time</p>
+          <p className="text-sm font-medium text-[#2B3448] mb-1">
+            Selected Time
+          </p>
           <p className="text-sm text-[#4f4f4f]">{formatSelectedDateTime()}</p>
         </div>
       )}
@@ -68,7 +70,7 @@ export function BookingForm({
           id="name"
           type="text"
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={e => setFormData({ ...formData, name: e.target.value })}
           placeholder="Your full name"
           required
         />
@@ -80,7 +82,7 @@ export function BookingForm({
           id="email"
           type="email"
           value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          onChange={e => setFormData({ ...formData, email: e.target.value })}
           placeholder="your.email@example.com"
           required
         />
@@ -92,7 +94,7 @@ export function BookingForm({
           id="phone"
           type="tel"
           value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          onChange={e => setFormData({ ...formData, phone: e.target.value })}
           placeholder="(555) 123-4567"
         />
       </div>
@@ -104,7 +106,7 @@ export function BookingForm({
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           rows={3}
           value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          onChange={e => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Any additional information..."
         />
       </div>

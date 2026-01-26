@@ -22,7 +22,11 @@ export function UIDemoPage() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="demo-input">Email</Label>
-            <Input id="demo-input" type="email" placeholder="Enter your email" />
+            <Input
+              id="demo-input"
+              type="email"
+              placeholder="Enter your email"
+            />
           </div>
           <div>
             <Label htmlFor="demo-password">Password</Label>
@@ -54,8 +58,3 @@ export function UIDemoPage() {
     </div>
   );
 }
-
-
-
-
-

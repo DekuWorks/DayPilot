@@ -22,7 +22,7 @@ function generateICS(
 
   let ics = 'BEGIN:VCALENDAR\r\n';
   ics += 'VERSION:2.0\r\n';
- ics += 'PRODID:-//DayPilot//Booking//EN\r\n';
+  ics += 'PRODID:-//DayPilot//Booking//EN\r\n';
   ics += 'CALSCALE:GREGORIAN\r\n';
   ics += 'METHOD:REQUEST\r\n';
   ics += 'BEGIN:VEVENT\r\n';
@@ -71,7 +71,9 @@ export function BookingConfirmationPage() {
 
   useEffect(() => {
     // Get booking from URL params or localStorage
-    const bookingId = new URLSearchParams(window.location.search).get('bookingId');
+    const bookingId = new URLSearchParams(window.location.search).get(
+      'bookingId'
+    );
     if (bookingId) {
       // In a real app, fetch booking by ID
       // For MVP, we'll use localStorage or URL params
@@ -88,7 +90,8 @@ export function BookingConfirmationPage() {
     const start = new Date(booking.start_time);
     const end = new Date(booking.end_time);
     const title = bookingLink.title || `Booking with ${booking.booker_name}`;
-    const description = booking.notes || `Booking confirmed for ${booking.booker_name}`;
+    const description =
+      booking.notes || `Booking confirmed for ${booking.booker_name}`;
 
     const ics = generateICS(
       title,
@@ -106,10 +109,15 @@ export function BookingConfirmationPage() {
 
   if (!booking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5E6D3' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
         <Card>
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">Booking Not Found</h1>
+            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">
+              Booking Not Found
+            </h1>
             <p className="text-gray-600 mb-6">
               Unable to find booking confirmation details.
             </p>
@@ -124,7 +132,10 @@ export function BookingConfirmationPage() {
   const end = new Date(booking.end_time);
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: '#F5E6D3' }}>
+    <div
+      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
+      style={{ background: '#F5E6D3' }}
+    >
       <div className="max-w-2xl mx-auto">
         <Card className="p-8">
           <div className="text-center mb-8">
@@ -143,7 +154,9 @@ export function BookingConfirmationPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-[#2B3448] mb-2">Booking Confirmed!</h1>
+            <h1 className="text-3xl font-bold text-[#2B3448] mb-2">
+              Booking Confirmed!
+            </h1>
             <p className="text-lg text-[#4f4f4f]">
               Your appointment has been successfully scheduled.
             </p>
@@ -152,12 +165,15 @@ export function BookingConfirmationPage() {
           <div className="space-y-6 mb-8">
             {/* Booking Details */}
             <div className="bg-gray-50 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-[#2B3448] mb-4">Booking Details</h2>
+              <h2 className="text-xl font-semibold text-[#2B3448] mb-4">
+                Booking Details
+              </h2>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Event</p>
                   <p className="font-medium text-[#2B3448]">
-                    {bookingLink?.title || `Booking with ${booking.booker_name}`}
+                    {bookingLink?.title ||
+                      `Booking with ${booking.booker_name}`}
                   </p>
                 </div>
                 <div>
@@ -187,7 +203,9 @@ export function BookingConfirmationPage() {
                 {booking.notes && (
                   <div>
                     <p className="text-sm text-gray-600">Notes</p>
-                    <p className="font-medium text-[#2B3448]">{booking.notes}</p>
+                    <p className="font-medium text-[#2B3448]">
+                      {booking.notes}
+                    </p>
                   </div>
                 )}
               </div>
@@ -195,11 +213,18 @@ export function BookingConfirmationPage() {
 
             {/* Calendar Summary */}
             <div className="bg-blue-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-[#2B3448] mb-2">Add to Calendar</h3>
+              <h3 className="text-lg font-semibold text-[#2B3448] mb-2">
+                Add to Calendar
+              </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Download a calendar file to add this booking to your calendar app.
+                Download a calendar file to add this booking to your calendar
+                app.
               </p>
-              <Button onClick={handleDownloadICS} variant="outline" className="w-full">
+              <Button
+                onClick={handleDownloadICS}
+                variant="outline"
+                className="w-full"
+              >
                 📅 Download .ics File
               </Button>
             </div>

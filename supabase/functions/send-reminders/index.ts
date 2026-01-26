@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@daypilot.app';
+const RESEND_FROM_EMAIL =
+  Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@daypilot.app';
 
 interface ReminderData {
   id: string;
@@ -29,14 +30,14 @@ interface ReminderData {
   };
 }
 
-serve(async (req) => {
+serve(async req => {
   try {
     // Only allow POST requests
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -52,7 +53,8 @@ serve(async (req) => {
     // Check reminders table (new structure) and event_reminders (legacy)
     const { data: newReminders, error: newRemindersError } = await supabase
       .from('reminders')
-      .select(`
+      .select(
+        `
         id,
         event_id,
         send_at,
@@ -71,14 +73,16 @@ serve(async (req) => {
             name
           )
         )
-      `)
+      `
+      )
       .eq('status', 'pending')
       .lte('send_at', nowISO);
 
     // Also check legacy event_reminders table
     const { data: legacyReminders, error: legacyError } = await supabase
       .from('event_reminders')
-      .select(`
+      .select(
+        `
         id,
         event_id,
         reminder_type,
@@ -101,14 +105,18 @@ serve(async (req) => {
             )
           )
         )
-      `)
+      `
+      )
       .is('sent_at', null)
       .in('reminder_type', ['email', 'default', 'custom']);
 
     if (queryError) {
       console.error('Error querying reminders:', queryError);
       return new Response(
-        JSON.stringify({ error: 'Failed to query reminders', details: queryError.message }),
+        JSON.stringify({
+          error: 'Failed to query reminders',
+          details: queryError.message,
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -122,14 +130,16 @@ serve(async (req) => {
 
     // Filter reminders that are actually due
     const dueReminders: ReminderData[] = [];
-    
+
     for (const reminder of reminders) {
       const event = reminder.events as any;
       if (!event) continue;
 
       const eventStart = new Date(event.start);
-      const reminderTime = new Date(eventStart.getTime() - reminder.minutes_before * 60 * 1000);
-      
+      const reminderTime = new Date(
+        eventStart.getTime() - reminder.minutes_before * 60 * 1000
+      );
+
       // Check if reminder is due (within the last 5 minutes to avoid missing it)
       const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
       if (reminderTime <= now && reminderTime >= fiveMinutesAgo) {
@@ -169,14 +179,14 @@ serve(async (req) => {
 
     // Send emails for due reminders
     const results = [];
-    
+
     for (const reminder of dueReminders) {
       try {
         // Format event time
         const eventStart = new Date(reminder.event.start);
         const eventEnd = new Date(reminder.event.end);
         const timezone = reminder.event.timezone || 'UTC';
-        
+
         const formattedStart = eventStart.toLocaleString('en-US', {
           weekday: 'long',
           year: 'numeric',
@@ -186,7 +196,7 @@ serve(async (req) => {
           minute: '2-digit',
           timeZone: timezone,
         });
-        
+
         const formattedEnd = eventEnd.toLocaleString('en-US', {
           hour: 'numeric',
           minute: '2-digit',
@@ -253,7 +263,11 @@ View your calendar: ${supabaseUrl.replace('/rest/v1', '')}/app/calendar
         // Send email via Resend
         if (!RESEND_API_KEY) {
           console.error('RESEND_API_KEY not configured');
-          results.push({ reminder_id: reminder.id, status: 'error', error: 'Email service not configured' });
+          results.push({
+            reminder_id: reminder.id,
+            status: 'error',
+            error: 'Email service not configured',
+          });
           continue;
         }
 
@@ -261,7 +275,7 @@ View your calendar: ${supabaseUrl.replace('/rest/v1', '')}/app/calendar
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
             from: RESEND_FROM_EMAIL,
@@ -275,7 +289,11 @@ View your calendar: ${supabaseUrl.replace('/rest/v1', '')}/app/calendar
         if (!emailResponse.ok) {
           const errorData = await emailResponse.text();
           console.error('Error sending email:', errorData);
-          results.push({ reminder_id: reminder.id, status: 'error', error: errorData });
+          results.push({
+            reminder_id: reminder.id,
+            status: 'error',
+            error: errorData,
+          });
           continue;
         }
 
@@ -287,13 +305,25 @@ View your calendar: ${supabaseUrl.replace('/rest/v1', '')}/app/calendar
 
         if (updateError) {
           console.error('Error updating reminder:', updateError);
-          results.push({ reminder_id: reminder.id, status: 'error', error: updateError.message });
+          results.push({
+            reminder_id: reminder.id,
+            status: 'error',
+            error: updateError.message,
+          });
         } else {
-          results.push({ reminder_id: reminder.id, status: 'sent', email: reminder.event.calendar.owner.email });
+          results.push({
+            reminder_id: reminder.id,
+            status: 'sent',
+            email: reminder.event.calendar.owner.email,
+          });
         }
       } catch (error: any) {
         console.error('Error processing reminder:', error);
-        results.push({ reminder_id: reminder.id, status: 'error', error: error.message });
+        results.push({
+          reminder_id: reminder.id,
+          status: 'error',
+          error: error.message,
+        });
       }
     }
 
@@ -308,7 +338,10 @@ View your calendar: ${supabaseUrl.replace('/rest/v1', '')}/app/calendar
   } catch (error: any) {
     console.error('Error in send-reminders function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

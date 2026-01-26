@@ -34,8 +34,3 @@ export function isToday(date: string | Date): boolean {
     dateObject.getFullYear() === today.getFullYear()
   );
 }
-
-
-
-
-

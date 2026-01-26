@@ -15,9 +15,17 @@ import { BookingForm } from '../components/BookingForm';
 export function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { data: bookingLink, isLoading, error } = useBookingLinkBySlug(slug || null);
-  const { data: availabilityRules = [] } = useAvailabilityRules(bookingLink?.id || null);
-  const { data: excludedDates = [] } = useExcludedDates(bookingLink?.id || null);
+  const {
+    data: bookingLink,
+    isLoading,
+    error,
+  } = useBookingLinkBySlug(slug || null);
+  const { data: availabilityRules = [] } = useAvailabilityRules(
+    bookingLink?.id || null
+  );
+  const { data: excludedDates = [] } = useExcludedDates(
+    bookingLink?.id || null
+  );
   const { data: existingBookings = [] } = useBookings(bookingLink?.id || null);
   const createBooking = useCreateBooking();
   const sendEmail = useSendEmail();
@@ -28,7 +36,10 @@ export function BookingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5E6D3' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
         <Card>
           <div className="animate-pulse space-y-4">
             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -41,14 +52,21 @@ export function BookingPage() {
 
   if (error || !bookingLink || !bookingLink.is_active) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5E6D3' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: '#F5E6D3' }}
+      >
         <Card>
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">Booking Link Not Found</h1>
+            <h1 className="text-2xl font-bold text-[#2B3448] mb-4">
+              Booking Link Not Found
+            </h1>
             <p className="text-gray-600 mb-6">
               This booking link doesn't exist or is no longer active.
             </p>
-            <Button onClick={() => (window.location.href = '/')}>Go to Home</Button>
+            <Button onClick={() => (window.location.href = '/')}>
+              Go to Home
+            </Button>
           </div>
         </Card>
       </div>
@@ -99,7 +117,10 @@ export function BookingPage() {
 
       // Store booking in sessionStorage for confirmation page
       if (booking?.id) {
-        sessionStorage.setItem(`booking_${booking.id}`, JSON.stringify(booking));
+        sessionStorage.setItem(
+          `booking_${booking.id}`,
+          JSON.stringify(booking)
+        );
       }
 
       // Create event in storage (localStorage or Supabase)
@@ -109,7 +130,8 @@ export function BookingPage() {
         const newEvent = {
           id: `event-${Date.now()}`,
           title: `Booking: ${formData.name}`,
-          description: formData.notes || `Booked by ${formData.name} (${formData.email})`,
+          description:
+            formData.notes || `Booked by ${formData.name} (${formData.email})`,
           start: startTimeISO,
           end: endTimeISO,
           status: 'scheduled' as const,
@@ -125,11 +147,13 @@ export function BookingPage() {
 
       // Send booking confirmation email
       try {
-        const { bookingConfirmationTemplate } = await import('../emails/templates');
+        const { bookingConfirmationTemplate } = await import(
+          '../emails/templates'
+        );
         const start = new Date(startTimeISO);
         const end = new Date(endTimeISO);
         const calendarLink = `${window.location.origin}/book/${slug}/confirmed?bookingId=${booking?.id || Date.now()}`;
-        
+
         const template = bookingConfirmationTemplate({
           bookingTitle: bookingLink.title || 'Booking',
           bookerName: formData.name,
@@ -145,7 +169,7 @@ export function BookingPage() {
           notes: formData.notes,
           calendarLink,
         });
-        
+
         await sendEmail.mutateAsync({
           to: formData.email,
           template,
@@ -156,7 +180,9 @@ export function BookingPage() {
       }
 
       // Navigate to confirmation page
-      navigate(`/book/${slug}/confirmed?bookingId=${booking?.id || Date.now()}`);
+      navigate(
+        `/book/${slug}/confirmed?bookingId=${booking?.id || Date.now()}`
+      );
     } catch (error: any) {
       alert('Error creating booking: ' + error.message);
     } finally {
@@ -165,7 +191,10 @@ export function BookingPage() {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: '#F5E6D3' }}>
+    <div
+      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8"
+      style={{ background: '#F5E6D3' }}
+    >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -185,7 +214,9 @@ export function BookingPage() {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Calendar & Time Selection */}
           <Card>
-            <h2 className="text-xl font-semibold mb-4 text-[#2B3448]">Select Date & Time</h2>
+            <h2 className="text-xl font-semibold mb-4 text-[#2B3448]">
+              Select Date & Time
+            </h2>
             <BookingCalendar
               bookingLink={bookingLink}
               availabilityRules={availabilityRules}
@@ -199,7 +230,9 @@ export function BookingPage() {
 
           {/* Booking Form */}
           <Card>
-            <h2 className="text-xl font-semibold mb-4 text-[#2B3448]">Your Information</h2>
+            <h2 className="text-xl font-semibold mb-4 text-[#2B3448]">
+              Your Information
+            </h2>
             <BookingForm
               onSubmit={handleBookingSubmit}
               isSubmitting={isSubmitting}

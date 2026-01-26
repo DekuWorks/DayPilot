@@ -42,15 +42,16 @@ export function CalendarPage() {
     all_day: false,
     color: '',
     icon: '',
-    calendar_id: calendars.find((c) => c.is_default)?.id || calendars[0]?.id || '',
+    calendar_id:
+      calendars.find(c => c.is_default)?.id || calendars[0]?.id || '',
     recurrence_rule: null as string | null,
     recurrence_end_date: null as string | null,
   });
 
   // Filter events by visible calendars
-  const visibleCalendars = calendars.filter((cal) => cal.is_visible !== false);
-  const visibleCalendarIds = new Set(visibleCalendars.map((cal) => cal.id));
-  const filteredEvents = events.filter((event) =>
+  const visibleCalendars = calendars.filter(cal => cal.is_visible !== false);
+  const visibleCalendarIds = new Set(visibleCalendars.map(cal => cal.id));
+  const filteredEvents = events.filter(event =>
     visibleCalendarIds.has(event.calendar_id)
   );
 
@@ -72,16 +73,14 @@ export function CalendarPage() {
   const viewStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const viewEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
 
-  filteredEvents.forEach((event) => {
-    const calendar = calendars.find((c) => c.id === event.calendar_id);
-    const baseTitle = event.icon
-      ? `${event.icon} ${event.title}`
-      : event.title;
+  filteredEvents.forEach(event => {
+    const calendar = calendars.find(c => c.id === event.calendar_id);
+    const baseTitle = event.icon ? `${event.icon} ${event.title}` : event.title;
 
     if (event.recurrence_rule && !event.is_recurring_instance) {
       // Expand recurring event
       const instances = expandRecurringEvent(event, viewStart, viewEnd);
-      instances.forEach((instance) => {
+      instances.forEach(instance => {
         calendarEvents.push({
           id: `${event.id}-${instance.start.getTime()}`,
           title: baseTitle,
@@ -127,7 +126,7 @@ export function CalendarPage() {
   });
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const event = events.find((e) => e.id === clickInfo.event.id);
+    const event = events.find(e => e.id === clickInfo.event.id);
     if (event) {
       setSelectedEvent(event);
       const startDate = new Date(event.start);
@@ -169,7 +168,7 @@ export function CalendarPage() {
       color: '',
       icon: '',
       calendar_id:
-        calendars.find((c) => c.is_default)?.id || calendars[0]?.id || '',
+        calendars.find(c => c.is_default)?.id || calendars[0]?.id || '',
       recurrence_rule: null,
       recurrence_end_date: null,
     });
@@ -179,7 +178,7 @@ export function CalendarPage() {
   };
 
   const handleEventDrop = async (dropInfo: EventDropArg) => {
-    const event = events.find((e) => e.id === dropInfo.event.id);
+    const event = events.find(e => e.id === dropInfo.event.id);
     if (!event) return;
 
     try {
@@ -188,7 +187,8 @@ export function CalendarPage() {
         dropInfo.revert();
         return;
       }
-      const newEnd = dropInfo.event.end || new Date(newStart.getTime() + 3600000);
+      const newEnd =
+        dropInfo.event.end || new Date(newStart.getTime() + 3600000);
 
       await updateEvent.mutateAsync({
         id: event.id,
@@ -202,7 +202,7 @@ export function CalendarPage() {
   };
 
   const handleEventResize = async (resizeInfo: EventResizeDoneArg) => {
-    const event = events.find((e) => e.id === resizeInfo.event.id);
+    const event = events.find(e => e.id === resizeInfo.event.id);
     if (!event) return;
 
     try {
@@ -211,7 +211,8 @@ export function CalendarPage() {
         resizeInfo.revert();
         return;
       }
-      const newEnd = resizeInfo.event.end || new Date(newStart.getTime() + 3600000);
+      const newEnd =
+        resizeInfo.event.end || new Date(newStart.getTime() + 3600000);
 
       await updateEvent.mutateAsync({
         id: event.id,
@@ -282,7 +283,6 @@ export function CalendarPage() {
     }
   };
 
-
   if (isLoading) {
     return (
       <div>
@@ -310,7 +310,9 @@ export function CalendarPage() {
                 color: '',
                 icon: '',
                 calendar_id:
-                  calendars.find((c) => c.is_default)?.id || calendars[0]?.id || '',
+                  calendars.find(c => c.is_default)?.id ||
+                  calendars[0]?.id ||
+                  '',
                 recurrence_rule: null,
                 recurrence_end_date: null,
               });
@@ -336,7 +338,8 @@ export function CalendarPage() {
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridThreeDay,timeGridDay,listWeek',
+            right:
+              'dayGridMonth,timeGridWeek,timeGridThreeDay,timeGridDay,listWeek',
           }}
           views={{
             timeGridThreeDay: {
@@ -378,7 +381,7 @@ export function CalendarPage() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, title: e.target.value })
                   }
                   required
@@ -390,7 +393,7 @@ export function CalendarPage() {
                   id="description"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   value={formData.description}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, description: e.target.value })
                   }
                   rows={3}
@@ -401,13 +404,13 @@ export function CalendarPage() {
                 <select
                   id="calendar_id"
                   value={formData.calendar_id}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, calendar_id: e.target.value })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 >
-                  {calendars.map((calendar) => (
+                  {calendars.map(calendar => (
                     <option key={calendar.id} value={calendar.id}>
                       {calendar.name}
                     </option>
@@ -419,7 +422,7 @@ export function CalendarPage() {
                   type="checkbox"
                   id="all_day"
                   checked={formData.all_day}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, all_day: e.target.checked })
                   }
                   className="w-4 h-4"
@@ -436,19 +439,21 @@ export function CalendarPage() {
                   id="start"
                   type={formData.all_day ? 'date' : 'datetime-local'}
                   value={formData.start}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, start: e.target.value })
                   }
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="end">{formData.all_day ? 'End Date' : 'End'}</Label>
+                <Label htmlFor="end">
+                  {formData.all_day ? 'End Date' : 'End'}
+                </Label>
                 <Input
                   id="end"
                   type={formData.all_day ? 'date' : 'datetime-local'}
                   value={formData.end}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, end: e.target.value })
                   }
                   required
@@ -461,7 +466,7 @@ export function CalendarPage() {
                   type="text"
                   placeholder="🎯 📅 ⚡"
                   value={formData.icon}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, icon: e.target.value })
                   }
                   maxLength={2}
@@ -474,7 +479,7 @@ export function CalendarPage() {
                     id="color"
                     type="color"
                     value={formData.color || '#059669'}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, color: e.target.value })
                     }
                     className="w-20 h-10"
@@ -482,7 +487,7 @@ export function CalendarPage() {
                   <Input
                     type="text"
                     value={formData.color || ''}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, color: e.target.value })
                     }
                     placeholder="#059669"

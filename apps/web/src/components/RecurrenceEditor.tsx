@@ -22,18 +22,21 @@ export function RecurrenceEditor({
         interval: 1,
         endType: 'never' as const,
         occurrences: 10,
-        endDate: recurrenceEndDate ? new Date(recurrenceEndDate).toISOString().slice(0, 10) : '',
+        endDate: recurrenceEndDate
+          ? new Date(recurrenceEndDate).toISOString().slice(0, 10)
+          : '',
       };
     }
 
     try {
       const rule = RRule.fromString(recurrenceRule);
-      const freqMap: Record<number, 'daily' | 'weekly' | 'monthly' | 'yearly'> = {
-        [RRule.DAILY]: 'daily',
-        [RRule.WEEKLY]: 'weekly',
-        [RRule.MONTHLY]: 'monthly',
-        [RRule.YEARLY]: 'yearly',
-      };
+      const freqMap: Record<number, 'daily' | 'weekly' | 'monthly' | 'yearly'> =
+        {
+          [RRule.DAILY]: 'daily',
+          [RRule.WEEKLY]: 'weekly',
+          [RRule.MONTHLY]: 'monthly',
+          [RRule.YEARLY]: 'yearly',
+        };
 
       return {
         isRecurring: true,
@@ -118,7 +121,8 @@ export function RecurrenceEditor({
     const rule = new RRule(options);
     const ruleString = rule.toString();
 
-    const finalEndDate = endType === 'on' && endDate ? new Date(endDate).toISOString() : null;
+    const finalEndDate =
+      endType === 'on' && endDate ? new Date(endDate).toISOString() : null;
 
     onRecurrenceChange(ruleString, finalEndDate);
   };
@@ -137,7 +141,7 @@ export function RecurrenceEditor({
           type="checkbox"
           id="recurring"
           checked={isRecurring}
-          onChange={(e) => handleToggle(e.target.checked)}
+          onChange={e => handleToggle(e.target.checked)}
           className="w-4 h-4"
         />
         <Label htmlFor="recurring" className="mb-0 font-semibold">
@@ -152,7 +156,7 @@ export function RecurrenceEditor({
             <select
               id="frequency"
               value={frequency}
-              onChange={(e) => {
+              onChange={e => {
                 setFrequency(e.target.value as any);
                 updateRule();
               }}
@@ -173,7 +177,7 @@ export function RecurrenceEditor({
                 type="number"
                 min="1"
                 value={interval}
-                onChange={(e) => {
+                onChange={e => {
                   setInterval(parseInt(e.target.value) || 1);
                   updateRule();
                 }}
@@ -197,7 +201,7 @@ export function RecurrenceEditor({
                   name="endType"
                   value="never"
                   checked={endType === 'never'}
-                  onChange={(e) => {
+                  onChange={e => {
                     setEndType(e.target.value as any);
                     updateRule();
                   }}
@@ -211,7 +215,7 @@ export function RecurrenceEditor({
                   name="endType"
                   value="after"
                   checked={endType === 'after'}
-                  onChange={(e) => {
+                  onChange={e => {
                     setEndType(e.target.value as any);
                     updateRule();
                   }}
@@ -222,7 +226,7 @@ export function RecurrenceEditor({
                   type="number"
                   min="1"
                   value={occurrences}
-                  onChange={(e) => {
+                  onChange={e => {
                     setOccurrences(parseInt(e.target.value) || 1);
                     updateRule();
                   }}
@@ -237,7 +241,7 @@ export function RecurrenceEditor({
                   name="endType"
                   value="on"
                   checked={endType === 'on'}
-                  onChange={(e) => {
+                  onChange={e => {
                     setEndType(e.target.value as any);
                     updateRule();
                   }}
@@ -247,7 +251,7 @@ export function RecurrenceEditor({
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(e) => {
+                  onChange={e => {
                     setEndDate(e.target.value);
                     updateRule();
                   }}
@@ -262,4 +266,3 @@ export function RecurrenceEditor({
     </div>
   );
 }
-

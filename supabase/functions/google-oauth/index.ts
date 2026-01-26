@@ -6,7 +6,7 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
 const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'http://localhost:5174';
 const REDIRECT_URI = `${FRONTEND_URL}/app/integrations/google/callback`;
 
-serve(async (req) => {
+serve(async req => {
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
@@ -20,20 +20,23 @@ serve(async (req) => {
       // Get auth token from request
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
       const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
 
       if (authError || !user) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -61,10 +64,10 @@ serve(async (req) => {
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-      return new Response(
-        JSON.stringify({ url: authUrl }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ url: authUrl }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     if (action === 'callback') {
@@ -73,15 +76,21 @@ serve(async (req) => {
       const error = url.searchParams.get('error');
 
       if (error) {
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=${encodeURIComponent(error)}`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=${encodeURIComponent(error)}`
+        );
       }
 
       if (!code || !state) {
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=missing_code`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=missing_code`
+        );
       }
 
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=oauth_not_configured`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=oauth_not_configured`
+        );
       }
 
       // Exchange code for tokens
@@ -102,20 +111,27 @@ serve(async (req) => {
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.text();
         console.error('Token exchange error:', errorData);
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=token_exchange_failed`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=token_exchange_failed`
+        );
       }
 
       const tokens = await tokenResponse.json();
 
       // Get user info from Google
-      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      });
+      const userInfoResponse = await fetch(
+        'https://www.googleapis.com/oauth2/v2/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+          },
+        }
+      );
 
       if (!userInfoResponse.ok) {
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=user_info_failed`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=user_info_failed`
+        );
       }
 
       const userInfo = await userInfoResponse.json();
@@ -127,36 +143,46 @@ serve(async (req) => {
 
       const { error: dbError } = await supabase
         .from('connected_accounts')
-        .upsert({
-          user_id: state,
-          provider: 'google',
-          provider_account_id: userInfo.id,
-          email: userInfo.email,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          token_expires_at: tokenExpiresAt,
-          scope: tokens.scope,
-          is_active: true,
-        }, {
-          onConflict: 'user_id,provider,provider_account_id',
-        });
+        .upsert(
+          {
+            user_id: state,
+            provider: 'google',
+            provider_account_id: userInfo.id,
+            email: userInfo.email,
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            token_expires_at: tokenExpiresAt,
+            scope: tokens.scope,
+            is_active: true,
+          },
+          {
+            onConflict: 'user_id,provider,provider_account_id',
+          }
+        );
 
       if (dbError) {
         console.error('Database error:', dbError);
-        return Response.redirect(`${FRONTEND_URL}/app/integrations?error=database_error`);
+        return Response.redirect(
+          `${FRONTEND_URL}/app/integrations?error=database_error`
+        );
       }
 
-      return Response.redirect(`${FRONTEND_URL}/app/integrations?success=connected`);
+      return Response.redirect(
+        `${FRONTEND_URL}/app/integrations?success=connected`
+      );
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Invalid action' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error: any) {
     console.error('Error in google-oauth function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -23,13 +23,13 @@ interface AIBlock {
   description?: string;
 }
 
-serve(async (req) => {
+serve(async req => {
   try {
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client
@@ -40,20 +40,23 @@ serve(async (req) => {
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Check AI entitlement
@@ -64,9 +67,9 @@ serve(async (req) => {
 
     if (entitlementError || !entitlement) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'AI features not available',
-          message: 'You need AI enabled or credits to use this feature'
+          message: 'You need AI enabled or credits to use this feature',
         }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
@@ -80,7 +83,9 @@ serve(async (req) => {
     // Get user profile with preferences
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('timezone, working_hours_start, working_hours_end, focus_block_duration')
+      .select(
+        'timezone, working_hours_start, working_hours_end, focus_block_duration'
+      )
       .eq('id', user.id)
       .single();
 
@@ -104,13 +109,13 @@ serve(async (req) => {
       .eq('owner_id', user.id);
 
     if (calendarsError || !userCalendars || userCalendars.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'No calendars found' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'No calendars found' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const calendarIds = userCalendars.map((c) => c.id);
+    const calendarIds = userCalendars.map(c => c.id);
 
     // Get today's events
     const { data: events, error: eventsError } = await supabase
@@ -123,10 +128,10 @@ serve(async (req) => {
       .order('start', { ascending: true });
 
     if (eventsError) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to load events' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Failed to load events' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Get backlog tasks (for now, we'll use the provided backlog or empty array)
@@ -164,7 +169,10 @@ serve(async (req) => {
     // Sort backlog by priority
     const sortedTasks = [...backlogTasks].sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return (priorityOrder[b.priority || 'medium'] || 2) - (priorityOrder[a.priority || 'medium'] || 2);
+      return (
+        (priorityOrder[b.priority || 'medium'] || 2) -
+        (priorityOrder[a.priority || 'medium'] || 2)
+      );
     });
 
     for (const task of sortedTasks) {
@@ -181,7 +189,7 @@ serve(async (req) => {
       }
 
       // Check for conflicts with existing events
-      const hasConflict = existingBlocks.some((block) => {
+      const hasConflict = existingBlocks.some(block => {
         const blockStart = new Date(block.start);
         const blockEnd = new Date(block.end);
         return (
@@ -202,7 +210,7 @@ serve(async (req) => {
             nextEnd.setMinutes(nextEnd.getMinutes() + duration);
 
             if (nextEnd <= dayEndTime) {
-              const nextConflict = existingBlocks.some((b) => {
+              const nextConflict = existingBlocks.some(b => {
                 const bStart = new Date(b.start);
                 const bEnd = new Date(b.end);
                 return (
@@ -242,8 +250,8 @@ serve(async (req) => {
     }
 
     // Combine existing events and new blocks, sort by start time
-    const allBlocks = [...existingBlocks, ...blocks].sort((a, b) => 
-      new Date(a.start).getTime() - new Date(b.start).getTime()
+    const allBlocks = [...existingBlocks, ...blocks].sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()
     );
 
     // Add breaks between long blocks
@@ -254,7 +262,8 @@ serve(async (req) => {
       if (i < allBlocks.length - 1) {
         const currentEnd = new Date(allBlocks[i].end);
         const nextStart = new Date(allBlocks[i + 1].start);
-        const gapMinutes = (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60);
+        const gapMinutes =
+          (nextStart.getTime() - currentEnd.getTime()) / (1000 * 60);
 
         if (gapMinutes > 30 && gapMinutes < 120) {
           // Add a break
@@ -310,7 +319,10 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in generate-day function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error.message,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

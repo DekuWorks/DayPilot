@@ -49,4 +49,3 @@ export interface WeeklyInsights {
     totalMinutes: number;
   }>;
 }
-

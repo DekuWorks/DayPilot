@@ -30,12 +30,15 @@ export function EmailPreferences() {
 
   return (
     <Card className="sidebar-card p-6">
-      <h3 className="text-lg font-bold text-[var(--text)] mb-4">Email Preferences</h3>
-      
+      <h3 className="text-lg font-bold text-[var(--text)] mb-4">
+        Email Preferences
+      </h3>
+
       {!emailEnabled && (
         <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded">
           <p className="text-sm text-yellow-800">
-            Email notifications are not configured. Emails will be logged but not sent.
+            Email notifications are not configured. Emails will be logged but
+            not sent.
           </p>
         </div>
       )}
@@ -55,8 +58,11 @@ export function EmailPreferences() {
             <input
               type="checkbox"
               checked={preferences.remindersEnabled}
-              onChange={(e) =>
-                setPreferences({ ...preferences, remindersEnabled: e.target.checked })
+              onChange={e =>
+                setPreferences({
+                  ...preferences,
+                  remindersEnabled: e.target.checked,
+                })
               }
               className="sr-only peer"
             />
@@ -67,7 +73,10 @@ export function EmailPreferences() {
         {/* Default Reminder Time */}
         {preferences.remindersEnabled && (
           <div>
-            <Label htmlFor="reminder-minutes" className="text-sm font-semibold text-[var(--text)] mb-2 block">
+            <Label
+              htmlFor="reminder-minutes"
+              className="text-sm font-semibold text-[var(--text)] mb-2 block"
+            >
               Default Reminder Time
             </Label>
             <div className="flex items-center gap-2">
@@ -78,7 +87,7 @@ export function EmailPreferences() {
                 max="1440"
                 step="5"
                 value={preferences.defaultReminderMinutes}
-                onChange={(e) =>
+                onChange={e =>
                   setPreferences({
                     ...preferences,
                     defaultReminderMinutes: parseInt(e.target.value) || 30,
@@ -86,19 +95,18 @@ export function EmailPreferences() {
                 }
                 className="flex-1"
               />
-              <span className="text-sm text-[var(--muted)]">minutes before</span>
+              <span className="text-sm text-[var(--muted)]">
+                minutes before
+              </span>
             </div>
             <p className="text-xs text-[var(--muted)] mt-1">
-              Events will be reminded {preferences.defaultReminderMinutes} minutes before start time
+              Events will be reminded {preferences.defaultReminderMinutes}{' '}
+              minutes before start time
             </p>
           </div>
         )}
 
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full"
-        >
+        <Button onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? 'Saving...' : 'Save Preferences'}
         </Button>
       </div>

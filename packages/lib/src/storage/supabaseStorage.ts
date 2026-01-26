@@ -30,7 +30,9 @@ interface LocalEvent {
 
 export async function getEvents(): Promise<LocalEvent[]> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabaseClient
@@ -55,7 +57,9 @@ export async function getEvents(): Promise<LocalEvent[]> {
       all_day: e.all_day || false,
       color: e.color,
       icon: e.icon,
-      recurrence_rule: e.recurrence_rule ? JSON.stringify(e.recurrence_rule) : null,
+      recurrence_rule: e.recurrence_rule
+        ? JSON.stringify(e.recurrence_rule)
+        : null,
       recurrence_end_date: e.recurrence_end_date,
       parent_event_id: e.parent_event_id,
       category_id: e.category_id,
@@ -69,7 +73,9 @@ export async function getEvents(): Promise<LocalEvent[]> {
 
 export async function saveEvents(events: LocalEvent[]): Promise<void> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     // Upsert events
@@ -85,18 +91,20 @@ export async function saveEvents(events: LocalEvent[]): Promise<void> {
         all_day: event.all_day || false,
         color: event.color,
         icon: event.icon,
-        recurrence_rule: event.recurrence_rule ? (typeof event.recurrence_rule === 'string' ? JSON.parse(event.recurrence_rule) : event.recurrence_rule) : null,
+        recurrence_rule: event.recurrence_rule
+          ? typeof event.recurrence_rule === 'string'
+            ? JSON.parse(event.recurrence_rule)
+            : event.recurrence_rule
+          : null,
         recurrence_end_date: event.recurrence_end_date,
         parent_event_id: event.parent_event_id,
         category_id: event.category_id,
         calendar_id: event.calendar_id || null,
       };
-      
-      const { error } = await supabaseClient
-        .from('events')
-        .upsert(eventData, {
-          onConflict: 'id',
-        });
+
+      const { error } = await supabaseClient.from('events').upsert(eventData, {
+        onConflict: 'id',
+      });
 
       if (error) {
         console.error('Error saving event:', error);
@@ -113,7 +121,9 @@ export async function saveEvents(events: LocalEvent[]): Promise<void> {
 
 export async function getTasks(): Promise<Task[]> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabaseClient
@@ -149,13 +159,14 @@ export async function getTasks(): Promise<Task[]> {
 
 export async function saveTasks(tasks: Task[]): Promise<void> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     for (const task of tasks) {
-      const { error } = await supabaseClient
-        .from('tasks')
-        .upsert({
+      const { error } = await supabaseClient.from('tasks').upsert(
+        {
           id: task.id,
           user_id: user.id,
           title: task.title,
@@ -166,9 +177,11 @@ export async function saveTasks(tasks: Task[]): Promise<void> {
           status: task.status,
           category_id: task.category_id,
           scheduled_event_id: task.converted_to_event_id,
-        }, {
+        },
+        {
           onConflict: 'id',
-        });
+        }
+      );
 
       if (error) {
         console.error('Error saving task:', error);
@@ -185,7 +198,9 @@ export async function saveTasks(tasks: Task[]): Promise<void> {
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabaseClient
@@ -215,21 +230,24 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function saveCategories(categories: Category[]): Promise<void> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     for (const category of categories) {
-      const { error } = await supabaseClient
-        .from('categories')
-        .upsert({
+      const { error } = await supabaseClient.from('categories').upsert(
+        {
           id: category.id,
           user_id: user.id,
           name: category.name,
           color: category.color,
           icon: category.icon,
-        }, {
+        },
+        {
           onConflict: 'id',
-        });
+        }
+      );
 
       if (error) {
         console.error('Error saving category:', error);
@@ -246,18 +264,22 @@ export async function saveCategories(categories: Category[]): Promise<void> {
 
 export async function getAttendees(): Promise<Attendee[]> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return [];
 
     // Get attendees for events owned by user
     const { data, error } = await supabaseClient
       .from('attendees')
-      .select(`
+      .select(
+        `
         *,
         events!inner (
           user_id
         )
-      `)
+      `
+      )
       .eq('events.user_id', user.id);
 
     if (error) {
@@ -285,9 +307,8 @@ export async function getAttendees(): Promise<Attendee[]> {
 export async function saveAttendees(attendees: Attendee[]): Promise<void> {
   try {
     for (const attendee of attendees) {
-      const { error } = await supabaseClient
-        .from('attendees')
-        .upsert({
+      const { error } = await supabaseClient.from('attendees').upsert(
+        {
           id: attendee.id,
           event_id: attendee.eventId,
           email: attendee.email,
@@ -295,9 +316,11 @@ export async function saveAttendees(attendees: Attendee[]): Promise<void> {
           role: attendee.role,
           rsvp_status: attendee.rsvpStatus,
           invite_token: attendee.inviteToken,
-        }, {
+        },
+        {
           onConflict: 'id',
-        });
+        }
+      );
 
       if (error) {
         console.error('Error saving attendee:', error);
@@ -314,7 +337,9 @@ export async function saveAttendees(attendees: Attendee[]): Promise<void> {
 
 export async function getShareLinks(): Promise<ShareLink[]> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabaseClient
@@ -345,21 +370,24 @@ export async function getShareLinks(): Promise<ShareLink[]> {
 
 export async function saveShareLinks(shareLinks: ShareLink[]): Promise<void> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     for (const link of shareLinks) {
-      const { error } = await supabaseClient
-        .from('share_links')
-        .upsert({
+      const { error } = await supabaseClient.from('share_links').upsert(
+        {
           id: link.id,
           user_id: user.id,
           token: link.token,
           mode: link.mode,
           revoked_at: link.revokedAt,
-        }, {
+        },
+        {
           onConflict: 'id',
-        });
+        }
+      );
 
       if (error) {
         console.error('Error saving share link:', error);
@@ -381,7 +409,9 @@ export async function getUserPreferences(): Promise<{
   timezone?: string;
 }> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) {
       return {
         emailRemindersEnabled: true,
@@ -395,7 +425,8 @@ export async function getUserPreferences(): Promise<{
       .eq('user_id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows returned
       console.error('Error fetching preferences:', error);
       return {
         emailRemindersEnabled: true,
@@ -418,7 +449,9 @@ export async function getUserPreferences(): Promise<{
       return {
         emailRemindersEnabled: newPrefs?.email_reminders_enabled ?? true,
         defaultReminderMinutes: newPrefs?.default_reminder_minutes ?? 30,
-        workingHours: newPrefs?.working_hours as { start: number; end: number } | undefined,
+        workingHours: newPrefs?.working_hours as
+          | { start: number; end: number }
+          | undefined,
         timezone: newPrefs?.timezone,
       };
     }
@@ -426,7 +459,9 @@ export async function getUserPreferences(): Promise<{
     return {
       emailRemindersEnabled: data.email_reminders_enabled ?? true,
       defaultReminderMinutes: data.default_reminder_minutes ?? 30,
-      workingHours: data.working_hours as { start: number; end: number } | undefined,
+      workingHours: data.working_hours as
+        | { start: number; end: number }
+        | undefined,
       timezone: data.timezone,
     };
   } catch (error) {
@@ -445,20 +480,23 @@ export async function saveUserPreferences(preferences: {
   timezone?: string;
 }): Promise<void> {
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabaseClient
-      .from('preferences')
-      .upsert({
+    const { error } = await supabaseClient.from('preferences').upsert(
+      {
         user_id: user.id,
         email_reminders_enabled: preferences.emailRemindersEnabled,
         default_reminder_minutes: preferences.defaultReminderMinutes,
         working_hours: preferences.workingHours,
         timezone: preferences.timezone,
-      }, {
+      },
+      {
         onConflict: 'user_id',
-      });
+      }
+    );
 
     if (error) {
       console.error('Error saving preferences:', error);
@@ -479,7 +517,9 @@ export async function generateShareToken(): Promise<string> {
     // Fallback to client-side generation
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join(
+      ''
+    );
   }
   return data;
 }
@@ -491,7 +531,9 @@ export async function generateInviteToken(): Promise<string> {
     // Fallback to client-side generation
     const array = new Uint8Array(24);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join(
+      ''
+    );
   }
   return data;
 }

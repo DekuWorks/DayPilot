@@ -67,7 +67,11 @@ function transformEventsForPrivacy(
 
 export function SharePage() {
   const { token } = useParams<{ token: string }>();
-  const { data: shareLink, isLoading, error } = useShareLinkByToken(token || null);
+  const {
+    data: shareLink,
+    isLoading,
+    error,
+  } = useShareLinkByToken(token || null);
   const [events, setEvents] = useState<LocalEvent[]>([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
 
@@ -77,12 +81,13 @@ export function SharePage() {
       const loadOwnerEvents = async () => {
         try {
           const { supabaseClient } = await import('@daypilot/lib');
-          
+
           // Get calendars for the share link owner
-          const { data: calendars, error: calendarsError } = await supabaseClient
-            .from('calendars')
-            .select('id')
-            .eq('owner_id', shareLink.userId);
+          const { data: calendars, error: calendarsError } =
+            await supabaseClient
+              .from('calendars')
+              .select('id')
+              .eq('owner_id', shareLink.userId);
 
           if (calendarsError || !calendars || calendars.length === 0) {
             setEvents([]);
@@ -105,15 +110,17 @@ export function SharePage() {
           }
 
           // Transform to LocalEvent format
-          const transformedEvents: LocalEvent[] = (eventsData || []).map((e: any) => ({
-            id: e.id,
-            title: e.title,
-            start: e.start_time || e.start,
-            end: e.end_time || e.end,
-            all_day: e.all_day || false,
-            description: e.description,
-            location: e.location,
-          }));
+          const transformedEvents: LocalEvent[] = (eventsData || []).map(
+            (e: any) => ({
+              id: e.id,
+              title: e.title,
+              start: e.start_time || e.start,
+              end: e.end_time || e.end,
+              all_day: e.all_day || false,
+              description: e.description,
+              location: e.location,
+            })
+          );
 
           setEvents(transformedEvents);
         } catch (error) {
@@ -146,7 +153,9 @@ export function SharePage() {
       <div className="min-h-screen py-6">
         <div className="dashboard-shell">
           <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-[var(--text)] mb-4">Link Not Found</h1>
+            <h1 className="text-2xl font-bold text-[var(--text)] mb-4">
+              Link Not Found
+            </h1>
             <p className="text-[var(--muted)]">
               This share link is invalid or has been revoked.
             </p>

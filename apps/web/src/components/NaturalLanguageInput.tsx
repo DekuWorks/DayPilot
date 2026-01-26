@@ -19,13 +19,15 @@ export function NaturalLanguageInput() {
       const parsed = parseEventCommand(input);
 
       if (!parsed) {
-        setResult('Could not parse command. Try: "Lunch with John tomorrow at 1pm" or "Gym M/W/F at 6am"');
+        setResult(
+          'Could not parse command. Try: "Lunch with John tomorrow at 1pm" or "Gym M/W/F at 6am"'
+        );
         setIsProcessing(false);
         return;
       }
 
       const defaultCalendarId =
-        calendars.find((c) => c.is_default)?.id || calendars[0]?.id;
+        calendars.find(c => c.is_default)?.id || calendars[0]?.id;
 
       if (!defaultCalendarId) {
         setResult('No calendar available');
@@ -84,7 +86,9 @@ export function NaturalLanguageInput() {
       };
 
       await createEvent.mutateAsync(eventData);
-      setResult(`✅ Created: ${parsed.title} on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}`);
+      setResult(
+        `✅ Created: ${parsed.title} on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}`
+      );
       setInput('');
     } catch (error: any) {
       setResult(`Error: ${error.message}`);
@@ -103,13 +107,16 @@ export function NaturalLanguageInput() {
         <div className="flex gap-2">
           <Input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleParse()}
+            onChange={e => setInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleParse()}
             placeholder='e.g., "Team meeting tomorrow at 2pm"'
             className="flex-1"
             disabled={isProcessing}
           />
-          <Button onClick={handleParse} disabled={isProcessing || !input.trim()}>
+          <Button
+            onClick={handleParse}
+            disabled={isProcessing || !input.trim()}
+          >
             {isProcessing ? 'Processing...' : 'Create'}
           </Button>
         </div>
@@ -128,4 +135,3 @@ export function NaturalLanguageInput() {
     </Card>
   );
 }
-

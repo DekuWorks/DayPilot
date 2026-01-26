@@ -188,10 +188,15 @@ export interface AIBlock {
   description?: string;
 }
 
-
 // Billing types
 export type SubscriptionTier = 'free' | 'student' | 'team' | 'enterprise';
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'trialing';
+export type SubscriptionStatus =
+  | 'active'
+  | 'canceled'
+  | 'past_due'
+  | 'unpaid'
+  | 'incomplete'
+  | 'trialing';
 
 export interface StripeCustomer {
   id: string;
@@ -237,7 +242,8 @@ export interface ConnectedAccount {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}export interface CalendarMapping {
+}
+export interface CalendarMapping {
   id: string;
   connected_account_id: string;
   daypilot_calendar_id: string;
@@ -258,7 +264,8 @@ export interface EventMapping {
   provider_etag: string | null;
   last_synced_at: string;
   created_at: string;
-}export interface SyncState {
+}
+export interface SyncState {
   id: string;
   calendar_mapping_id: string;
   sync_token: string | null;

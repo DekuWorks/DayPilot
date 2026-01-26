@@ -69,14 +69,14 @@ describe('privacyTransform', () => {
 
   it('should preserve event titles in readOnly mode', () => {
     const transformed = transformEventsForPrivacy(mockEvents, 'readOnly');
-    
+
     expect(transformed[0].title).toBe('Team Meeting');
     expect(transformed[1].title).toBe('Lunch Break');
   });
 
   it('should replace titles with "Busy" in busyOnly mode', () => {
     const transformed = transformEventsForPrivacy(mockEvents, 'busyOnly');
-    
+
     expect(transformed[0].title).toBe('Busy');
     expect(transformed[1].title).toBe('Busy');
   });
@@ -84,7 +84,7 @@ describe('privacyTransform', () => {
   it('should preserve time information in both modes', () => {
     const readOnly = transformEventsForPrivacy(mockEvents, 'readOnly');
     const busyOnly = transformEventsForPrivacy(mockEvents, 'busyOnly');
-    
+
     expect(readOnly[0].start.getTime()).toBe(busyOnly[0].start.getTime());
     expect(readOnly[0].end.getTime()).toBe(busyOnly[0].end.getTime());
   });
@@ -102,9 +102,9 @@ describe('privacyTransform', () => {
         all_day: true,
       },
     ];
-    
+
     const transformed = transformEventsForPrivacy(eventsWithAllDay, 'readOnly');
-    
+
     expect(transformed.length).toBe(2); // All-day event filtered out
   });
 });
