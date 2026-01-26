@@ -45,6 +45,8 @@ jobs:
           if [ -f CNAME ]; then
             cp CNAME apps/web/dist/CNAME
           fi
+          # Create .nojekyll to disable Jekyll processing
+          touch apps/web/dist/.nojekyll
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
