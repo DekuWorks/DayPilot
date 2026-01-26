@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@daypilot/ui';
 import { useBookingLinkBySlug, useBookingById } from '@daypilot/lib';
@@ -70,15 +69,19 @@ export function BookingConfirmationPage() {
   const bookingId = searchParams.get('bookingId');
   const { data: booking, isLoading } = useBookingById(bookingId);
 
-  // Fallback to sessionStorage if database fetch fails
-  useEffect(() => {
-    if (!booking && bookingId) {
-      const storedBooking = sessionStorage.getItem(`booking_${bookingId}`);
-      if (storedBooking) {
-        // Booking will be set from sessionStorage as fallback
-      }
-    }
-  }, [booking, bookingId]);
+  // Get booking from sessionStorage as fallback
+  const fallbackBooking = bookingId
+    ? (() => {
+        try {
+          const stored = sessionStorage.getItem(`booking_${bookingId}`);
+          return stored ? JSON.parse(stored) : null;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+
+  const displayBooking = booking || fallbackBooking;
 
   const handleDownloadICS = () => {
     if (!displayBooking || !bookingLink) return;
@@ -102,20 +105,6 @@ export function BookingConfirmationPage() {
     const filename = `booking-${start.toISOString().split('T')[0]}.ics`;
     downloadICS(ics, filename);
   };
-
-  // Get booking from sessionStorage as fallback
-  const fallbackBooking = bookingId
-    ? (() => {
-        try {
-          const stored = sessionStorage.getItem(`booking_${bookingId}`);
-          return stored ? JSON.parse(stored) : null;
-        } catch {
-          return null;
-        }
-      })()
-    : null;
-
-  const displayBooking = booking || fallbackBooking;
 
   if (isLoading) {
     return (
