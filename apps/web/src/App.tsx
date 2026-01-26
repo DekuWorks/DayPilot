@@ -1,6 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { SiteLayout } from './layouts/SiteLayout';
 import { AppLayout } from './layouts/AppLayout';
 import { HomePage } from './pages/HomePage';
@@ -39,15 +38,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Handle GitHub Pages 404.html - no redirect needed since 404.html is index.html
-// React Router will handle the routing automatically
-
 function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <GitHubPagesRedirect />
           <Routes>
             {/* Marketing routes */}
             <Route path="/" element={<SiteLayout />}>
