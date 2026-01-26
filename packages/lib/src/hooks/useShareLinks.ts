@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getShareLinks, saveShareLinks, generateShareToken } from '../storage/storageAdapter';
+import { getShareLinks, generateShareToken } from '../storage/storageAdapter';
 import type { ShareLink, ShareMode } from '@daypilot/types';
 import { supabaseClient } from '../supabaseClient';
 

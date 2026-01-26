@@ -4,7 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
-import { useShareLinkByToken, getEvents } from '@daypilot/lib';
+import { useShareLinkByToken } from '@daypilot/lib';
 import type { ShareMode } from '@daypilot/types';
 import { Card } from '@daypilot/ui';
 

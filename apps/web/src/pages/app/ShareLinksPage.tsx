@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, Button, Badge, Input, Label } from '@daypilot/ui';
+import { Card, Button, Input, Label } from '@daypilot/ui';
 import {
   useShareLinks,
   useCreateShareLink,
