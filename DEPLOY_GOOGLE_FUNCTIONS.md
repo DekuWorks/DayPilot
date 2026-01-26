@@ -3,6 +3,7 @@
 ## Step 1: Verify Secrets Are Set
 
 In your Supabase Dashboard:
+
 1. Go to **Project Settings** → **Edge Functions** → **Secrets**
 2. Verify you have all three:
    - ✅ `GOOGLE_CLIENT_ID`
@@ -46,6 +47,7 @@ If you're not linked to your project:
    - Copy the "Reference ID" (looks like: `abcdefghijklmnop`)
 
 2. Link your project:
+
    ```bash
    cd /Users/marcusbrown/Desktop/DayPilot
    supabase link --project-ref YOUR_PROJECT_REF
@@ -61,6 +63,7 @@ If you're not linked to your project:
 ## Step 3: Verify Deployment
 
 After deployment, you should see:
+
 - ✅ All three functions listed in Supabase Dashboard → Edge Functions
 - ✅ No errors in the deployment logs
 
@@ -75,17 +78,21 @@ After deployment, you should see:
 ## Troubleshooting
 
 ### "Function not found" error
+
 - Make sure you've deployed all three functions
 - Check that function names match exactly
 
 ### "OAuth not configured" error
+
 - Verify secrets are set correctly in Supabase Dashboard
 - Check secret names are exactly: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `FRONTEND_URL`
 
 ### "Redirect URI mismatch" error
+
 - Verify redirect URI in Google Cloud Console matches: `https://daypilot.co/app/integrations/google/callback`
 - No trailing slashes!
 
 ### Functions deploy but don't work
+
 - Check Edge Function logs in Supabase Dashboard
 - Verify secrets are accessible (they should be, but double-check)

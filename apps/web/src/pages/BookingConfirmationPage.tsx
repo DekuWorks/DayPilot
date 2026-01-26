@@ -88,9 +88,11 @@ export function BookingConfirmationPage() {
 
     const start = new Date(displayBooking.start_time);
     const end = new Date(displayBooking.end_time);
-    const title = bookingLink.title || `Booking with ${displayBooking.booker_name}`;
+    const title =
+      bookingLink.title || `Booking with ${displayBooking.booker_name}`;
     const description =
-      displayBooking.notes || `Booking confirmed for ${displayBooking.booker_name}`;
+      displayBooking.notes ||
+      `Booking confirmed for ${displayBooking.booker_name}`;
 
     const ics = generateICS(
       title,

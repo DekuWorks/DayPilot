@@ -67,6 +67,7 @@ supabase secrets list
 ```
 
 You should see:
+
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `FRONTEND_URL`

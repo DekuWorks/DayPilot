@@ -92,12 +92,23 @@ export function useConnectGoogle() {
     mutationFn: async () => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
+
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }
 
-      // Get fresh session
+      // Get fresh session - try getUser first (more reliable)
+      const {
+        data: { user: currentUser },
+        error: userError,
+      } = await supabaseClient.auth.getUser();
+
+      if (userError || !currentUser) {
+        console.error('User error:', userError);
+        throw new Error('Not authenticated. Please sign in again.');
+      }
+
+      // Get session for the access token
       const {
         data: { session },
         error: sessionError,
@@ -108,7 +119,7 @@ export function useConnectGoogle() {
         throw new Error('Failed to get session: ' + sessionError.message);
       }
 
-      if (!session) {
+      if (!session || !session.access_token) {
         throw new Error('Not authenticated. Please sign in again.');
       }
 
@@ -139,7 +150,7 @@ export function useConnectGoogle() {
       if (!url) {
         throw new Error('No OAuth URL returned from server');
       }
-      
+
       window.location.href = url;
     },
   });
@@ -155,7 +166,7 @@ export function useDiscoverCalendars() {
     mutationFn: async (connectedAccountId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
+
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }
@@ -210,7 +221,7 @@ export function useSyncCalendar() {
     mutationFn: async (calendarMappingId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
+
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }

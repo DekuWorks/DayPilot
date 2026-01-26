@@ -3,11 +3,13 @@
 ## Step 2: Test End-to-End Booking Flow
 
 ### Prerequisites
+
 - [ ] Logged in as a user with premium subscription (or booking links enabled)
 - [ ] Supabase Edge Functions deployed
 - [ ] Resend API configured with secrets
 
 ### Test 1: Create Booking Link
+
 1. [ ] Navigate to `/app/booking-links`
 2. [ ] Click "Create Booking Link"
 3. [ ] Fill in:
@@ -20,6 +22,7 @@
 6. [ ] Copy the booking link slug/URL
 
 ### Test 2: Set Availability
+
 1. [ ] Open the booking link you just created
 2. [ ] Go to "Availability" section
 3. [ ] Set availability rules:
@@ -29,6 +32,7 @@
 5. [ ] Verify rules are saved
 
 ### Test 3: Book Through Public Page
+
 1. [ ] Open booking link in incognito/private window (or different browser)
 2. [ ] Navigate to: `/book/[your-slug]`
 3. [ ] Verify:
@@ -49,6 +53,7 @@
    - [ ] No errors in console
 
 ### Test 4: Verify Booking Confirmation Page
+
 1. [ ] On confirmation page, verify:
    - [ ] Success message displays
    - [ ] Booking details are correct (date, time, duration)
@@ -57,6 +62,7 @@
    - [ ] "Done" button navigates home
 
 ### Test 5: Verify Event Creation
+
 1. [ ] Log back in as the booking link owner
 2. [ ] Navigate to Calendar page (`/app/calendar`)
 3. [ ] Verify:
@@ -66,6 +72,7 @@
    - [ ] Event description includes booker info
 
 ### Test 6: Verify Email Sent
+
 1. [ ] Check email inbox (the email used in booking form)
 2. [ ] Verify:
    - [ ] Booking confirmation email received
@@ -74,6 +81,7 @@
    - [ ] Email is from correct sender (Resend configured email)
 
 ### Test 7: Verify Booking in Database
+
 1. [ ] Check Supabase dashboard → `bookings` table
 2. [ ] Verify:
    - [ ] New booking record exists
@@ -82,6 +90,7 @@
    - [ ] `event_id` is linked (if event was created)
 
 ### Test 8: Verify Event in Database
+
 1. [ ] Check Supabase dashboard → `events` table
 2. [ ] Verify:
    - [ ] Event was created automatically (by trigger)
@@ -89,6 +98,7 @@
    - [ ] Event times match booking times
 
 ### Common Issues to Watch For
+
 - [ ] Booking link not found (check slug is correct)
 - [ ] No available time slots (check availability rules)
 - [ ] Event not created (check database trigger is active)
@@ -96,6 +106,7 @@
 - [ ] Confirmation page shows "Booking Not Found" (check booking ID in URL)
 
 ### Success Criteria
+
 ✅ All tests pass
 ✅ Booking flow works end-to-end
 ✅ Event created automatically

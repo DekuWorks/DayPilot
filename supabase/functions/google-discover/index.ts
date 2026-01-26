@@ -139,7 +139,10 @@ serve(async req => {
     // For each Google calendar, create a DayPilot calendar and mapping
     for (const googleCalendar of calendars) {
       // Skip calendars user doesn't have access to write
-      if (googleCalendar.accessRole === 'freeBusyReader' || !googleCalendar.id) {
+      if (
+        googleCalendar.accessRole === 'freeBusyReader' ||
+        !googleCalendar.id
+      ) {
         continue;
       }
 

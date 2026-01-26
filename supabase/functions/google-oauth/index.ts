@@ -33,23 +33,56 @@ serve(async req => {
       // Get auth token from request
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        console.error('No Authorization header provided');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: No token provided' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
       const token = authHeader.replace('Bearer ', '');
+      if (!token) {
+        console.error('Empty token in Authorization header');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Invalid token format' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       const {
         data: { user },
         error: authError,
       } = await supabase.auth.getUser(token);
 
-      if (authError || !user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (authError) {
+        console.error('Auth error:', authError.message);
+        return new Response(
+          JSON.stringify({
+            error: 'Unauthorized',
+            details: authError.message,
+          }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      if (!user) {
+        console.error('No user returned from getUser');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Invalid user' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {

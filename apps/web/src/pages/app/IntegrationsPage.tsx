@@ -68,7 +68,11 @@ export function IntegrationsPage() {
   // Auto-discover calendars when user returns from OAuth
   useEffect(() => {
     const success = searchParams.get('success');
-    if (success === 'connected' && googleAccount && calendarMappings.length === 0) {
+    if (
+      success === 'connected' &&
+      googleAccount &&
+      calendarMappings.length === 0
+    ) {
       // Auto-discover calendars after connection
       handleDiscoverCalendars(googleAccount.id);
       // Clear the success param

@@ -88,7 +88,7 @@ Before creating credentials, you need to set up the OAuth consent screen:
 4. If prompted, choose **"Web application"** as the application type
 5. Fill in the **OAuth client** details:
    - **Name**: `DayPilot Web Client` (or any name)
-   - **Authorized JavaScript origins**: 
+   - **Authorized JavaScript origins**:
      - Click **"+ ADD URI"**
      - Add: `https://daypilot.co`
      - (Optional for local dev): `http://localhost:5174`
@@ -105,6 +105,7 @@ Before creating credentials, you need to set up the OAuth consent screen:
 ## Step 10: Save Your Credentials
 
 Copy both values:
+
 - **Client ID**: `xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com`
 - **Client Secret**: `GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
@@ -115,18 +116,22 @@ You'll need these in the next step to set up Supabase secrets!
 ## Troubleshooting
 
 ### "API not enabled" error
+
 - Make sure you're in the correct Google Cloud project
 - Verify the API is enabled in "APIs & Services" → "Enabled APIs"
 
 ### "Redirect URI mismatch" error
+
 - Make sure the redirect URI in Google Cloud Console **exactly matches**: `https://daypilot.co/app/integrations/google/callback`
 - No trailing slashes!
 - Check for typos (case-sensitive)
 
 ### Can't see "OAuth client ID" option
+
 - Make sure you've completed the OAuth consent screen setup first
 - You need to be in a project with billing enabled (free tier is fine)
 
 ### "Access blocked" when testing
+
 - Make sure you added your email as a test user in the OAuth consent screen
 - The app needs to be published or you need to be in test mode with test users added
