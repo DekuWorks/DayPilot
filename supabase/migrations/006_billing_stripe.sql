@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS entitlements (
   ai_credits INTEGER DEFAULT 0,
   max_connected_calendars INTEGER DEFAULT 1,
   sync_frequency_minutes INTEGER DEFAULT 60,
+  booking_links_enabled BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -100,8 +101,8 @@ BEGIN
 
   -- If not found, create default (free tier)
   IF NOT FOUND THEN
-    INSERT INTO entitlements (user_id, tier, ai_enabled, ai_credits, max_connected_calendars, sync_frequency_minutes)
-    VALUES (user_uuid, 'free', FALSE, 0, 1, 60)
+    INSERT INTO entitlements (user_id, tier, ai_enabled, ai_credits, max_connected_calendars, sync_frequency_minutes, booking_links_enabled)
+    VALUES (user_uuid, 'free', FALSE, 0, 1, 60, FALSE)
     RETURNING * INTO result;
   END IF;
 

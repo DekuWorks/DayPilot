@@ -231,6 +231,7 @@ function getEntitlementsForTier(tier: string): {
   ai_credits: number;
   max_connected_calendars: number;
   sync_frequency_minutes: number;
+  booking_links_enabled: boolean;
 } {
   switch (tier) {
     case 'student':
@@ -239,6 +240,7 @@ function getEntitlementsForTier(tier: string): {
         ai_credits: 20,
         max_connected_calendars: 2,
         sync_frequency_minutes: 60,
+        booking_links_enabled: true,
       };
     case 'team':
       return {
@@ -246,6 +248,7 @@ function getEntitlementsForTier(tier: string): {
         ai_credits: 200,
         max_connected_calendars: 5,
         sync_frequency_minutes: 30,
+        booking_links_enabled: true,
       };
     case 'enterprise':
       return {
@@ -253,6 +256,7 @@ function getEntitlementsForTier(tier: string): {
         ai_credits: -1, // Unlimited
         max_connected_calendars: 50,
         sync_frequency_minutes: 15,
+        booking_links_enabled: true,
       };
     default:
       return {
@@ -260,6 +264,7 @@ function getEntitlementsForTier(tier: string): {
         ai_credits: 0,
         max_connected_calendars: 1,
         sync_frequency_minutes: 60,
+        booking_links_enabled: false,
       };
   }
 }

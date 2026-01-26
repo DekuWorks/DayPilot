@@ -14,6 +14,7 @@ import { OrganizationPage } from './pages/app/OrganizationPage';
 import { OrganizationsPage } from './pages/app/OrganizationsPage';
 import { BookingLinksPage } from './pages/app/BookingLinksPage';
 import { BookingLinkEditPage } from './pages/app/BookingLinkEditPage';
+import { ShareLinksPage } from './pages/app/ShareLinksPage';
 import { BookingPage } from './pages/BookingPage';
 import { BookingConfirmationPage } from './pages/BookingConfirmationPage';
 import { SharePage } from './pages/SharePage';
@@ -24,6 +25,7 @@ import { IntegrationsPage } from './pages/app/IntegrationsPage';
 import { GoogleOAuthCallback } from './pages/app/GoogleOAuthCallback';
 import { UIDemoPage } from './pages/UIDemoPage';
 import { RequireAuth } from './components/RequireAuth';
+import { RequireSubscription } from './components/RequireSubscription';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OnboardingWrapper } from './components/OnboardingWrapper';
 
@@ -78,9 +80,31 @@ function App() {
                 <Route path="integrations/google/callback" element={<GoogleOAuthCallback />} />
                 <Route path="organizations" element={<OrganizationsPage />} />
                 <Route path="organization/:orgId" element={<OrganizationPage />} />
-                <Route path="booking-links" element={<BookingLinksPage />} />
-                <Route path="booking-links/new" element={<BookingLinkEditPage />} />
-                <Route path="booking-links/:id" element={<BookingLinkEditPage />} />
+                <Route path="share-links" element={<ShareLinksPage />} />
+                <Route
+                  path="booking-links"
+                  element={
+                    <RequireSubscription feature="booking-links">
+                      <BookingLinksPage />
+                    </RequireSubscription>
+                  }
+                />
+                <Route
+                  path="booking-links/new"
+                  element={
+                    <RequireSubscription feature="booking-links">
+                      <BookingLinkEditPage />
+                    </RequireSubscription>
+                  }
+                />
+                <Route
+                  path="booking-links/:id"
+                  element={
+                    <RequireSubscription feature="booking-links">
+                      <BookingLinkEditPage />
+                    </RequireSubscription>
+                  }
+                />
                 <Route path="insights" element={<InsightsPage />} />
               </Route>
             </Route>

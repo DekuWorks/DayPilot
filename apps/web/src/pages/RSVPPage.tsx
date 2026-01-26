@@ -7,7 +7,16 @@ import {
   getEvents,
 } from '@daypilot/lib';
 import type { RSVPStatus } from '@daypilot/types';
-import type { LocalEvent } from '../features/pilotBrief/pilotBriefTypes';
+
+type LocalEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  start: string;
+  end: string;
+  all_day?: boolean;
+  location?: string | null;
+};
 
 export function RSVPPage() {
   const { token } = useParams<{ token: string }>();

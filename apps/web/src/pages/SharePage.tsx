@@ -5,9 +5,18 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import { useShareLinkByToken, getEvents } from '@daypilot/lib';
-import type { LocalEvent } from '../features/pilotBrief/pilotBriefTypes';
 import type { ShareMode } from '@daypilot/types';
 import { Card } from '@daypilot/ui';
+
+type LocalEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  all_day?: boolean;
+  description?: string | null;
+  location?: string | null;
+};
 
 /**
  * Transform events for privacy based on share mode
@@ -64,11 +73,56 @@ export function SharePage() {
 
   useEffect(() => {
     if (shareLink) {
-      // Load events for the share link owner
-      // In a real app, this would be an API call filtered by userId
-      // For MVP, we'll load all events (since we can't filter by userId in localStorage easily)
-      const allEvents = getEvents() as LocalEvent[];
-      setEvents(allEvents);
+      // Load events for the share link owner from Supabase
+      const loadOwnerEvents = async () => {
+        try {
+          const { supabaseClient } = await import('@daypilot/lib');
+          
+          // Get calendars for the share link owner
+          const { data: calendars, error: calendarsError } = await supabaseClient
+            .from('calendars')
+            .select('id')
+            .eq('owner_id', shareLink.userId);
+
+          if (calendarsError || !calendars || calendars.length === 0) {
+            setEvents([]);
+            return;
+          }
+
+          const calendarIds = calendars.map(c => c.id);
+
+          // Get events for those calendars
+          const { data: eventsData, error: eventsError } = await supabaseClient
+            .from('events')
+            .select('*')
+            .in('calendar_id', calendarIds)
+            .order('start_time', { ascending: true });
+
+          if (eventsError) {
+            console.error('Error loading events:', eventsError);
+            setEvents([]);
+            return;
+          }
+
+          // Transform to LocalEvent format
+          const transformedEvents: LocalEvent[] = (eventsData || []).map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            start: e.start_time || e.start,
+            end: e.end_time || e.end,
+            all_day: e.all_day || false,
+            description: e.description,
+            location: e.location,
+          }));
+
+          setEvents(transformedEvents);
+        } catch (error) {
+          console.error('Error loading owner events:', error);
+          setEvents([]);
+        }
+      };
+
+      loadOwnerEvents();
     }
   }, [shareLink]);
 

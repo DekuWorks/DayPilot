@@ -1,7 +1,15 @@
 import { Card, Button } from '@daypilot/ui';
 import { useNavigate } from 'react-router-dom';
 import type { InsightsSummary } from './insightsSelectors';
-import { formatDuration } from '../pilotBrief/pilotBriefUtils';
+
+function formatDuration(totalMinutes: number): string {
+  const minutes = Math.max(0, Math.round(totalMinutes));
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h <= 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
 
 interface InsightsCardProps {
   insights: InsightsSummary;

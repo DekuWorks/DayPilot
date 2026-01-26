@@ -51,11 +51,27 @@ export function BookingLinksPage() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'object' && error !== null && 'message' in error
+      ? String(error.message)
+      : 'Failed to load booking links. Please check your connection and try again.';
+    
     return (
       <div>
         <h1 className="text-3xl font-bold mb-6">Booking Links</h1>
         <Card>
-          <p className="text-red-600">Error loading booking links: {String(error)}</p>
+          <div className="p-6">
+            <p className="text-red-600 font-semibold mb-2">Error loading booking links</p>
+            <p className="text-red-500 text-sm">{errorMessage}</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline" 
+              className="mt-4"
+            >
+              Retry
+            </Button>
+          </div>
         </Card>
       </div>
     );

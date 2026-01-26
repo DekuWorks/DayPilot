@@ -10,8 +10,6 @@ import type {
 import { Button, Card, Input, Label } from '@daypilot/ui';
 import { RecurrenceEditor } from '../../components/RecurrenceEditor';
 import { expandRecurringEvent, supabaseClient } from '@daypilot/lib';
-import { PilotBrief } from '../../features/pilotBrief/PilotBrief';
-import type { LocalEvent as PilotBriefLocalEvent } from '../../features/pilotBrief/pilotBriefTypes';
 import { InsightsCard } from '../../features/insights/InsightsCard';
 import { calculateInsightsSummary } from '../../features/insights/insightsSelectors';
 import { useMemo } from 'react';
@@ -614,34 +612,6 @@ export function DashboardPage() {
 
           {/* Main Calendar Area */}
           <div className="flex flex-col overflow-hidden">
-            {/* Pilot Brief */}
-            <PilotBrief
-              events={events as PilotBriefLocalEvent[]}
-              tasks={tasks}
-              onScheduleTask={(task, start, end) => {
-                setFormData({
-                  title: task.title,
-                  description: task.description || '',
-                  start: start.toISOString().slice(0, 16),
-                  end: end.toISOString().slice(0, 16),
-                  all_day: false,
-                  color: task.category_id 
-                    ? categories.find((c) => c.id === task.category_id)?.color || '#059669'
-                    : '#059669',
-                  category_id: task.category_id,
-                  recurrence_rule: null,
-                  recurrence_end_date: null,
-                });
-                setIsNewEvent(true);
-                setIsEventModalOpen(true);
-              }}
-              onCompleteTask={(taskId) => {
-                setTasks(tasks.map((t) => 
-                  t.id === taskId ? { ...t, status: 'completed' as TaskStatus } : t
-                ));
-              }}
-            />
-
             {/* Header with Segmented Control */}
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-[var(--text)]">

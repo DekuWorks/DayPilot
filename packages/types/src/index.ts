@@ -219,6 +219,7 @@ export interface Entitlements {
   ai_credits: number;
   max_connected_calendars: number;
   sync_frequency_minutes: number;
+  booking_links_enabled: boolean;
   updated_at: string;
 }
 

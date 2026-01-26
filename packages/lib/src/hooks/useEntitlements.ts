@@ -86,3 +86,11 @@ export function remainingCredits(entitlements: Entitlements | undefined): number
   if (entitlements.ai_enabled) return -1; // Unlimited
   return entitlements.ai_credits;
 }
+
+/**
+ * Check if user can use booking links (premium feature)
+ */
+export function canUseBookingLinks(entitlements: Entitlements | undefined): boolean {
+  if (!entitlements) return false;
+  return entitlements.booking_links_enabled || entitlements.tier !== 'free';
+}

@@ -2,8 +2,17 @@
  * Unit tests for busy-only privacy transform
  */
 
-import type { LocalEvent } from '../../pilotBrief/pilotBriefTypes';
 import type { ShareMode } from '@daypilot/types';
+
+type LocalEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  start: string;
+  end: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  all_day?: boolean;
+};
 
 function transformEventsForPrivacy(
   events: LocalEvent[],

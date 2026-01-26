@@ -8,8 +8,16 @@ import {
 import { calculateWeeklyInsights } from '../../features/insights/insightsSelectors';
 import type { LocalEvent } from '../../features/insights/insightsTypes';
 import type { Category } from '@daypilot/types';
-import { formatDuration } from '../../features/pilotBrief/pilotBriefUtils';
 import { useState, useEffect } from 'react';
+
+function formatDuration(totalMinutes: number): string {
+  const minutes = Math.max(0, Math.round(totalMinutes));
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h <= 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
 
 export function InsightsPage() {
   const navigate = useNavigate();

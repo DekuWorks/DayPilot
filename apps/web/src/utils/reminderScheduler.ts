@@ -6,7 +6,16 @@
 import { getEvents, getUserEmailPreferences } from '@daypilot/lib';
 import { reminderTemplate } from '../emails/templates';
 import { sendEmail } from '@daypilot/lib';
-import type { LocalEvent } from '../features/pilotBrief/pilotBriefTypes';
+
+type LocalEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  start: string;
+  end: string;
+  all_day?: boolean;
+  status?: 'scheduled' | 'completed' | 'cancelled';
+};
 
 const SENT_REMINDERS_KEY = 'daypilot-sent-reminders';
 const REMINDER_CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
