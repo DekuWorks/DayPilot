@@ -97,7 +97,38 @@ export function useConnectGoogle() {
         throw new Error('Supabase not configured');
       }
 
-      // Get fresh session - try getUser first (more reliable)
+      // Get fresh session - refresh if needed
+      const {
+        data: { session: currentSession },
+        error: sessionError,
+      } = await supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Failed to get session: ' + sessionError.message);
+      }
+
+      let session = currentSession;
+
+      // If no session or session is expired, try to refresh
+      if (!session || !session.access_token) {
+        // Try to refresh the session
+        const {
+          data: { session: refreshedSession },
+          error: refreshError,
+        } = await supabaseClient.auth.refreshSession();
+
+        if (refreshError || !refreshedSession) {
+          console.error('Refresh error:', refreshError);
+          throw new Error(
+            'Session expired. Please sign out and sign back in, then try again.'
+          );
+        }
+
+        session = refreshedSession;
+      }
+
+      // Verify user exists
       const {
         data: { user: currentUser },
         error: userError,
@@ -106,17 +137,6 @@ export function useConnectGoogle() {
       if (userError || !currentUser) {
         console.error('User error:', userError);
         throw new Error('Not authenticated. Please sign in again.');
-      }
-
-      // Get session for the access token
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabaseClient.auth.getSession();
-
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Failed to get session: ' + sessionError.message);
       }
 
       if (!session || !session.access_token) {
@@ -142,8 +162,25 @@ export function useConnectGoogle() {
           const errorText = await response.text();
           errorData = { error: errorText || `HTTP ${response.status}` };
         }
-        console.error('OAuth request failed:', errorData);
-        throw new Error(errorData.error || 'Failed to initiate OAuth');
+        console.error('OAuth request failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          url: response.url,
+        });
+        
+        // Provide more specific error messages
+        if (response.status === 401) {
+          throw new Error(
+            errorData.error ||
+              errorData.details ||
+              'Authentication failed. Please sign out and sign back in, then try again.'
+          );
+        }
+        
+        throw new Error(
+          errorData.error || errorData.details || 'Failed to initiate OAuth'
+        );
       }
 
       const { url } = await response.json();
