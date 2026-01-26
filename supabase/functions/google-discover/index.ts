@@ -5,12 +5,25 @@ import { google } from 'https://esm.sh/googleapis@126.0.1';
 const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
+
 serve(async req => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -24,7 +37,7 @@ serve(async req => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -37,7 +50,7 @@ serve(async req => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -47,7 +60,10 @@ serve(async req => {
     if (!connectedAccountId) {
       return new Response(
         JSON.stringify({ error: 'connectedAccountId is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       );
     }
 
@@ -63,7 +79,10 @@ serve(async req => {
     if (accountError || !account) {
       return new Response(
         JSON.stringify({ error: 'Connected account not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
       );
     }
 
@@ -201,7 +220,10 @@ serve(async req => {
         mappingsCreated: createdMappings.length,
         mappings: createdMappings,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
   } catch (error: any) {
     console.error('Error in google-discover function:', error);
@@ -210,7 +232,10 @@ serve(async req => {
         error: 'Internal server error',
         details: error.message,
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
   }
 });

@@ -6,7 +6,20 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
 const FRONTEND_URL = Deno.env.get('FRONTEND_URL') || 'http://localhost:5174';
 const REDIRECT_URI = `${FRONTEND_URL}/app/integrations/google/callback`;
 
+// CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+};
+
 serve(async req => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
@@ -22,7 +35,7 @@ serve(async req => {
       if (!authHeader) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
@@ -35,14 +48,17 @@ serve(async req => {
       if (authError || !user) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         return new Response(
           JSON.stringify({ error: 'Google OAuth not configured' }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } }
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
 
@@ -66,7 +82,7 @@ serve(async req => {
 
       return new Response(JSON.stringify({ url: authUrl }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -174,7 +190,7 @@ serve(async req => {
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
     console.error('Error in google-oauth function:', error);
@@ -183,7 +199,10 @@ serve(async req => {
         error: 'Internal server error',
         details: error.message,
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
   }
 });
