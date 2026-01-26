@@ -39,23 +39,8 @@ const queryClient = new QueryClient({
   },
 });
 
-// Handle GitHub Pages 404.html redirect
-function GitHubPagesRedirect() {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Check if we're coming from 404.html redirect (path in query string)
-    const queryParams = new URLSearchParams(location.search);
-    const redirectPath = queryParams.get('/');
-    if (redirectPath) {
-      // Replace the current path with the redirected path
-      const newPath = redirectPath.replace(/~and~/g, '&');
-      window.history.replaceState(null, '', newPath);
-    }
-  }, [location]);
-
-  return null;
-}
+// Handle GitHub Pages 404.html - no redirect needed since 404.html is index.html
+// React Router will handle the routing automatically
 
 function App() {
   return (
