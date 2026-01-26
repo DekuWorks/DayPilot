@@ -91,16 +91,25 @@ export function useConnectGoogle() {
   return useMutation({
     mutationFn: async () => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }
 
+      // Get fresh session
       const {
         data: { session },
+        error: sessionError,
       } = await supabaseClient.auth.getSession();
 
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Failed to get session: ' + sessionError.message);
+      }
+
       if (!session) {
-        throw new Error('Not authenticated');
+        throw new Error('Not authenticated. Please sign in again.');
       }
 
       const response = await fetch(
@@ -109,16 +118,28 @@ export function useConnectGoogle() {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${session.access_token}`,
+            apikey: supabaseAnonKey || '',
           },
         }
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to initiate OAuth');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { error: errorText || `HTTP ${response.status}` };
+        }
+        console.error('OAuth request failed:', errorData);
+        throw new Error(errorData.error || 'Failed to initiate OAuth');
       }
 
       const { url } = await response.json();
+      if (!url) {
+        throw new Error('No OAuth URL returned from server');
+      }
+      
       window.location.href = url;
     },
   });
@@ -133,6 +154,8 @@ export function useDiscoverCalendars() {
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }
@@ -152,14 +175,20 @@ export function useDiscoverCalendars() {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
+            apikey: supabaseAnonKey || '',
           },
           body: JSON.stringify({ connectedAccountId }),
         }
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to discover calendars');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}` };
+        }
+        throw new Error(errorData.error || 'Failed to discover calendars');
       }
 
       return await response.json();
@@ -180,6 +209,8 @@ export function useSyncCalendar() {
   return useMutation({
     mutationFn: async (calendarMappingId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error('Supabase not configured');
       }
@@ -197,13 +228,19 @@ export function useSyncCalendar() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
+          apikey: supabaseAnonKey || '',
         },
         body: JSON.stringify({ calendarMappingId }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to sync calendar');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}` };
+        }
+        throw new Error(errorData.error || 'Failed to sync calendar');
       }
 
       return await response.json();
