@@ -74,32 +74,54 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase (anon key client)...');
+      console.log('Validating token with Supabase...');
       
-      // Create anon key client with Authorization header for token validation
-      // This is the correct pattern for validating user JWTs in Edge Functions
-      const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
-        global: {
-          headers: { Authorization: authHeader },
+      // Validate token by calling Supabase Auth API directly
+      // This is more reliable than using the client
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: {
+          Authorization: authHeader,
+          apikey: supabaseAnonKey,
         },
       });
-      
-      // Validate the user token - getUser() will use the Authorization header
-      const {
-        data: { user },
-        error: authError,
-      } = await supabaseAnon.auth.getUser();
+
+      if (!authResponse.ok) {
+        const errorText = await authResponse.text();
+        console.error('Auth API error:', {
+          status: authResponse.status,
+          statusText: authResponse.statusText,
+          error: errorText,
+        });
+        return new Response(
+          JSON.stringify({
+            error: 'Unauthorized',
+            details: errorText || 'Invalid token',
+          }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const user = await authResponse.json();
+      const authError = null; // No error if we got here
 
       if (authError) {
-        console.error('Auth error:', {
+        console.error('Auth error details:', {
           message: authError.message,
           status: authError.status,
           name: authError.name,
+          tokenLength: token.length,
+          tokenPreview: token.substring(0, 30) + '...',
+          supabaseUrl,
+          hasAnonKey: !!supabaseAnonKey,
         });
         return new Response(
           JSON.stringify({
             error: 'Unauthorized',
             details: authError.message,
+            code: authError.status || 401,
           }),
           {
             status: 401,
