@@ -38,8 +38,6 @@ serve(async req => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
-    // Use anon key client for token validation (validates user JWTs correctly)
-    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
     // Use service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -78,12 +76,19 @@ serve(async req => {
 
       console.log('Validating token with Supabase (anon key client)...');
       
-      // Validate the user token using anon key client
-      // This properly validates user JWT tokens
+      // Create anon key client with Authorization header for token validation
+      // This is the correct pattern for validating user JWTs in Edge Functions
+      const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      });
+      
+      // Validate the user token - getUser() will use the Authorization header
       const {
         data: { user },
         error: authError,
-      } = await supabaseAnon.auth.getUser(token);
+      } = await supabaseAnon.auth.getUser();
 
       if (authError) {
         console.error('Auth error:', {
