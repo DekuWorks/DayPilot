@@ -166,7 +166,7 @@ export interface AIAction {
   id: string;
   user_id: string;
   action_type: AIActionType;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
   output: {
     blocks: AIBlock[];
     alternatives?: AIBlock[][];
