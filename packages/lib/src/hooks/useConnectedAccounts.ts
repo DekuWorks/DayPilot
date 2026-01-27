@@ -126,7 +126,11 @@ export function useConnectGoogle() {
           error: refreshError,
         } = await supabaseClient.auth.refreshSession();
 
-        if (refreshError || !refreshedSession || !refreshedSession.access_token) {
+        if (
+          refreshError ||
+          !refreshedSession ||
+          !refreshedSession.access_token
+        ) {
           console.error('Refresh error:', refreshError);
           throw new Error(
             'Session expired. Please sign out and sign back in, then try again.'
@@ -136,7 +140,7 @@ export function useConnectGoogle() {
         // Use refreshed session
         const refreshedToken = refreshedSession.access_token;
         console.log('Using refreshed token, length:', refreshedToken.length);
-        
+
         const response = await fetch(
           `${supabaseUrl}/functions/v1/google-oauth?action=authorize`,
           {
@@ -162,7 +166,7 @@ export function useConnectGoogle() {
             error: errorData,
             url: response.url,
           });
-          
+
           if (response.status === 401) {
             throw new Error(
               errorData.error ||
@@ -170,7 +174,7 @@ export function useConnectGoogle() {
                 'Authentication failed. Please sign out and sign back in, then try again.'
             );
           }
-          
+
           throw new Error(
             errorData.error || errorData.details || 'Failed to initiate OAuth'
           );
@@ -188,7 +192,7 @@ export function useConnectGoogle() {
       // Validate token before sending
       const token = session.access_token;
       console.log('Using session token, length:', token.length);
-      
+
       // Verify token is valid by checking expiry
       if (session.expires_at) {
         const expiresAt = new Date(session.expires_at * 1000);
@@ -200,16 +204,20 @@ export function useConnectGoogle() {
             error: refreshError,
           } = await supabaseClient.auth.refreshSession();
 
-          if (refreshError || !refreshedSession || !refreshedSession.access_token) {
+          if (
+            refreshError ||
+            !refreshedSession ||
+            !refreshedSession.access_token
+          ) {
             throw new Error(
               'Session expired. Please sign out and sign back in, then try again.'
             );
           }
-          
+
           // Use refreshed token
           const refreshedToken = refreshedSession.access_token;
           console.log('Using refreshed token after expiry check');
-          
+
           const response = await fetch(
             `${supabaseUrl}/functions/v1/google-oauth?action=authorize`,
             {
@@ -234,7 +242,7 @@ export function useConnectGoogle() {
               statusText: response.statusText,
               error: errorData,
             });
-            
+
             if (response.status === 401) {
               throw new Error(
                 errorData.error ||
@@ -242,7 +250,7 @@ export function useConnectGoogle() {
                   'Authentication failed. Please sign out and sign back in, then try again.'
               );
             }
-            
+
             throw new Error(
               errorData.error || errorData.details || 'Failed to initiate OAuth'
             );
@@ -283,7 +291,7 @@ export function useConnectGoogle() {
           error: errorData,
           url: response.url,
         });
-        
+
         // Provide more specific error messages
         if (response.status === 401) {
           throw new Error(
@@ -292,7 +300,7 @@ export function useConnectGoogle() {
               'Authentication failed. Please sign out and sign back in, then try again.'
           );
         }
-        
+
         throw new Error(
           errorData.error || errorData.details || 'Failed to initiate OAuth'
         );

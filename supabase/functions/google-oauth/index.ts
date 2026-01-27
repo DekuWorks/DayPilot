@@ -37,7 +37,7 @@ serve(async req => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     // Use anon key for token validation (user JWTs are validated against anon key)
     const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
     // Use service role key for database operations
@@ -45,11 +45,11 @@ serve(async req => {
 
     if (action === 'authorize') {
       console.log('Processing authorize action');
-      
+
       // Get auth token from request
       const authHeader = req.headers.get('Authorization');
       console.log('Authorization header present:', !!authHeader);
-      
+
       if (!authHeader) {
         console.error('No Authorization header provided');
         return new Response(
@@ -64,7 +64,7 @@ serve(async req => {
       const token = authHeader.replace('Bearer ', '');
       console.log('Token length:', token.length);
       console.log('Token preview:', token.substring(0, 20) + '...');
-      
+
       if (!token) {
         console.error('Empty token in Authorization header');
         return new Response(
@@ -76,8 +76,10 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase (anon key for user JWT validation)...');
-      
+      console.log(
+        'Validating token with Supabase (anon key for user JWT validation)...'
+      );
+
       // Validate user JWT with anon key client
       // User JWTs are signed with the anon key's JWT secret, not service role
       const {
