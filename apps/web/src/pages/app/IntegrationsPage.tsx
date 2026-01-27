@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button, Badge } from '@daypilot/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useConnectedAccounts,
   useCalendarMappings,
@@ -39,6 +40,7 @@ function formatDistanceToNow(
 }
 
 export function IntegrationsPage() {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: connectedAccounts = [], isLoading: accountsLoading } =
     useConnectedAccounts();
@@ -65,20 +67,43 @@ export function IntegrationsPage() {
     connectedAccounts.length
   );
 
-  // Auto-discover calendars when user returns from OAuth
+  // Handle OAuth callback and refresh data
   useEffect(() => {
     const success = searchParams.get('success');
-    if (
-      success === 'connected' &&
-      googleAccount &&
-      calendarMappings.length === 0
-    ) {
-      // Auto-discover calendars after connection
-      handleDiscoverCalendars(googleAccount.id);
+    const error = searchParams.get('error');
+    
+    if (success === 'connected') {
+      // Invalidate queries to refresh connected accounts
+      queryClient.invalidateQueries({ queryKey: ['connected_accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['google_account_status'] });
+      
+      // Show success message
+      alert('Google Calendar connected successfully!');
+      
       // Clear the success param
       setSearchParams({});
+    } else if (error) {
+      // Show error message
+      alert(`Connection failed: ${error}`);
+      setSearchParams({});
     }
-  }, [googleAccount, calendarMappings.length, searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, queryClient]);
+
+  // Auto-discover calendars when Google account is connected (but not already discovering)
+  useEffect(() => {
+    if (
+      googleAccount &&
+      calendarMappings.length === 0 &&
+      !discoveringAccountId &&
+      !accountsLoading
+    ) {
+      // Small delay to ensure data is fully loaded
+      const timer = setTimeout(() => {
+        handleDiscoverCalendars(googleAccount.id);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [googleAccount?.id, calendarMappings.length, discoveringAccountId, accountsLoading]);
 
   const handleConnectGoogle = () => {
     connectGoogle.mutate();
