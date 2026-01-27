@@ -108,11 +108,12 @@ export function useConnectGoogle() {
       }
 
       // Build authorize URL with user_id and return path
-      // The authorize function is PUBLIC and will redirect to Google
+      // The authorize function is PUBLIC but still needs apikey for Supabase gateway
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const returnPath = '/app/integrations';
-      const authorizeUrl = `${supabaseUrl}/functions/v1/google-oauth-authorize?user_id=${currentUser.id}&state=${encodeURIComponent(returnPath)}`;
+      const authorizeUrl = `${supabaseUrl}/functions/v1/google-oauth-authorize?user_id=${currentUser.id}&state=${encodeURIComponent(returnPath)}&apikey=${supabaseAnonKey}`;
 
-      // Redirect directly to authorize function (no JWT needed - it's public)
+      // Redirect directly to authorize function (apikey allows public access)
       window.location.href = authorizeUrl;
     },
   });
