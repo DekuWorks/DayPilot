@@ -33,10 +33,14 @@ serve(async req => {
     const action = url.searchParams.get('action');
     console.log('Action:', action);
 
-    // Initialize Supabase client
-    // Use service role key - this is the pattern used in all other working Edge Functions
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Use anon key for token validation (user JWTs are validated against anon key)
+    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+    // Use service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === 'authorize') {
@@ -72,15 +76,14 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase (service role key)...');
+      console.log('Validating token with Supabase (anon key for user JWT validation)...');
       
-      // Use the same pattern as other working Edge Functions:
-      // Service role key client with getUser(token)
-      // This is the proven pattern used in generate-day, google-discover, google-sync, etc.
+      // Validate user JWT with anon key client
+      // User JWTs are signed with the anon key's JWT secret, not service role
       const {
         data: { user },
         error: authError,
-      } = await supabase.auth.getUser(token);
+      } = await supabaseAnon.auth.getUser(token);
 
       if (authError) {
         console.error('Auth error:', {
