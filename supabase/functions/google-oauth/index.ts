@@ -33,12 +33,10 @@ serve(async req => {
     const action = url.searchParams.get('action');
     console.log('Action:', action);
 
-    // Initialize Supabase clients
+    // Initialize Supabase client
+    // Use service role key - this is the pattern used in all other working Edge Functions
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Use service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (action === 'authorize') {
@@ -74,54 +72,27 @@ serve(async req => {
         );
       }
 
-      console.log('Validating token with Supabase...');
+      console.log('Validating token with Supabase (service role key)...');
       
-      // Validate token by calling Supabase Auth API directly
-      // This is more reliable than using the client
-      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: {
-          Authorization: authHeader,
-          apikey: supabaseAnonKey,
-        },
-      });
-
-      if (!authResponse.ok) {
-        const errorText = await authResponse.text();
-        console.error('Auth API error:', {
-          status: authResponse.status,
-          statusText: authResponse.statusText,
-          error: errorText,
-        });
-        return new Response(
-          JSON.stringify({
-            error: 'Unauthorized',
-            details: errorText || 'Invalid token',
-          }),
-          {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const user = await authResponse.json();
-      const authError = null; // No error if we got here
+      // Use the same pattern as other working Edge Functions:
+      // Service role key client with getUser(token)
+      // This is the proven pattern used in generate-day, google-discover, google-sync, etc.
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(token);
 
       if (authError) {
-        console.error('Auth error details:', {
+        console.error('Auth error:', {
           message: authError.message,
           status: authError.status,
           name: authError.name,
           tokenLength: token.length,
-          tokenPreview: token.substring(0, 30) + '...',
-          supabaseUrl,
-          hasAnonKey: !!supabaseAnonKey,
         });
         return new Response(
           JSON.stringify({
             error: 'Unauthorized',
             details: authError.message,
-            code: authError.status || 401,
           }),
           {
             status: 401,
