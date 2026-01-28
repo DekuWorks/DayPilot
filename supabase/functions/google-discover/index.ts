@@ -57,33 +57,53 @@ serve(async req => {
     const body = await req.json();
     const { connectedAccountId } = body;
 
-    if (!connectedAccountId) {
-      return new Response(
-        JSON.stringify({ error: 'connectedAccountId is required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    // Get connected account from connected_accounts table (if connectedAccountId provided)
+    let account: any = null;
+    
+    if (connectedAccountId) {
+      const { data: accountData, error: accountError } = await supabase
+        .from('connected_accounts')
+        .select('*')
+        .eq('id', connectedAccountId)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (!accountError && accountData) {
+        account = accountData;
+      }
     }
 
-    // Get connected account
-    const { data: account, error: accountError } = await supabase
-      .from('connected_accounts')
-      .select('*')
-      .eq('id', connectedAccountId)
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
+    // Fallback: If not found in connected_accounts or no ID provided, try google_accounts table
+    if (!account) {
+      console.log('Account not found in connected_accounts, trying google_accounts...');
+      const { data: googleAccount, error: googleAccountError } = await supabase
+        .from('google_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-    if (accountError || !account) {
-      return new Response(
-        JSON.stringify({ error: 'Connected account not found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      if (googleAccountError || !googleAccount) {
+        return new Response(
+          JSON.stringify({ error: 'Google account not found. Please reconnect your Google account.' }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Convert google_accounts format to match connected_accounts format
+      account = {
+        id: googleAccount.user_id, // Use user_id as id for compatibility
+        user_id: googleAccount.user_id,
+        provider: 'google',
+        access_token: googleAccount.access_token,
+        refresh_token: googleAccount.refresh_token,
+        token_expires_at: googleAccount.expires_at,
+        scope: googleAccount.scope,
+        is_active: true,
+      };
     }
 
     // Check and refresh token if needed
