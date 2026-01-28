@@ -111,24 +111,28 @@ serve(async req => {
 
     const tokens = await tokenResponse.json();
 
-    // Get user info from Google
-    const userInfoResponse = await fetch(
-      'https://www.googleapis.com/oauth2/v2/userinfo',
-      {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      }
-    );
-
-    if (!userInfoResponse.ok) {
-      return Response.redirect(
-        `${APP_BASE_URL}${returnPath}?error=user_info_failed`,
-        302
+    // Get user info from Google (optional - we have user_id from state)
+    let userInfo: { id?: string; email?: string } = {};
+    try {
+      const userInfoResponse = await fetch(
+        'https://www.googleapis.com/oauth2/v2/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+          },
+        }
       );
-    }
 
-    const userInfo = await userInfoResponse.json();
+      if (userInfoResponse.ok) {
+        userInfo = await userInfoResponse.json();
+      } else {
+        console.warn('Failed to fetch user info, continuing anyway:', await userInfoResponse.text());
+        // Continue without user info - we have user_id from state
+      }
+    } catch (error) {
+      console.warn('Error fetching user info, continuing anyway:', error);
+      // Continue without user info
+    }
 
     // Calculate token expiration
     const expiresAt = tokens.expires_in
@@ -160,12 +164,13 @@ serve(async req => {
     }
 
     // Also update connected_accounts table for backward compatibility
+    // Use user_id as provider_account_id if we don't have userInfo.id
     await supabase.from('connected_accounts').upsert(
       {
         user_id: userId,
         provider: 'google',
-        provider_account_id: userInfo.id,
-        email: userInfo.email,
+        provider_account_id: userInfo.id || userId, // Fallback to user_id if no userInfo
+        email: userInfo.email || null,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_expires_at: expiresAt,
