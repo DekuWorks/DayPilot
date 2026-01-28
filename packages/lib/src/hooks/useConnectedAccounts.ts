@@ -157,12 +157,20 @@ export function useDiscoverCalendars() {
 
       if (!response.ok) {
         let errorData;
+        let errorText = '';
         try {
-          errorData = await response.json();
+          errorText = await response.text();
+          errorData = JSON.parse(errorText);
         } catch {
-          errorData = { error: `HTTP ${response.status}` };
+          errorData = { error: `HTTP ${response.status}: ${errorText || 'Unknown error'}` };
         }
-        throw new Error(errorData.error || 'Failed to discover calendars');
+        console.error('Calendar discovery error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          url: `${supabaseUrl}/functions/v1/google-discover`,
+        });
+        throw new Error(errorData.error || errorData.message || `Failed to discover calendars (${response.status})`);
       }
 
       return await response.json();

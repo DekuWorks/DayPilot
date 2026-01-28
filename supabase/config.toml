@@ -23,5 +23,5 @@ entrypoint = "./functions/google-oauth-callback/index.ts"
 
 [functions.google-discover]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/google-discover/index.ts"

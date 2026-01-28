@@ -259,11 +259,15 @@ serve(async req => {
       }
     );
   } catch (error: any) {
-    console.error('Error in google-discover function:', error);
+    console.error('Error in google-discover function:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     return new Response(
       JSON.stringify({
-        error: 'Internal server error',
-        details: error.message,
+        error: error.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       }),
       {
         status: 500,
