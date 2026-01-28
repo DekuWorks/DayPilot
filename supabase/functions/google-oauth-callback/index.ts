@@ -171,7 +171,11 @@ serve(async req => {
 
     // Also update connected_accounts table for backward compatibility
     // Use user_id as provider_account_id if we don't have userInfo.id
+    // Email is required, so use a placeholder if we don't have it
     console.log('Storing in connected_accounts table...');
+    const providerAccountId = userInfo.id || userId;
+    const email = userInfo.email || `${userId}@google.oauth`; // Fallback email since NOT NULL
+    
     const { error: connectedAccountError, data: connectedAccountData } =
       await supabase
         .from('connected_accounts')
@@ -179,8 +183,8 @@ serve(async req => {
           {
             user_id: userId,
             provider: 'google',
-            provider_account_id: userInfo.id || userId, // Fallback to user_id if no userInfo
-            email: userInfo.email || null,
+            provider_account_id: providerAccountId,
+            email: email,
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
             token_expires_at: expiresAt,
@@ -198,7 +202,8 @@ serve(async req => {
         'Database error storing connected_accounts:',
         connectedAccountError
       );
-      // Don't fail the whole flow - google_accounts was stored successfully
+      // Log but don't fail - google_accounts was stored successfully
+      // The app can work with just google_accounts table
     } else {
       console.log(
         'Successfully stored in connected_accounts:',
