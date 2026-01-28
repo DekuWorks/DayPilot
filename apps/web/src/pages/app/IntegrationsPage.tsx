@@ -73,12 +73,15 @@ export function IntegrationsPage() {
     const error = searchParams.get('error');
     
     if (success === 'connected') {
-      // Invalidate queries to refresh connected accounts
+      // Show success message first
+      alert('Google Calendar connected successfully!');
+      
+      // Invalidate and refetch queries to refresh connected accounts
       queryClient.invalidateQueries({ queryKey: ['connected_accounts'] });
       queryClient.invalidateQueries({ queryKey: ['google_account_status'] });
       
-      // Show success message
-      alert('Google Calendar connected successfully!');
+      // Force a refetch
+      queryClient.refetchQueries({ queryKey: ['connected_accounts'] });
       
       // Clear the success param
       setSearchParams({});

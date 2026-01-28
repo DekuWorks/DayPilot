@@ -140,47 +140,71 @@ serve(async req => {
       : new Date(Date.now() + 3600 * 1000).toISOString(); // Default 1 hour
 
     // Store tokens in database
-    const { error: dbError } = await supabase.from('google_accounts').upsert(
-      {
-        user_id: userId,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at: expiresAt,
-        scope: tokens.scope,
-        token_type: tokens.token_type || 'Bearer',
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'user_id',
-      }
-    );
+    console.log('Storing tokens for user:', userId);
+    const { error: dbError, data: googleAccountData } = await supabase
+      .from('google_accounts')
+      .upsert(
+        {
+          user_id: userId,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_at: expiresAt,
+          scope: tokens.scope,
+          token_type: tokens.token_type || 'Bearer',
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        }
+      )
+      .select();
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database error storing google_accounts:', dbError);
       return Response.redirect(
         `${APP_BASE_URL}${returnPath}?error=database_error`,
         302
       );
     }
 
+    console.log('Successfully stored in google_accounts:', googleAccountData);
+
     // Also update connected_accounts table for backward compatibility
     // Use user_id as provider_account_id if we don't have userInfo.id
-    await supabase.from('connected_accounts').upsert(
-      {
-        user_id: userId,
-        provider: 'google',
-        provider_account_id: userInfo.id || userId, // Fallback to user_id if no userInfo
-        email: userInfo.email || null,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: expiresAt,
-        scope: tokens.scope,
-        is_active: true,
-      },
-      {
-        onConflict: 'user_id,provider,provider_account_id',
-      }
-    );
+    console.log('Storing in connected_accounts table...');
+    const { error: connectedAccountError, data: connectedAccountData } =
+      await supabase
+        .from('connected_accounts')
+        .upsert(
+          {
+            user_id: userId,
+            provider: 'google',
+            provider_account_id: userInfo.id || userId, // Fallback to user_id if no userInfo
+            email: userInfo.email || null,
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            token_expires_at: expiresAt,
+            scope: tokens.scope,
+            is_active: true,
+          },
+          {
+            onConflict: 'user_id,provider,provider_account_id',
+          }
+        )
+        .select();
+
+    if (connectedAccountError) {
+      console.error(
+        'Database error storing connected_accounts:',
+        connectedAccountError
+      );
+      // Don't fail the whole flow - google_accounts was stored successfully
+    } else {
+      console.log(
+        'Successfully stored in connected_accounts:',
+        connectedAccountData
+      );
+    }
 
     // Redirect back to app
     return Response.redirect(
