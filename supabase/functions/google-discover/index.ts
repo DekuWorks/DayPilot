@@ -14,10 +14,13 @@ const corsHeaders = {
 };
 
 serve(async req => {
-  // Handle CORS preflight requests
+  // CRITICAL: Handle CORS preflight requests FIRST, before any other logic
+  // This must be at the very top to work with verify_jwt=true
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS preflight request received');
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   console.log('Request received:', {
