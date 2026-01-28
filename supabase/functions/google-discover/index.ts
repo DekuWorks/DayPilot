@@ -16,8 +16,15 @@ const corsHeaders = {
 serve(async req => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('OPTIONS preflight request received');
     return new Response('ok', { headers: corsHeaders });
   }
+
+  console.log('Request received:', {
+    method: req.method,
+    url: req.url,
+    hasAuth: !!req.headers.get('Authorization'),
+  });
 
   try {
     if (req.method !== 'POST') {
