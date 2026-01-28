@@ -142,9 +142,12 @@ export function useDiscoverCalendars() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/google-discover`,
-        {
+      const functionUrl = `${supabaseUrl}/functions/v1/google-discover`;
+      console.log('Calling google-discover function:', functionUrl);
+      
+      let response: Response;
+      try {
+        response = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -152,8 +155,16 @@ export function useDiscoverCalendars() {
             apikey: supabaseAnonKey || '',
           },
           body: JSON.stringify({ connectedAccountId }),
-        }
-      );
+        });
+      } catch (networkError: any) {
+        console.error('Network error calling google-discover:', {
+          error: networkError,
+          message: networkError.message,
+          name: networkError.name,
+          url: functionUrl,
+        });
+        throw new Error(`Network error: ${networkError.message || 'Failed to connect to server'}`);
+      }
 
       if (!response.ok) {
         let errorData;

@@ -17,6 +17,7 @@ serve(async req => {
   // CRITICAL: Handle CORS preflight requests FIRST, before any other logic
   // This must be at the very top to work with verify_jwt=true
   if (req.method === 'OPTIONS') {
+    console.log('OPTIONS preflight request received');
     return new Response(null, {
       status: 204,
       headers: corsHeaders,
@@ -27,6 +28,7 @@ serve(async req => {
     method: req.method,
     url: req.url,
     hasAuth: !!req.headers.get('Authorization'),
+    headers: Object.fromEntries(req.headers.entries()),
   });
 
   try {
