@@ -7,7 +7,8 @@ const APP_BASE_URL = Deno.env.get('APP_BASE_URL') || 'https://daypilot.co';
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
 };
 
@@ -38,11 +39,11 @@ serve(async req => {
     // Get state parameter (return path after OAuth)
     const url = new URL(req.url);
     const returnPath = url.searchParams.get('state') || '/app/integrations';
-    
+
     // Get user_id from query param (frontend will pass it)
     // Format: state will be "user_id|return_path" or just "return_path"
     const userId = url.searchParams.get('user_id');
-    
+
     // Build state parameter for Google OAuth
     // Format: "user_id|return_path" so callback can extract both
     const state = userId ? `${userId}|${returnPath}` : returnPath;

@@ -71,7 +71,7 @@ serve(async req => {
 
     // Get connected account from connected_accounts table (if connectedAccountId provided)
     let account: any = null;
-    
+
     if (connectedAccountId) {
       const { data: accountData, error: accountError } = await supabase
         .from('connected_accounts')
@@ -88,7 +88,9 @@ serve(async req => {
 
     // Fallback: If not found in connected_accounts or no ID provided, try google_accounts table
     if (!account) {
-      console.log('Account not found in connected_accounts, trying google_accounts...');
+      console.log(
+        'Account not found in connected_accounts, trying google_accounts...'
+      );
       const { data: googleAccount, error: googleAccountError } = await supabase
         .from('google_accounts')
         .select('*')
@@ -97,7 +99,10 @@ serve(async req => {
 
       if (googleAccountError || !googleAccount) {
         return new Response(
-          JSON.stringify({ error: 'Google account not found. Please reconnect your Google account.' }),
+          JSON.stringify({
+            error:
+              'Google account not found. Please reconnect your Google account.',
+          }),
           {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -269,7 +274,8 @@ serve(async req => {
     return new Response(
       JSON.stringify({
         error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        details:
+          process.env.NODE_ENV === 'development' ? error.stack : undefined,
       }),
       {
         status: 500,

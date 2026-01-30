@@ -71,18 +71,18 @@ export function IntegrationsPage() {
   useEffect(() => {
     const success = searchParams.get('success');
     const error = searchParams.get('error');
-    
+
     if (success === 'connected') {
       // Show success message first
       alert('Google Calendar connected successfully!');
-      
+
       // Invalidate and refetch queries to refresh connected accounts
       queryClient.invalidateQueries({ queryKey: ['connected_accounts'] });
       queryClient.invalidateQueries({ queryKey: ['google_account_status'] });
-      
+
       // Force a refetch
       queryClient.refetchQueries({ queryKey: ['connected_accounts'] });
-      
+
       // Clear the success param
       setSearchParams({});
     } else if (error) {
@@ -106,7 +106,12 @@ export function IntegrationsPage() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [googleAccount?.id, calendarMappings.length, discoveringAccountId, accountsLoading]);
+  }, [
+    googleAccount?.id,
+    calendarMappings.length,
+    discoveringAccountId,
+    accountsLoading,
+  ]);
 
   const handleConnectGoogle = () => {
     connectGoogle.mutate();

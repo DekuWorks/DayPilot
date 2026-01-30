@@ -144,7 +144,7 @@ export function useDiscoverCalendars() {
 
       const functionUrl = `${supabaseUrl}/functions/v1/google-discover`;
       console.log('Calling google-discover function:', functionUrl);
-      
+
       let response: Response;
       try {
         response = await fetch(functionUrl, {
@@ -163,7 +163,9 @@ export function useDiscoverCalendars() {
           name: networkError.name,
           url: functionUrl,
         });
-        throw new Error(`Network error: ${networkError.message || 'Failed to connect to server'}`);
+        throw new Error(
+          `Network error: ${networkError.message || 'Failed to connect to server'}`
+        );
       }
 
       if (!response.ok) {
@@ -173,7 +175,9 @@ export function useDiscoverCalendars() {
           errorText = await response.text();
           errorData = JSON.parse(errorText);
         } catch {
-          errorData = { error: `HTTP ${response.status}: ${errorText || 'Unknown error'}` };
+          errorData = {
+            error: `HTTP ${response.status}: ${errorText || 'Unknown error'}`,
+          };
         }
         console.error('Calendar discovery error:', {
           status: response.status,
@@ -181,7 +185,11 @@ export function useDiscoverCalendars() {
           error: errorData,
           url: `${supabaseUrl}/functions/v1/google-discover`,
         });
-        throw new Error(errorData.error || errorData.message || `Failed to discover calendars (${response.status})`);
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            `Failed to discover calendars (${response.status})`
+        );
       }
 
       return await response.json();

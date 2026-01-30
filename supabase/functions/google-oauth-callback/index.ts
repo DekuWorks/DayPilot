@@ -126,7 +126,10 @@ serve(async req => {
       if (userInfoResponse.ok) {
         userInfo = await userInfoResponse.json();
       } else {
-        console.warn('Failed to fetch user info, continuing anyway:', await userInfoResponse.text());
+        console.warn(
+          'Failed to fetch user info, continuing anyway:',
+          await userInfoResponse.text()
+        );
         // Continue without user info - we have user_id from state
       }
     } catch (error) {
@@ -175,7 +178,7 @@ serve(async req => {
     console.log('Storing in connected_accounts table...');
     const providerAccountId = userInfo.id || userId;
     const email = userInfo.email || `${userId}@google.oauth`; // Fallback email since NOT NULL
-    
+
     const { error: connectedAccountError, data: connectedAccountData } =
       await supabase
         .from('connected_accounts')

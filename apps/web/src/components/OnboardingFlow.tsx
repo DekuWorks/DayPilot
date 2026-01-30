@@ -69,9 +69,7 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-[#F5E6D3] via-[#F8F5EE] to-[#F5E6D3]"
-    >
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-[#F5E6D3] via-[#F8F5EE] to-[#F5E6D3]">
       <Card className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2 text-[#2B3448]">
@@ -174,8 +172,7 @@ export function OnboardingFlow() {
           <Button
             onClick={handleSubmit}
             disabled={
-              createOrg.isPending ||
-              (choice !== 'personal' && !orgName.trim())
+              createOrg.isPending || (choice !== 'personal' && !orgName.trim())
             }
           >
             {createOrg.isPending ? 'Creating...' : 'Continue'}
