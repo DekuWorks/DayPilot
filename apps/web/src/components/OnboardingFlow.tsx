@@ -10,7 +10,8 @@ import {
 type OnboardingChoice = 'personal' | 'team' | 'franchise' | null;
 
 export function OnboardingFlow() {
-  const [choice, setChoice] = useState<OnboardingChoice>(null);
+  // Default to "personal" so Continue always does something sensible
+  const [choice, setChoice] = useState<OnboardingChoice>('personal');
   const [orgName, setOrgName] = useState('');
   const [locationName, setLocationName] = useState('');
   const navigate = useNavigate();
@@ -19,9 +20,22 @@ export function OnboardingFlow() {
   const createOrg = useCreateOrganization();
   const createLocation = useCreateLocation();
 
+  const markOnboardingSkipped = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('daypilot_onboarding_skipped', 'true');
+        // Let any listeners (like OnboardingWrapper) know immediately
+        window.dispatchEvent(new CustomEvent('daypilot_onboarding_skipped'));
+      }
+    } catch {
+      // If localStorage isn't available, just ignore – navigation will still work
+    }
+  };
+
   const handleSubmit = async () => {
     if (choice === 'personal') {
       // Just personal use, skip organization creation
+      markOnboardingSkipped();
       navigate('/app');
       return;
     }
@@ -56,11 +70,7 @@ export function OnboardingFlow() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background:
-          'linear-gradient(180deg, #F5E6D3 0%, #EFEBE2 50%, #F5E6D3 100%)',
-      }}
+      className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-[#F5E6D3] via-[#F8F5EE] to-[#F5E6D3]"
     >
       <Card className="max-w-2xl w-full">
         <div className="text-center mb-8">
@@ -152,20 +162,24 @@ export function OnboardingFlow() {
         )}
 
         <div className="flex justify-end gap-4">
-          <Button variant="outline" onClick={() => navigate('/app')}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              markOnboardingSkipped();
+              navigate('/app');
+            }}
+          >
             Skip for now
           </Button>
-          {choice && (
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                createOrg.isPending ||
-                (choice !== 'personal' && !orgName.trim())
-              }
-            >
-              {createOrg.isPending ? 'Creating...' : 'Continue'}
-            </Button>
-          )}
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              createOrg.isPending ||
+              (choice !== 'personal' && !orgName.trim())
+            }
+          >
+            {createOrg.isPending ? 'Creating...' : 'Continue'}
+          </Button>
         </div>
       </Card>
     </div>
