@@ -120,17 +120,18 @@ export function useConnectGoogle() {
 }
 
 /**
- * Discover and map Google calendars
+ * Discover and map Google calendars.
+ * Uses supabase.functions.invoke so the session JWT is sent automatically (avoids CORS preflight issues).
  */
 export function useDiscoverCalendars() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
+      if (
+        !import.meta.env.VITE_SUPABASE_URL ||
+        import.meta.env.VITE_SUPABASE_URL === 'https://placeholder.supabase.co'
+      ) {
         throw new Error('Supabase not configured');
       }
 
@@ -142,57 +143,27 @@ export function useDiscoverCalendars() {
         throw new Error('Not authenticated');
       }
 
-      const functionUrl = `${supabaseUrl}/functions/v1/google-discover`;
-      console.log('Calling google-discover function:', functionUrl);
-
-      let response: Response;
-      try {
-        response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: supabaseAnonKey || '',
-          },
-          body: JSON.stringify({ connectedAccountId }),
-        });
-      } catch (networkError: any) {
-        console.error('Network error calling google-discover:', {
-          error: networkError,
-          message: networkError.message,
-          name: networkError.name,
-          url: functionUrl,
-        });
-        throw new Error(
-          `Network error: ${networkError.message || 'Failed to connect to server'}`
-        );
-      }
-
-      if (!response.ok) {
-        let errorData;
-        let errorText = '';
-        try {
-          errorText = await response.text();
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = {
-            error: `HTTP ${response.status}: ${errorText || 'Unknown error'}`,
-          };
+      const { data, error } = await supabaseClient.functions.invoke(
+        'google-discover',
+        {
+          body: { connectedAccountId },
         }
-        console.error('Calendar discovery error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          url: `${supabaseUrl}/functions/v1/google-discover`,
-        });
+      );
+
+      if (error) {
+        console.error('Calendar discovery error:', { error, data });
+        throw new Error(error.message || 'Failed to discover calendars');
+      }
+
+      if (data?.error) {
         throw new Error(
-          errorData.error ||
-            errorData.message ||
-            `Failed to discover calendars (${response.status})`
+          typeof data.error === 'string'
+            ? data.error
+            : data.error?.message || 'Failed to discover calendars'
         );
       }
 
-      return await response.json();
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar_mappings'] });

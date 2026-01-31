@@ -71,6 +71,7 @@ serve(async req => {
 
     // Get connected account from connected_accounts table (if connectedAccountId provided)
     let account: any = null;
+    let fromGoogleAccounts = false;
 
     if (connectedAccountId) {
       const { data: accountData, error: accountError } = await supabase
@@ -110,9 +111,36 @@ serve(async req => {
         );
       }
 
-      // Convert google_accounts format to match connected_accounts format
+      fromGoogleAccounts = true;
+      // Ensure we have a connected_accounts row for calendar_mappings FK (create if missing)
+      let connectedId: string;
+      const { data: existingConnected } = await supabase
+        .from('connected_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .maybeSingle();
+      if (existingConnected?.id) {
+        connectedId = existingConnected.id;
+      } else {
+        const { data: newRow, error: insertErr } = await supabase
+          .from('connected_accounts')
+          .insert({
+            user_id: user.id,
+            provider: 'google',
+            provider_account_id: user.id,
+            email: `${user.id}@google.oauth`,
+            access_token: googleAccount.access_token,
+            refresh_token: googleAccount.refresh_token,
+            token_expires_at: googleAccount.expires_at,
+            is_active: true,
+          })
+          .select('id')
+          .single();
+        connectedId = !insertErr && newRow ? newRow.id : googleAccount.user_id;
+      }
       account = {
-        id: googleAccount.user_id, // Use user_id as id for compatibility
+        id: connectedId,
         user_id: googleAccount.user_id,
         provider: 'google',
         access_token: googleAccount.access_token,
@@ -148,17 +176,30 @@ serve(async req => {
       if (tokenResponse.ok) {
         const tokens = await tokenResponse.json();
         accessToken = tokens.access_token;
+        const newExpiresAt = tokens.expires_in
+          ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+          : null;
 
-        // Update stored token
+        // Update stored token in connected_accounts (if we have a row there)
+        if (!fromGoogleAccounts) {
+          await supabase
+            .from('connected_accounts')
+            .update({
+              access_token: tokens.access_token,
+              token_expires_at: newExpiresAt,
+            })
+            .eq('id', account.id);
+        }
+
+        // Always update google_accounts so tokens stay in sync
         await supabase
-          .from('connected_accounts')
+          .from('google_accounts')
           .update({
             access_token: tokens.access_token,
-            token_expires_at: tokens.expires_in
-              ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-              : null,
+            expires_at:
+              newExpiresAt || new Date(Date.now() + 3600 * 1000).toISOString(),
           })
-          .eq('id', account.id);
+          .eq('user_id', user.id);
       }
     }
 
@@ -183,11 +224,11 @@ serve(async req => {
         continue;
       }
 
-      // Check if mapping already exists
+      // Check if mapping already exists (use account.id so fallback from google_accounts works)
       const { data: existingMapping } = await supabase
         .from('calendar_mappings')
         .select('id')
-        .eq('connected_account_id', connectedAccountId)
+        .eq('connected_account_id', account.id)
         .eq('provider_calendar_id', googleCalendar.id)
         .single();
 
@@ -235,7 +276,7 @@ serve(async req => {
       const { data: mapping, error: mappingError } = await supabase
         .from('calendar_mappings')
         .insert({
-          connected_account_id: connectedAccountId,
+          connected_account_id: account.id,
           daypilot_calendar_id: daypilotCalendarId,
           provider_calendar_id: googleCalendar.id,
           provider_calendar_name: googleCalendar.summary || 'Untitled Calendar',

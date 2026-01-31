@@ -56,7 +56,16 @@ supabase secrets set FRONTEND_URL=https://daypilot.co
 3. Add each secret:
    - **Name**: `GOOGLE_CLIENT_ID`, **Value**: (your client ID)
    - **Name**: `GOOGLE_CLIENT_SECRET`, **Value**: (your client secret)
-   - **Name**: `FRONTEND_URL`, **Value**: `https://daypilot.co`
+   - **Name**: `GOOGLE_REDIRECT_URI`, **Value**: (your callback URL, e.g. `https://xxx.supabase.co/functions/v1/google-oauth-callback`)
+   - **Name**: `APP_BASE_URL`, **Value**: `https://www.daypilot.co` (canonical app URL; use one domain consistently)
+
+### Domain consistency
+
+- Prefer one canonical domain (e.g. `https://www.daypilot.co`). Set **APP_BASE_URL** to that:
+  - `APP_BASE_URL=https://www.daypilot.co`
+- In Google Cloud Console → APIs & Services → Credentials → your OAuth client → **Authorized JavaScript origins**, add:
+  - `https://www.daypilot.co`
+  - `https://daypilot.co` (optional if you redirect to www)
 
 ## Step 3: Verify Secrets
 
@@ -70,7 +79,8 @@ You should see:
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
-- `FRONTEND_URL`
+- `GOOGLE_REDIRECT_URI`
+- `APP_BASE_URL` (e.g. `https://www.daypilot.co`)
 
 ## Step 4: Deploy Edge Functions
 
@@ -80,8 +90,14 @@ supabase functions deploy google-discover
 supabase functions deploy google-sync
 ```
 
+## Verify with network + logs (E)
+
+If "Discover calendars" fails:
+
+1. **Network tab**: In DevTools → Network, trigger "Discover calendars" and confirm a request to `.../functions/v1/google-discover` (status 200 or the actual error).
+2. **Edge Function logs**: In Supabase Dashboard → Edge Functions → `google-discover` → Logs. Check for thrown errors or missing tokens.
+
 ## Important Notes
 
-- Make sure the redirect URI in Google Cloud Console **exactly matches**: `https://daypilot.co/app/integrations/google/callback`
-- No trailing slashes!
-- The redirect URI must match what's in the code (case-sensitive)
+- Make sure the redirect URI in Google Cloud Console **exactly matches** your Supabase callback URL (e.g. `https://xxx.supabase.co/functions/v1/google-oauth-callback`).
+- No trailing slashes. The redirect URI must match what's in the code (case-sensitive).
