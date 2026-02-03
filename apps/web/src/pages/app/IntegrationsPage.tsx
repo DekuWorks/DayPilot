@@ -11,6 +11,7 @@ import {
   useDiscoverCalendars,
   useEntitlements,
   canSyncCalendars,
+  isSupabaseConfigured,
 } from '@daypilot/lib';
 // Helper function to format relative time
 function formatDistanceToNow(
@@ -170,6 +171,19 @@ export function IntegrationsPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Integrations</h1>
+
+      {!isSupabaseConfigured() && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm font-medium text-amber-900">
+            Supabase is not configured for this build.
+          </p>
+          <p className="text-sm text-amber-800 mt-1">
+            Add <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_URL</code> and{' '}
+            <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> in your repo’s{' '}
+            <strong>Settings → Secrets and variables → Actions</strong>, then redeploy so Google Calendar discovery and other features work.
+          </p>
+        </div>
+      )}
 
       {/* Google Calendar */}
       <Card className="mb-6">
