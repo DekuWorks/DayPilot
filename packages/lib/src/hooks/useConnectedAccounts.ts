@@ -128,11 +128,14 @@ export function useDiscoverCalendars() {
 
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (
-        !import.meta.env.VITE_SUPABASE_URL ||
-        import.meta.env.VITE_SUPABASE_URL === 'https://placeholder.supabase.co'
+        !supabaseUrl ||
+        supabaseUrl === 'https://placeholder.supabase.co'
       ) {
-        throw new Error('Supabase not configured');
+        throw new Error(
+          'Supabase not configured. In GitHub: Settings → Secrets and variables → Actions, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then redeploy.'
+        );
       }
 
       const {
@@ -152,7 +155,19 @@ export function useDiscoverCalendars() {
 
       if (error) {
         console.error('Calendar discovery error:', { error, data });
-        throw new Error(error.message || 'Failed to discover calendars');
+        const rawMsg =
+          error.message ||
+          (data && typeof data.error === 'string' ? data.error : null) ||
+          'Failed to discover calendars';
+        // Help users when the request never reaches Supabase (wrong URL or function not deployed)
+        const isFetchError =
+          rawMsg.includes('Failed to send a request') ||
+          rawMsg.includes('FunctionsFetchError') ||
+          rawMsg.includes('fetch failed');
+        const msg = isFetchError
+          ? `${rawMsg} Make sure VITE_SUPABASE_URL points to your Supabase project (e.g. https://YOUR_PROJECT.supabase.co) in production, and that the google-discover Edge Function is deployed (supabase functions deploy google-discover).`
+          : rawMsg;
+        throw new Error(msg);
       }
 
       if (data?.error) {

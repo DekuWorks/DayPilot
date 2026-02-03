@@ -5,7 +5,7 @@ import { google } from 'https://esm.sh/googleapis@126.0.1';
 const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
-// CORS headers
+// CORS headers — applied to every response
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -13,22 +13,26 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
+function jsonResponse(body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 serve(async req => {
-  // CRITICAL: Handle CORS preflight requests FIRST, before any other logic
-  // This must be at the very top to work with verify_jwt=true
+  const requestId = `gd-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+  // CRITICAL: Handle CORS preflight FIRST
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS preflight request received');
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
+    console.log(`[google-discover] ${requestId} OPTIONS preflight`);
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  console.log('Request received:', {
+  console.log(`[google-discover] ${requestId} request`, {
     method: req.method,
     url: req.url,
     hasAuth: !!req.headers.get('Authorization'),
-    headers: Object.fromEntries(req.headers.entries()),
   });
 
   try {
@@ -294,6 +298,11 @@ serve(async req => {
       createdMappings.push(mapping);
     }
 
+    console.log(`[google-discover] ${requestId} success`, {
+      calendarsDiscovered: calendars.length,
+      mappingsCreated: createdMappings.length,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -306,22 +315,17 @@ serve(async req => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
-    console.error('Error in google-discover function:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    return new Response(
-      JSON.stringify({
-        error: error.message || 'Internal server error',
-        details:
-          process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      }),
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[google-discover] ${requestId} exception:`, err.message);
+    console.error(`[google-discover] ${requestId} stack:`, err.stack);
+    return jsonResponse(
       {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+        error: err.message || 'Internal server error',
+        requestId,
+        details: err.stack ?? undefined,
+      },
+      500
     );
   }
 });

@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
+      # Required: In repo Settings → Secrets and variables → Actions, add
+      # VITE_SUPABASE_URL = https://YOUR_PROJECT_REF.supabase.co
+      # VITE_SUPABASE_ANON_KEY = your anon key (so Edge Functions and auth work)
       - name: Build
         run: pnpm build
         env:
@@ -47,9 +50,10 @@ jobs:
           fi
           # Create .nojekyll to disable Jekyll processing
           touch apps/web/dist/.nojekyll
-          # Create 404.html for SPA routing - just copy index.html
-          # This way, when GitHub Pages serves 404, it serves the React app
-          # and React Router will handle the routing
+          # SPA fallback for www.daypilot.co (and any path): 404.html = index.html.
+          # When GitHub Pages gets a request for a missing path (e.g. /app/integrations
+          # or /app/integrations?foo=bar), it serves 404.html; the app loads and
+          # React Router handles the route and query params.
           cp apps/web/dist/index.html apps/web/dist/404.html
           # Verify build output
           ls -la apps/web/dist/
