@@ -178,9 +178,15 @@ export function IntegrationsPage() {
             Supabase is not configured for this build.
           </p>
           <p className="text-sm text-amber-800 mt-1">
-            Add <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_URL</code> and{' '}
-            <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> in your repo’s{' '}
-            <strong>Settings → Secrets and variables → Actions</strong>, then redeploy so Google Calendar discovery and other features work.
+            Add{' '}
+            <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_URL</code>{' '}
+            and{' '}
+            <code className="bg-amber-100 px-1 rounded">
+              VITE_SUPABASE_ANON_KEY
+            </code>{' '}
+            in your repo’s{' '}
+            <strong>Settings → Secrets and variables → Actions</strong>, then
+            redeploy so Google Calendar discovery and other features work.
           </p>
         </div>
       )}

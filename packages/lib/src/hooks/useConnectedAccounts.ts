@@ -129,10 +129,7 @@ export function useDiscoverCalendars() {
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (
-        !supabaseUrl ||
-        supabaseUrl === 'https://placeholder.supabase.co'
-      ) {
+      if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error(
           'Supabase not configured. In GitHub: Settings → Secrets and variables → Actions, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then redeploy.'
         );
