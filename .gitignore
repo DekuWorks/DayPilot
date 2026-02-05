@@ -49,6 +49,12 @@ lerna-debug.log*
 # TypeScript
 *.tsbuildinfo
 
+# .NET / C# API
+api/**/bin/
+api/**/obj/
+api/**/*.user
+api/**/launchSettings.json
+
 
 
 

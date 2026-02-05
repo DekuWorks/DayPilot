@@ -121,20 +121,18 @@ export function useConnectGoogle() {
 
 /**
  * Discover and map Google calendars.
- * Uses fetch with apikey in the URL so the Supabase gateway accepts the CORS preflight (OPTIONS).
+ * If VITE_GOOGLE_DISCOVER_API_URL is set, calls your custom API (e.g. C#); otherwise calls Supabase Edge Function.
  */
 export function useDiscoverCalendars() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
+      const customApiUrl = import.meta.env.VITE_GOOGLE_DISCOVER_API_URL as
+        | string
+        | undefined;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
-        throw new Error(
-          'Supabase not configured. In GitHub: Settings → Secrets and variables → Actions, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then redeploy.'
-        );
-      }
 
       const {
         data: { session },
@@ -144,7 +142,24 @@ export function useDiscoverCalendars() {
         throw new Error('Not authenticated');
       }
 
-      const url = `${supabaseUrl}/functions/v1/google-discover${anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : ''}`;
+      const url = customApiUrl
+        ? (() => {
+            const base = customApiUrl.replace(/\/$/, '');
+            if (base.endsWith('/discover')) return base;
+            if (base.endsWith('/api/google')) return `${base}/discover`;
+            return `${base}/api/google/discover`;
+          })()
+        : supabaseUrl &&
+            supabaseUrl !== 'https://placeholder.supabase.co'
+          ? `${supabaseUrl}/functions/v1/google-discover${anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : ''}`
+          : '';
+
+      if (!url) {
+        throw new Error(
+          'Supabase not configured and VITE_GOOGLE_DISCOVER_API_URL not set. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, or set VITE_GOOGLE_DISCOVER_API_URL to your custom API (e.g. https://your-api.com/api/google/discover).'
+        );
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
