@@ -51,14 +51,14 @@ jobs:
           # Create .nojekyll to disable Jekyll processing
           touch apps/web/dist/.nojekyll
           # SPA fallback for www.daypilot.co (and any path): 404.html = index.html.
-          # When GitHub Pages gets a request for a missing path (e.g. /app/integrations
-          # or /app/integrations?foo=bar), it serves 404.html; the app loads and
-          # React Router handles the route and query params.
           cp apps/web/dist/index.html apps/web/dist/404.html
-          # Verify build output
+      - name: Create index.html for SPA routes (200 instead of 404)
+        run: bash apps/web/scripts/spa-fallback-pages.sh apps/web/dist
+      - name: Verify build output
+        run: |
           ls -la apps/web/dist/
           echo "Build complete. Files in dist:"
-          find apps/web/dist -type f | head -10
+          find apps/web/dist -type f | head -20
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
