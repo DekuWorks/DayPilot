@@ -25,7 +25,12 @@ export function LoginPage() {
 
       navigate('/app');
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      const msg = err?.message || 'Failed to sign in';
+      setError(
+        msg.toLowerCase().includes('invalid api key')
+          ? `${msg} Use the legacy anon key (JWT) in GitHub Actions secrets as VITE_SUPABASE_ANON_KEY, then redeploy.`
+          : msg
+      );
     } finally {
       setLoading(false);
     }
