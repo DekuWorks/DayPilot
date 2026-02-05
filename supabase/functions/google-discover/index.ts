@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { google } from 'https://esm.sh/googleapis@126.0.1';
 
 const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
+
+// Google Calendar API v3 (REST) — avoids googleapis package which fails in Deno Edge runtime
+const CALENDAR_LIST_URL = 'https://www.googleapis.com/calendar/v3/users/me/calendarList';
 
 // CORS headers — applied to every response
 const corsHeaders = {
@@ -207,16 +209,28 @@ serve(async req => {
       }
     }
 
-    // Initialize Google Calendar API
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: accessToken });
-    const calendar = google.calendar({ version: 'v3', auth });
+    // List calendars via Google Calendar API v3 REST (no googleapis package — Deno-safe)
+    const calendarListRes = await fetch(CALENDAR_LIST_URL, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!calendarListRes.ok) {
+      const errText = await calendarListRes.text();
+      throw new Error(
+        `Google Calendar API error: ${calendarListRes.status} ${errText.slice(0, 200)}`
+      );
+    }
+    const calendarListData = (await calendarListRes.json()) as {
+      items?: Array<{
+        id?: string;
+        summary?: string;
+        accessRole?: string;
+        backgroundColor?: string;
+        description?: string;
+      }>;
+    };
+    const calendars = calendarListData.items || [];
 
-    // List all calendars
-    const { data: calendarsResponse } = await calendar.calendarList.list();
-    const calendars = calendarsResponse.items || [];
-
-    const createdMappings: any[] = [];
+    const createdMappings: Array<{ id: string; provider_calendar_name: string }> = [];
 
     // For each Google calendar, create a DayPilot calendar and mapping
     for (const googleCalendar of calendars) {

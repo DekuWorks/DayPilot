@@ -121,7 +121,7 @@ export function useConnectGoogle() {
 
 /**
  * Discover and map Google calendars.
- * Uses supabase.functions.invoke so the session JWT is sent automatically (avoids CORS preflight issues).
+ * Uses fetch with apikey in the URL so the Supabase gateway accepts the CORS preflight (OPTIONS).
  */
 export function useDiscoverCalendars() {
   const queryClient = useQueryClient();
@@ -129,6 +129,7 @@ export function useDiscoverCalendars() {
   return useMutation({
     mutationFn: async (connectedAccountId: string) => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
         throw new Error(
           'Supabase not configured. In GitHub: Settings → Secrets and variables → Actions, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then redeploy.'
@@ -143,35 +144,44 @@ export function useDiscoverCalendars() {
         throw new Error('Not authenticated');
       }
 
-      const { data, error } = await supabaseClient.functions.invoke(
-        'google-discover',
-        {
-          body: { connectedAccountId },
-        }
-      );
+      const url = `${supabaseUrl}/functions/v1/google-discover${anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : ''}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ connectedAccountId }),
+      });
 
-      if (error) {
-        console.error('Calendar discovery error:', { error, data });
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
         const rawMsg =
-          error.message ||
-          (data && typeof data.error === 'string' ? data.error : null) ||
-          'Failed to discover calendars';
-        // Help users when the request never reaches Supabase (wrong URL or function not deployed)
+          (data && typeof (data as { error?: string }).error === 'string'
+            ? (data as { error: string }).error
+            : null) ||
+          `HTTP ${response.status}`;
         const isFetchError =
-          rawMsg.includes('Failed to send a request') ||
-          rawMsg.includes('FunctionsFetchError') ||
+          response.status === 0 ||
+          rawMsg.includes('Failed to send') ||
           rawMsg.includes('fetch failed');
         const msg = isFetchError
-          ? `${rawMsg} Make sure VITE_SUPABASE_URL points to your Supabase project (e.g. https://YOUR_PROJECT.supabase.co) in production, and that the google-discover Edge Function is deployed (supabase functions deploy google-discover).`
+          ? `${rawMsg} Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in production, and that the google-discover Edge Function is deployed (supabase functions deploy google-discover).`
           : rawMsg;
+        console.error('Calendar discovery error:', { response, data });
         throw new Error(msg);
       }
 
-      if (data?.error) {
+      if (data && typeof data === 'object' && (data as { error?: unknown }).error) {
+        const err = (data as { error: string | { message?: string } }).error;
         throw new Error(
-          typeof data.error === 'string'
-            ? data.error
-            : data.error?.message || 'Failed to discover calendars'
+          typeof err === 'string' ? err : err?.message || 'Failed to discover calendars'
         );
       }
 
