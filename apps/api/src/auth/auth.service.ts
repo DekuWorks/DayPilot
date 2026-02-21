@@ -36,13 +36,14 @@ export class AuthService {
       data: {
         email: dto.email.toLowerCase(),
         passwordHash,
-        name: dto.name ?? null,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
       },
     });
     await this.prisma.subscription.create({
       data: { userId: user.id },
     });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole);
+    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl ?? null);
   }
 
   async login(dto: LoginDto) {
@@ -62,7 +63,7 @@ export class AuthService {
       entityId: user.id,
       userId: user.id,
     });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole);
+    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl);
   }
 
   async refresh(refreshToken: string) {
@@ -90,7 +91,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole);
+    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl);
   }
 
   async logout(refreshToken: string | null) {
@@ -115,6 +116,9 @@ export class AuthService {
     userId: string,
     email: string,
     role: UserRole,
+    firstName: string,
+    lastName: string,
+    avatarUrl?: string | null,
   ) {
     const accessToken = this.jwtService.sign(
       { sub: userId, email, role, type: 'access' },
@@ -133,7 +137,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresIn: 900, // 15 min in seconds
-      user: { id: userId, email, role },
+      user: { id: userId, email, role, firstName, lastName, avatarUrl: avatarUrl ?? null },
     };
   }
 
@@ -144,7 +148,18 @@ export class AuthService {
   async validateUserById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, role: true },
+      select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true, role: true },
     });
+  }
+
+  async updateProfile(userId: string, dto: { avatarUrl?: string | null }) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl || null }),
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true, role: true },
+    });
+    return updated;
   }
 }

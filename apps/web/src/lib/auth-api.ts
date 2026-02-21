@@ -3,9 +3,24 @@ import { getApiUrl, getAuthHeaders } from "./api";
 export type User = {
   id: string;
   email: string;
-  name: string | null;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
   role: string;
 };
+
+export async function updateProfile(data: { avatarUrl?: string | null }): Promise<User> {
+  const res = await fetch(`${getApiUrl()}/auth/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? "Failed to update profile");
+  }
+  return res.json();
+}
 
 export type AuthResponse = {
   accessToken: string;
@@ -33,12 +48,13 @@ export async function login(
 export async function signup(
   email: string,
   password: string,
-  name?: string
+  firstName: string,
+  lastName: string
 ): Promise<AuthResponse> {
   const res = await fetch(`${getApiUrl()}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name: name || undefined }),
+    body: JSON.stringify({ email, password, firstName, lastName }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

@@ -41,9 +41,12 @@ export class SentryFilter implements ExceptionFilter {
       });
     }
 
-    this.logger.error(
-      `${req?.method ?? '?'} ${req?.url ?? '?'} ${status} - ${message}`,
-    );
+    const logLine = `${req?.method ?? '?'} ${req?.url ?? '?'} ${status} - ${message}`;
+    if (status >= 500) {
+      this.logger.error(logLine);
+    } else {
+      this.logger.warn(logLine);
+    }
 
     const body =
       exception instanceof HttpException

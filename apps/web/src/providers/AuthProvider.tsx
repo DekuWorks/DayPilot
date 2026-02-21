@@ -18,7 +18,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -121,8 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signup = useCallback(
-    async (email: string, password: string, name?: string) => {
-      const data = await authApi.signup(email, password, name);
+    async (email: string, password: string, firstName: string, lastName: string) => {
+      const data = await authApi.signup(email, password, firstName, lastName);
       persistAuth(data);
       setState({
         user: data.user,

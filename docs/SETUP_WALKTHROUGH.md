@@ -10,6 +10,8 @@ Follow these steps in order to plug in and configure everything: **required** fi
 
 **Option A: Docker (recommended for local)**
 
+If you don’t already have a container named `daypilot-db`:
+
 ```bash
 docker run -d --name daypilot-db -p 5432:5432 \
   -e POSTGRES_USER=postgres \
@@ -17,6 +19,8 @@ docker run -d --name daypilot-db -p 5432:5432 \
   -e POSTGRES_DB=daypilot \
   postgres:16
 ```
+
+**If you see "container name already in use":** the container already exists. Start it if it’s stopped: `docker start daypilot-db`. Check status: `docker ps` (you should see `daypilot-db` and port 5432). Then continue to Step 1.2.
 
 **Option B: Docker Compose (if you use the repo’s `docker-compose.yml`)**
 
