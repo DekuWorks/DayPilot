@@ -1,6 +1,6 @@
 # Deployment & domain (DayPilot)
 
-Get the app running on your domain (e.g. **daypilot.co**) and keep the GitHub repo as the source of truth.
+**Production:** [daypilot.co](https://daypilot.co) — domain is connected. Pushes to `main` deploy to this domain (via Vercel or your connected host).
 
 ---
 

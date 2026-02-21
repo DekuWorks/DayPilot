@@ -4,7 +4,7 @@
 
 DayPilot is an AI-powered scheduling assistant that helps you manage your calendar across platforms. Connect your calendars, let AI plan your day, and pilot your schedule with confidence.
 
-Visit [daypilot.co](https://daypilot.co) to learn more.
+**Live site:** [daypilot.co](https://daypilot.co) (domain connected; deploys from `main`).
 
 ---
 
