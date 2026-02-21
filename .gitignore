@@ -8,13 +8,13 @@ Thumbs.db
 *.swp
 *.swo
 
-# Env (do not commit secrets)
+# Env (do not commit secrets; .env.example is allowed)
 .env
-.env.*
 .env.local
 .env.*.local
 **/.env
-**/.env.*
+!/.env.example
+!**/.env.example
 
 # Logs
 *.log
