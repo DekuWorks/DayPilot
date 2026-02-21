@@ -1,7 +1,5 @@
-# Build and push DayPilot C# API Docker image to GitHub Container Registry.
-# To deploy: use the image (ghcr.io/OWNER/daypilot-api:latest) in Azure Container Apps,
-# AWS ECS, Fly.io, or any host that runs Docker.
-name: Build and push API image
+# Build and push DayPilot C# API image; optionally deploy to Fly.io.
+name: Build and deploy API
 
 on:
   push:
@@ -53,3 +51,20 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-fly:
+    needs: build-and-push
+    if: ${{ secrets.FLY_API_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        working-directory: api/DayPilot.Api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: fly deploy --remote-only

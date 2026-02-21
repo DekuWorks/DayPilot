@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabaseClient, isSupabaseConfigured } from '@daypilot/lib';
+import { supabaseClient, isSupabaseConfigured, isApiMode, getApiConfig } from '@daypilot/lib';
 import { Button, Input, Label, Card } from '@daypilot/ui';
+import { setStoredApiToken } from '../components/InitApiAuth';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,6 +17,25 @@ export function LoginPage() {
     setLoading(true);
 
     try {
+      if (isApiMode()) {
+        const api = getApiConfig();
+        if (!api) throw new Error('API not configured');
+        const base = api.apiUrl.replace(/\/$/, '');
+        const url = base.endsWith('/api') ? `${base}/auth/login` : `${base}/api/auth/login`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);
+        const token = (data as { token?: string }).token;
+        if (!token) throw new Error('No token returned');
+        setStoredApiToken(token);
+        navigate('/app');
+        return;
+      }
+
       const { error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
@@ -36,7 +56,19 @@ export function LoginPage() {
     }
   };
 
-  if (!isSupabaseConfigured()) {
+  const handleGoogleSignIn = () => {
+    if (isApiMode()) {
+      const api = getApiConfig();
+      if (!api) return;
+      const base = api.apiUrl.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/auth/google` : `${base}/api/auth/google`;
+      window.location.href = `${url}?return_path=/app`;
+      return;
+    }
+    supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/app` } });
+  };
+
+  if (!isApiMode() && !isSupabaseConfigured()) {
     return (
       <div className="max-w-md mx-auto py-12">
         <Card>
@@ -112,6 +144,18 @@ export function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
+          {(isApiMode() || isSupabaseConfigured()) && (
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleSignIn}
+              >
+                Sign in with Google
+              </Button>
+            </div>
+          )}
         </form>
       </Card>
     </div>

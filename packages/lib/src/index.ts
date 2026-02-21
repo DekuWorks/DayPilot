@@ -1,6 +1,9 @@
 // Supabase client
 export { supabaseClient, isSupabaseConfigured } from './supabaseClient';
 
+// API config (when migrating off Supabase)
+export { setApiConfig, getApiConfig, isApiMode } from './apiConfig';
+
 // Date utilities
 export * from './utils/date';
 

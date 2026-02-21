@@ -28,6 +28,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { RequireSubscription } from './components/RequireSubscription';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OnboardingWrapper } from './components/OnboardingWrapper';
+import { InitApiAuth } from './components/InitApiAuth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <InitApiAuth />
           <Routes>
             {/* Marketing routes */}
             <Route path="/" element={<SiteLayout />}>

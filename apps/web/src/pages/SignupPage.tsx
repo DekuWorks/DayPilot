@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabaseClient, isSupabaseConfigured } from '@daypilot/lib';
+import { supabaseClient, isSupabaseConfigured, isApiMode, getApiConfig } from '@daypilot/lib';
 import { Button, Input, Label, Card } from '@daypilot/ui';
+import { setStoredApiToken } from '../components/InitApiAuth';
 
 export function SignupPage() {
   const [firstName, setFirstName] = useState('');
@@ -16,6 +17,14 @@ export function SignupPage() {
   const handleSSO = async (provider: 'google' | 'azure' | 'apple') => {
     setError('');
     try {
+      if (isApiMode() && provider === 'google') {
+        const api = getApiConfig();
+        if (!api) throw new Error('API not configured');
+        const base = api.apiUrl.replace(/\/$/, '');
+        const url = base.endsWith('/api') ? `${base}/auth/google` : `${base}/api/auth/google`;
+        window.location.href = `${url}?return_path=/app`;
+        return;
+      }
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider,
         options: {
@@ -34,8 +43,26 @@ export function SignupPage() {
     setLoading(true);
 
     try {
-      // Combine first and last name
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+      if (isApiMode()) {
+        const api = getApiConfig();
+        if (!api) throw new Error('API not configured');
+        const base = api.apiUrl.replace(/\/$/, '');
+        const url = base.endsWith('/api') ? `${base}/auth/register` : `${base}/api/auth/register`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name: fullName || undefined }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);
+        const token = (data as { token?: string }).token;
+        if (!token) throw new Error('No token returned');
+        setStoredApiToken(token);
+        navigate('/app');
+        return;
+      }
 
       const { error } = await supabaseClient.auth.signUp({
         email,
@@ -57,7 +84,7 @@ export function SignupPage() {
     }
   };
 
-  if (!isSupabaseConfigured()) {
+  if (!isApiMode() && !isSupabaseConfigured()) {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"

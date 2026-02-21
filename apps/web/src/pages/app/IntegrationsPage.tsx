@@ -131,9 +131,13 @@ export function IntegrationsPage() {
   const handleDiscoverCalendars = async (accountId: string) => {
     setDiscoveringAccountId(accountId);
     try {
-      const result = await discoverCalendars.mutateAsync(accountId);
+      const result = (await discoverCalendars.mutateAsync(accountId)) as {
+        mappingsCreated?: number;
+        calendarsDiscovered?: number;
+      };
+      const count = result.mappingsCreated ?? result.calendarsDiscovered ?? 0;
       alert(
-        `Discovered ${result.mappingsCreated} calendar${result.mappingsCreated !== 1 ? 's' : ''}!`
+        `Discovered ${count} calendar${count !== 1 ? 's' : ''}!`
       );
     } catch (error: any) {
       alert('Failed to discover calendars: ' + error.message);
