@@ -23,18 +23,22 @@ DayPilot is being rebuilt on a modern monorepo stack:
 | Real-time | WebSockets (NestJS Gateway)   |
 | DevOps    | Docker, GitHub Actions, Vercel + backend deploy |
 
-### Target monorepo structure
+### Monorepo structure (Phase 2 ✓)
 
 ```
 daypilot/
 ├── apps/
-│   ├── web/          # Next.js frontend
-│   └── api/          # NestJS backend
+│   ├── web/          # Next.js frontend (Phase 3 ✓)
+│   └── api/          # NestJS backend (Phase 4 ✓)
 ├── packages/
 │   ├── ui/           # Shared components
 │   └── lib/          # Shared utilities
-├── prisma/           # Database schema
-├── docker/
+├── prisma/           # Database schema (Phase 5 ✓)
+├── docker/           # Dockerfiles & compose (Phase 10)
+├── package.json      # Root scripts: pnpm dev, pnpm build, pnpm lint
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── turbo.json
 └── README.md
 ```
 
@@ -48,16 +52,27 @@ The previous codebase (Vite + React, ASP.NET API, Supabase) is archived under:
 
 ---
 
-## Getting started (once Phase 2+ is in place)
+## Getting started
 
-Prerequisites: Node.js 20+, pnpm, Docker (optional).
+Prerequisites: Node.js 20+, pnpm.
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev                    # Run all apps (web: Next.js; api: placeholder)
+pnpm build                  # Build all
+pnpm lint                   # Lint all
+pnpm dev --filter @daypilot/web   # Dev server for frontend only (port 3000)
+pnpm db:generate                  # Generate Prisma client (after schema changes)
+pnpm db:migrate                   # Run migrations (requires Postgres; see .env.example)
 ```
 
-Details will be added as the new structure is created.
+**Database (prisma/):** PostgreSQL schema with User, Organization, Team, Event, Task, Subscription, AuditLog. **Setup:** [docs/SETUP_POSTGRES.md](./docs/SETUP_POSTGRES.md) — copy `.env.example` to `.env`, then `docker compose up -d` and `pnpm db:migrate`. API uses `PrismaService` (global).
+
+**Frontend (apps/web):** Next.js 16, App Router, TypeScript, Tailwind, ESLint, `src/`. Core deps: axios, zustand, @tanstack/react-query, stripe, @supabase/supabase-js. Folders: `components`, `features`, `hooks`, `lib`, `providers`, `types`, `utils`.
+
+**Backend (apps/api):** NestJS 11, TypeScript. Essentials: @nestjs/config, @nestjs/jwt, @nestjs/passport, passport, passport-jwt, prisma, @prisma/client, class-validator, class-transformer, stripe.
+
+Next: **Phase 6** — Authentication (JWT, refresh tokens, role guards, protected routes).
 
 ---
 

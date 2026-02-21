@@ -1,0 +1,19 @@
+# Local dev: Postgres for DayPilot
+# Usage: docker compose up -d   (then: pnpm db:migrate)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: daypilot-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: daypilot
+    volumes:
+      - daypilot_pgdata:/var/lib/postgresql/data
+
+volumes:
+  daypilot_pgdata:

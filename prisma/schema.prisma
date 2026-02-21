@@ -1,0 +1,155 @@
+// DayPilot — Prisma schema (Phase 5)
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../apps/api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum UserRole {
+  USER
+  ADMIN
+  ORG_ADMIN
+}
+
+enum SubscriptionTier {
+  Free
+  Personal
+  Business
+  Enterprise
+}
+
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  trialing
+}
+
+// --- Models ---
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?   @map("password_hash")
+  name           String?
+  role           UserRole  @default(USER)
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  ownedOrganizations Organization[]
+  teams             Team[]         @relation("TeamMembers")
+  events            Event[]
+  tasks             Task[]
+  subscriptions     Subscription[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String?  @unique
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  teams   Team[]
+  events  Event[]
+  tasks   Task[]
+  auditLogs AuditLog[]
+
+  @@map("organizations")
+}
+
+model Team {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String   @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      User[]        @relation("TeamMembers")
+  events       Event[]
+
+  @@map("teams")
+}
+
+model Event {
+  id             String    @id @default(cuid())
+  title          String
+  start          DateTime
+  end            DateTime
+  description    String?
+  location       String?
+  userId         String    @map("user_id")
+  organizationId String?   @map("organization_id")
+  teamId         String?   @map("team_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@map("events")
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  completed      Boolean   @default(false)
+  dueDate        DateTime? @map("due_date")
+  userId         String    @map("user_id")
+  organizationId String?   @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@map("tasks")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @map("user_id")
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  tier                 SubscriptionTier   @default(Free)
+  status               SubscriptionStatus? @default(active)
+  currentPeriodEnd     DateTime?         @map("current_period_end")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

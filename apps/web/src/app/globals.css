@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* DayPilot legacy theme (Tailwind 4) */
+@theme {
+  --color-gradient-start: #efbf4d;
+  --color-gradient-end: #4fb3b3;
+  --color-gradient-cream: #efebe2;
+  --color-gradient-dark: #2b3448;
+  --color-gradient-dark-teal: #1d5a6e;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --background: #f5e6d3;
+  --foreground: #2b3448;
+}
+
+body {
+  background: linear-gradient(to bottom right, #f5e6d3, #efebe2, #f5e6d3);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: #2b3448;
+  line-height: 1.2;
+}
+
+a {
+  transition: color 0.2s;
+}
+
+button {
+  transition: all 0.2s;
+}
+
+/* Legacy utility classes */
+.gradient-text {
+  background: linear-gradient(to right, #efbf4d, #4fb3b3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass-effect {
+  background: rgb(255 255 255 / 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.2);
+}
+
+.section-padding {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .section-padding {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.container-width {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*:focus-visible {
+  outline: 2px solid #4fb3b3;
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #efebe2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #efbf4d, #4fb3b3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
