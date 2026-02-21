@@ -24,9 +24,10 @@ export class SentryFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
     const message =
       exception instanceof HttpException
-        ? (typeof exception.getResponse() === 'string'
-            ? exception.getResponse()
-            : (exception.getResponse() as { message?: string }).message ?? exception.message)
+        ? typeof exception.getResponse() === 'string'
+          ? exception.getResponse()
+          : ((exception.getResponse() as { message?: string }).message ??
+            exception.message)
         : exception instanceof Error
           ? exception.message
           : 'Internal server error';
@@ -41,7 +42,8 @@ export class SentryFilter implements ExceptionFilter {
       });
     }
 
-    const logLine = `${req?.method ?? '?'} ${req?.url ?? '?'} ${status} - ${message}`;
+    const msg = typeof message === 'string' ? message : JSON.stringify(message);
+    const logLine = `${req?.method ?? '?'} ${req?.url ?? '?'} ${status} - ${msg}`;
     if (status >= 500) {
       this.logger.error(logLine);
     } else {
@@ -52,6 +54,8 @@ export class SentryFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getResponse()
         : { statusCode: status, message };
-    res.status(status).json(typeof body === 'object' ? body : { message: body });
+    res
+      .status(status)
+      .json(typeof body === 'object' ? body : { message: body });
   }
 }

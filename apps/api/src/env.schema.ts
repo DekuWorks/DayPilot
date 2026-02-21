@@ -29,7 +29,10 @@ export const envSchema = {
         databaseUrl.startsWith('postgres://') ||
         databaseUrl.startsWith('file:') ||
         databaseUrl.startsWith('sqlite:');
-      assert(valid, 'DATABASE_URL must be a postgresql, postgres, file, or sqlite URL.');
+      assert(
+        valid,
+        'DATABASE_URL must be a postgresql, postgres, file, or sqlite URL.',
+      );
     }
 
     return env;

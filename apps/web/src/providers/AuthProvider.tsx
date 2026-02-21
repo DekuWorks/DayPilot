@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    loadUser();
+    void Promise.resolve().then(() => loadUser());
   }, [loadUser]);
 
   const login = useCallback(

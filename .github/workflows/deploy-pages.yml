@@ -1,0 +1,52 @@
+# Build and push static output to docs/ on main.
+# Repo Settings → Pages: set Source to "Deploy from a branch", branch main, folder /docs.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.14.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Build web app
+        run: pnpm run build --filter @daypilot/web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:3001' }}
+
+      - name: Setup Pages output
+        run: |
+          if [ -f CNAME ]; then
+            cp CNAME apps/web/out/CNAME
+          fi
+          touch apps/web/out/.nojekyll
+
+      - name: Push to main (docs/)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: apps/web/out
+          publish_branch: main
+          destination_dir: docs

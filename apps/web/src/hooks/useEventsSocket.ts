@@ -10,7 +10,9 @@ import { getApiUrl } from "@/lib/api";
  */
 export function useEventsSocket(onSync: () => void) {
   const onSyncRef = useRef(onSync);
-  onSyncRef.current = onSync;
+  useEffect(() => {
+    onSyncRef.current = onSync;
+  }, [onSync]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

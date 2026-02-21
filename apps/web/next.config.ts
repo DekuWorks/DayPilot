@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  output: "export",
   turbopack: {
     root: path.join(__dirname, "..", ".."),
   },

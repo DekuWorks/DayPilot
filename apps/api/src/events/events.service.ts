@@ -36,7 +36,11 @@ export class EventsService {
   ) {}
 
   async findAll(userId: string, from?: string, to?: string) {
-    const where: { userId: string; start?: { gte?: Date }; end?: { lte?: Date } } = {
+    const where: {
+      userId: string;
+      start?: { gte?: Date };
+      end?: { lte?: Date };
+    } = {
       userId,
     };
     if (from) where.start = { gte: new Date(from) };
@@ -82,7 +86,9 @@ export class EventsService {
         ...(dto.title != null && { title: dto.title }),
         ...(dto.start != null && { start: new Date(dto.start) }),
         ...(dto.end != null && { end: new Date(dto.end) }),
-        ...(dto.description !== undefined && { description: dto.description ?? null }),
+        ...(dto.description !== undefined && {
+          description: dto.description ?? null,
+        }),
         ...(dto.location !== undefined && { location: dto.location ?? null }),
       },
     });

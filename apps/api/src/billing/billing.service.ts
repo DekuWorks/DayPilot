@@ -29,7 +29,8 @@ export class BillingService {
     if (key) {
       this.stripe = new Stripe(key, { apiVersion: '2026-01-28.clover' });
     }
-    this.webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? null;
+    this.webhookSecret =
+      this.config.get<string>('STRIPE_WEBHOOK_SECRET') ?? null;
   }
 
   private ensureStripe(): Stripe {
@@ -57,8 +58,10 @@ export class BillingService {
     };
   }
 
-
-  private async getOrCreateStripeCustomerInternal(userId: string, email: string): Promise<string> {
+  private async getOrCreateStripeCustomerInternal(
+    userId: string,
+    email: string,
+  ): Promise<string> {
     const sub = await this.prisma.subscription.findFirst({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
@@ -97,10 +100,18 @@ export class BillingService {
     return customer.id;
   }
 
-  async createCheckoutSession(userId: string, userEmail: string, priceId: string) {
+  async createCheckoutSession(
+    userId: string,
+    userEmail: string,
+    priceId: string,
+  ) {
     const stripe = this.ensureStripe();
-    const customerId = await this.getOrCreateStripeCustomerInternal(userId, userEmail);
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const customerId = await this.getOrCreateStripeCustomerInternal(
+      userId,
+      userEmail,
+    );
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -120,9 +131,12 @@ export class BillingService {
       orderBy: { updatedAt: 'desc' },
     });
     if (!sub?.stripeCustomerId) {
-      throw new BadRequestException('No billing customer found. Subscribe to a plan first.');
+      throw new BadRequestException(
+        'No billing customer found. Subscribe to a plan first.',
+      );
     }
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     const session = await stripe.billingPortal.sessions.create({
       customer: sub.stripeCustomerId,
       return_url: `${frontendUrl}/billing`,
@@ -159,28 +173,35 @@ export class BillingService {
     );
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         if (session.mode !== 'subscription' || !session.subscription) break;
         const subId =
           typeof session.subscription === 'string'
             ? session.subscription
             : session.subscription.id;
         const subscription = await this.stripe.subscriptions.retrieve(subId);
-        const userId = session.metadata?.user_id ?? (await this.userIdFromStripeCustomer(session.customer as string));
+        const userId =
+          session.metadata?.user_id ??
+          (await this.userIdFromStripeCustomer(session.customer as string));
         if (userId) {
           await this.upsertSubscriptionFromStripe(subscription, userId);
           await this.audit.log({
             action: 'billing.subscription_updated',
             entityType: 'subscription',
             userId,
-            metadata: { stripeSubscriptionId: subscription.id, source: 'checkout.session.completed' },
+            metadata: {
+              stripeSubscriptionId: subscription.id,
+              source: 'checkout.session.completed',
+            },
           });
         }
         break;
       }
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const userId = await this.userIdFromStripeCustomer(subscription.customer as string);
+        const subscription = event.data.object;
+        const userId = await this.userIdFromStripeCustomer(
+          subscription.customer as string,
+        );
         if (userId) {
           await this.upsertSubscriptionFromStripe(subscription, userId);
           await this.audit.log({
@@ -193,14 +214,19 @@ export class BillingService {
         break;
       }
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         const existing = await this.prisma.subscription.findFirst({
           where: { stripeSubscriptionId: subscription.id },
           select: { userId: true },
         });
         await this.prisma.subscription.updateMany({
           where: { stripeSubscriptionId: subscription.id },
-          data: { status: 'canceled', tier: 'Free', stripeSubscriptionId: null, currentPeriodEnd: null },
+          data: {
+            status: 'canceled',
+            tier: 'Free',
+            stripeSubscriptionId: null,
+            currentPeriodEnd: null,
+          },
         });
         if (existing?.userId) {
           await this.audit.log({
@@ -218,7 +244,9 @@ export class BillingService {
     return { received: true };
   }
 
-  private async userIdFromStripeCustomer(customerId: string): Promise<string | null> {
+  private async userIdFromStripeCustomer(
+    customerId: string,
+  ): Promise<string | null> {
     const sub = await this.prisma.subscription.findFirst({
       where: { stripeCustomerId: customerId },
       select: { userId: true },
@@ -226,14 +254,20 @@ export class BillingService {
     return sub?.userId ?? null;
   }
 
-  private async upsertSubscriptionFromStripe(stripeSub: Stripe.Subscription, userId: string) {
+  private async upsertSubscriptionFromStripe(
+    stripeSub: Stripe.Subscription,
+    userId: string,
+  ) {
     const priceId = stripeSub.items.data[0]?.price.id;
     const tier = priceId ? this.priceIdToTier(priceId) : 'Personal';
     const status = STRIPE_STATUS_MAP[stripeSub.status] ?? 'active';
-    const periodEnd = (stripeSub as { current_period_end?: number }).current_period_end ?? 0;
+    const periodEnd =
+      (stripeSub as { current_period_end?: number }).current_period_end ?? 0;
     const currentPeriodEnd = new Date(periodEnd * 1000);
     const stripeCustomerId =
-      typeof stripeSub.customer === 'string' ? stripeSub.customer : stripeSub.customer.id;
+      typeof stripeSub.customer === 'string'
+        ? stripeSub.customer
+        : stripeSub.customer.id;
     const sub = await this.prisma.subscription.findFirst({
       where: { userId },
       orderBy: { updatedAt: 'desc' },

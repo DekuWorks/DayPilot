@@ -17,11 +17,13 @@ if (SENTRY_DSN) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-  app.use(express.json({
-    verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
-      req.rawBody = buf;
-    },
-  }));
+  app.use(
+    express.json({
+      verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,7 +37,10 @@ async function bootstrap() {
     origin:
       corsOrigin === undefined || corsOrigin === ''
         ? true
-        : corsOrigin.split(',').map((s) => s.trim()).filter(Boolean),
+        : corsOrigin
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
     credentials: true,
   });
   const port = process.env.PORT ?? 3000;

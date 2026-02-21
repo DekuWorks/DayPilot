@@ -1,4 +1,13 @@
-import { Controller, Delete, Get, Param, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { CalendarConnectionsService } from './calendar-connections.service';
@@ -24,13 +33,18 @@ export class CalendarConnectionsController {
     @Query('state') state: string,
     @Res() res: express.Response,
   ) {
-    const frontend = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const frontend =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     if (!code || !state) {
       res.redirect(`${frontend}/integrations?error=missing_params`);
       return;
     }
     try {
-      const { redirectUrl } = await this.calendarConnections.handleCallback('google', code, state);
+      const { redirectUrl } = await this.calendarConnections.handleCallback(
+        'google',
+        code,
+        state,
+      );
       res.redirect(redirectUrl);
     } catch {
       res.redirect(`${frontend}/integrations?error=google_callback`);
@@ -43,13 +57,18 @@ export class CalendarConnectionsController {
     @Query('state') state: string,
     @Res() res: express.Response,
   ) {
-    const frontend = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const frontend =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     if (!code || !state) {
       res.redirect(`${frontend}/integrations?error=missing_params`);
       return;
     }
     try {
-      const { redirectUrl } = await this.calendarConnections.handleCallback('outlook', code, state);
+      const { redirectUrl } = await this.calendarConnections.handleCallback(
+        'outlook',
+        code,
+        state,
+      );
       res.redirect(redirectUrl);
     } catch {
       res.redirect(`${frontend}/integrations?error=outlook_callback`);
@@ -80,10 +99,7 @@ export class CalendarConnectionsController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/sync')
-  async sync(
-    @Req() req: { user: { id: string } },
-    @Param('id') id: string,
-  ) {
+  async sync(@Req() req: { user: { id: string } }, @Param('id') id: string) {
     return this.calendarConnections.syncConnectionById(req.user.id, id);
   }
 }

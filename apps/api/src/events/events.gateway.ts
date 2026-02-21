@@ -27,7 +27,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly config: ConfigService,
   ) {}
 
-  async handleConnection(client: { handshake: any; id: string; join: (room: string) => void; disconnect: () => void }) {
+  async handleConnection(client: {
+    handshake: any;
+    id: string;
+    join: (room: string) => void;
+    disconnect: () => void;
+  }) {
     const token =
       client.handshake?.auth?.token ??
       client.handshake?.query?.token ??
@@ -38,7 +43,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     try {
       const payload = this.jwtService.verify(token, {
-        secret: this.config.get<string>('JWT_SECRET') || 'change-me-in-production',
+        secret:
+          this.config.get<string>('JWT_SECRET') || 'change-me-in-production',
       });
       if (payload.type !== 'access' || !payload.sub) {
         client.disconnect();
@@ -58,16 +64,22 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @OnEvent('event.created')
   handleEventCreated(payload: { userId: string; event: object }) {
-    this.server.to(USER_ROOM_PREFIX + payload.userId).emit('event:created', payload.event);
+    this.server
+      .to(USER_ROOM_PREFIX + payload.userId)
+      .emit('event:created', payload.event);
   }
 
   @OnEvent('event.updated')
   handleEventUpdated(payload: { userId: string; event: object }) {
-    this.server.to(USER_ROOM_PREFIX + payload.userId).emit('event:updated', payload.event);
+    this.server
+      .to(USER_ROOM_PREFIX + payload.userId)
+      .emit('event:updated', payload.event);
   }
 
   @OnEvent('event.deleted')
   handleEventDeleted(payload: { userId: string; eventId: string }) {
-    this.server.to(USER_ROOM_PREFIX + payload.userId).emit('event:deleted', { id: payload.eventId });
+    this.server
+      .to(USER_ROOM_PREFIX + payload.userId)
+      .emit('event:deleted', { id: payload.eventId });
   }
 }

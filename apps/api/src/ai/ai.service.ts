@@ -21,14 +21,29 @@ export class AiService {
   ) {}
 
   private getProvider(): AiProvider | null {
-    const provider = (this.config.get<string>('AI_PROVIDER') ?? 'openai').toLowerCase();
-    if (provider === 'anthropic' && this.config.get<string>('ANTHROPIC_API_KEY')) return 'anthropic';
-    if (provider === 'openai-compatible' && this.config.get<string>('OPENAI_BASE_URL') && this.config.get<string>('OPENAI_API_KEY')) return 'openai-compatible';
-    if (this.config.get<string>('OPENAI_API_KEY')) return provider === 'openai-compatible' ? 'openai-compatible' : 'openai';
+    const provider = (
+      this.config.get<string>('AI_PROVIDER') ?? 'openai'
+    ).toLowerCase();
+    if (
+      provider === 'anthropic' &&
+      this.config.get<string>('ANTHROPIC_API_KEY')
+    )
+      return 'anthropic';
+    if (
+      provider === 'openai-compatible' &&
+      this.config.get<string>('OPENAI_BASE_URL') &&
+      this.config.get<string>('OPENAI_API_KEY')
+    )
+      return 'openai-compatible';
+    if (this.config.get<string>('OPENAI_API_KEY'))
+      return provider === 'openai-compatible' ? 'openai-compatible' : 'openai';
     return null;
   }
 
-  private async getCompletion(systemPrompt: string, userPrompt: string): Promise<string> {
+  private async getCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+  ): Promise<string> {
     const provider = this.getProvider();
     if (!provider) {
       throw new BadRequestException(
@@ -39,7 +54,9 @@ export class AiService {
     if (provider === 'anthropic') {
       const apiKey = this.config.get<string>('ANTHROPIC_API_KEY');
       const client = new Anthropic({ apiKey });
-      const model = this.config.get<string>('ANTHROPIC_MODEL') ?? 'claude-3-5-haiku-20241022';
+      const model =
+        this.config.get<string>('ANTHROPIC_MODEL') ??
+        'claude-3-5-haiku-20241022';
       const message = await client.messages.create({
         model,
         max_tokens: 1024,
@@ -47,12 +64,18 @@ export class AiService {
         messages: [{ role: 'user', content: userPrompt }],
       });
       const textBlock = message.content.find((b) => b.type === 'text');
-      const text = textBlock && 'text' in textBlock ? (textBlock as { text: string }).text : '';
+      const text =
+        textBlock && 'text' in textBlock
+          ? (textBlock as { text: string }).text
+          : '';
       return text.trim();
     }
 
     const apiKey = this.config.get<string>('OPENAI_API_KEY')!;
-    const baseURL = provider === 'openai-compatible' ? this.config.get<string>('OPENAI_BASE_URL') : undefined;
+    const baseURL =
+      provider === 'openai-compatible'
+        ? this.config.get<string>('OPENAI_BASE_URL')
+        : undefined;
     const client = new OpenAI({ apiKey, ...(baseURL && { baseURL }) });
     const model = this.config.get<string>('OPENAI_MODEL') ?? 'gpt-4o-mini';
     const completion = await client.chat.completions.create({
@@ -66,7 +89,10 @@ export class AiService {
     return completion.choices[0]?.message?.content?.trim() ?? '';
   }
 
-  async suggestSchedule(userId: string, prompt: string): Promise<{ suggestions: SuggestedEvent[] }> {
+  async suggestSchedule(
+    userId: string,
+    prompt: string,
+  ): Promise<{ suggestions: SuggestedEvent[] }> {
     const now = new Date();
     const weekEnd = new Date(now);
     weekEnd.setDate(weekEnd.getDate() + 7);
@@ -103,7 +129,9 @@ Example: {"suggestions":[{"title":"Deep work","start":"2025-02-22T09:00:00.000Z"
     }
     try {
       const parsed = JSON.parse(content);
-      const arr = Array.isArray(parsed) ? parsed : parsed.events ?? parsed.suggestions ?? [];
+      const arr = Array.isArray(parsed)
+        ? parsed
+        : (parsed.events ?? parsed.suggestions ?? []);
       const suggestions: SuggestedEvent[] = arr
         .filter(
           (e: unknown) =>

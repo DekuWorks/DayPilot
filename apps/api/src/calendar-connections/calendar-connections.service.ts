@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { google } from 'googleapis';
@@ -37,25 +41,32 @@ export class CalendarConnectionsService {
     }));
   }
 
-  getConnectUrl(userId: string, provider: CalendarProvider): { redirectUrl: string } {
+  getConnectUrl(
+    userId: string,
+    provider: CalendarProvider,
+  ): { redirectUrl: string } {
     const state = this.jwtService.sign(
       { sub: userId, provider, purpose: 'calendar-connect' },
       { expiresIn: '10m' },
     );
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
     if (provider === 'google') {
       const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
-      if (!clientId) throw new BadRequestException('Google Calendar is not configured');
+      if (!clientId)
+        throw new BadRequestException('Google Calendar is not configured');
       const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
-      const scope = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+      const scope =
+        'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
       const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
       return { redirectUrl: url };
     }
 
     if (provider === 'outlook') {
       const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
-      if (!clientId) throw new BadRequestException('Outlook Calendar is not configured');
+      if (!clientId)
+        throw new BadRequestException('Outlook Calendar is not configured');
       const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/outlook/callback`;
       const scope = 'openid email Calendars.Read offline_access';
       const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&response_mode=query&state=${encodeURIComponent(state)}`;
@@ -71,30 +82,46 @@ export class CalendarConnectionsService {
     throw new BadRequestException('Unknown provider');
   }
 
-  async handleCallback(provider: CalendarProvider, code: string, state: string) {
+  async handleCallback(
+    provider: CalendarProvider,
+    code: string,
+    state: string,
+  ) {
     let payload: { sub: string; provider: CalendarProvider; purpose: string };
     try {
       payload = this.jwtService.verify(state);
-      if (payload.purpose !== 'calendar-connect' || payload.provider !== provider) throw new Error('Invalid state');
+      if (
+        payload.purpose !== 'calendar-connect' ||
+        payload.provider !== provider
+      )
+        throw new Error('Invalid state');
     } catch {
       throw new BadRequestException('Invalid or expired state');
     }
     const userId = payload.sub;
 
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
     if (provider === 'google') {
       const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
       const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
-      if (!clientId || !clientSecret) throw new BadRequestException('Google Calendar is not configured');
+      if (!clientId || !clientSecret)
+        throw new BadRequestException('Google Calendar is not configured');
       const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
-      const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+      const oauth2 = new google.auth.OAuth2(
+        clientId,
+        clientSecret,
+        redirectUri,
+      );
       const { tokens } = await oauth2.getToken(code);
       oauth2.setCredentials(tokens);
       const oauth2Client = google.oauth2({ version: 'v2', auth: oauth2 });
       const { data: userInfo } = await oauth2Client.userinfo.get();
-      const email = (userInfo.email ?? userInfo.id ?? 'google') as string;
-      const expiresAt = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
+      const email = userInfo.email ?? userInfo.id ?? 'google';
+      const expiresAt = tokens.expiry_date
+        ? new Date(tokens.expiry_date)
+        : null;
       await this.prisma.calendarConnection.upsert({
         where: {
           userId_providerType: { userId, providerType: 'google' },
@@ -121,9 +148,11 @@ export class CalendarConnectionsService {
     if (provider === 'outlook') {
       const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
       const clientSecret = this.config.get<string>('MICROSOFT_CLIENT_SECRET');
-      if (!clientId || !clientSecret) throw new BadRequestException('Outlook Calendar is not configured');
+      if (!clientId || !clientSecret)
+        throw new BadRequestException('Outlook Calendar is not configured');
       const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/outlook/callback`;
-      const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+      const tokenUrl =
+        'https://login.microsoftonline.com/common/oauth2/v2.0/token';
       const res = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -144,7 +173,9 @@ export class CalendarConnectionsService {
       const refreshToken = data.refresh_token as string | undefined;
       const expiresIn = (data.expires_in as number) ?? 3600;
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
-      const client = Client.init({ authProvider: () => Promise.resolve(accessToken) });
+      const client = Client.init({
+        authProvider: () => Promise.resolve(accessToken),
+      });
       const me = await client.api('/me').get();
       const email = (me.mail ?? me.userPrincipalName ?? 'outlook') as string;
       await this.prisma.calendarConnection.upsert({
@@ -182,7 +213,9 @@ export class CalendarConnectionsService {
     await this.prisma.event.deleteMany({
       where: { userId, source },
     });
-    await this.prisma.calendarConnection.delete({ where: { id: connectionId } });
+    await this.prisma.calendarConnection.delete({
+      where: { id: connectionId },
+    });
     return { ok: true };
   }
 
@@ -207,9 +240,23 @@ export class CalendarConnectionsService {
     rangeEnd.setDate(rangeEnd.getDate() + 60);
 
     if (provider === 'google') {
-      await this.syncGoogleCalendar(userId, conn.id, conn.accessToken, conn.refreshToken, conn.calendarId, rangeStart, rangeEnd);
+      await this.syncGoogleCalendar(
+        userId,
+        conn.id,
+        conn.accessToken,
+        conn.refreshToken,
+        conn.calendarId,
+        rangeStart,
+        rangeEnd,
+      );
     } else if (provider === 'outlook') {
-      await this.syncOutlookCalendar(userId, conn.id, conn.accessToken, rangeStart, rangeEnd);
+      await this.syncOutlookCalendar(
+        userId,
+        conn.id,
+        conn.accessToken,
+        rangeStart,
+        rangeEnd,
+      );
     }
     // apple: CalDAV sync can be added later
 
@@ -234,7 +281,10 @@ export class CalendarConnectionsService {
     if (!clientId || !clientSecret) return;
     const redirectUri = `${this.config.get('API_URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
     const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-    oauth2.setCredentials({ access_token: accessToken, refresh_token: refreshToken ?? undefined });
+    oauth2.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken ?? undefined,
+    });
     const calendar = google.calendar({ version: 'v3', auth: oauth2 });
     const calId = calendarId ?? 'primary';
     const { data } = await calendar.events.list({
@@ -247,8 +297,12 @@ export class CalendarConnectionsService {
     const items = data.items ?? [];
     for (const item of items) {
       if (!item.id || !item.start || !item.end) continue;
-      const start = item.start.dateTime ? new Date(item.start.dateTime) : new Date(item.start.date!);
-      const end = item.end.dateTime ? new Date(item.end.dateTime) : new Date(item.end.date!);
+      const start = item.start.dateTime
+        ? new Date(item.start.dateTime)
+        : new Date(item.start.date!);
+      const end = item.end.dateTime
+        ? new Date(item.end.dateTime)
+        : new Date(item.end.date!);
       await this.prisma.event.upsert({
         where: {
           source_externalId: { source: 'google', externalId: item.id },
@@ -286,8 +340,16 @@ export class CalendarConnectionsService {
     }
   }
 
-  private async syncOutlookCalendar(userId: string, connectionId: string, accessToken: string, rangeStart: Date, rangeEnd: Date) {
-    const client = Client.init({ authProvider: () => Promise.resolve(accessToken) });
+  private async syncOutlookCalendar(
+    userId: string,
+    connectionId: string,
+    accessToken: string,
+    rangeStart: Date,
+    rangeEnd: Date,
+  ) {
+    const client = Client.init({
+      authProvider: () => Promise.resolve(accessToken),
+    });
     const res = await client
       .api('/me/calendarView')
       .query({

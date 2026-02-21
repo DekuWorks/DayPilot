@@ -43,7 +43,14 @@ export class AuthService {
     await this.prisma.subscription.create({
       data: { userId: user.id },
     });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl ?? null);
+    return this.issueTokenPair(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      user.avatarUrl ?? null,
+    );
   }
 
   async login(dto: LoginDto) {
@@ -63,7 +70,14 @@ export class AuthService {
       entityId: user.id,
       userId: user.id,
     });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl);
+    return this.issueTokenPair(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      user.avatarUrl,
+    );
   }
 
   async refresh(refreshToken: string) {
@@ -91,16 +105,20 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
-    return this.issueTokenPair(user.id, user.email, user.role as UserRole, user.firstName, user.lastName, user.avatarUrl);
+    return this.issueTokenPair(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      user.avatarUrl,
+    );
   }
 
   async logout(refreshToken: string | null) {
     if (!refreshToken) return;
     try {
-      const payload = this.jwtService.decode(refreshToken) as {
-        sub?: string;
-        type?: string;
-      } | null;
+      const payload = this.jwtService.decode(refreshToken);
       if (payload?.type === 'refresh' && payload.sub) {
         const hash = this.hashRefreshToken(refreshToken);
         await this.prisma.refreshToken.deleteMany({
@@ -137,7 +155,14 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresIn: 900, // 15 min in seconds
-      user: { id: userId, email, role, firstName, lastName, avatarUrl: avatarUrl ?? null },
+      user: {
+        id: userId,
+        email,
+        role,
+        firstName,
+        lastName,
+        avatarUrl: avatarUrl ?? null,
+      },
     };
   }
 
@@ -148,7 +173,14 @@ export class AuthService {
   async validateUserById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true, role: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        role: true,
+      },
     });
   }
 
@@ -156,9 +188,18 @@ export class AuthService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl || null }),
+        ...(dto.avatarUrl !== undefined && {
+          avatarUrl: dto.avatarUrl || null,
+        }),
       },
-      select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true, role: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        role: true,
+      },
     });
     return updated;
   }

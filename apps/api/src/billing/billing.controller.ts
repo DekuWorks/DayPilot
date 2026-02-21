@@ -1,4 +1,12 @@
-import { BadRequestException, Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -25,7 +33,11 @@ export class BillingController {
     @Body() dto: CreateCheckoutSessionDto,
   ) {
     const email = req.user.email ?? '';
-    return this.billingService.createCheckoutSession(req.user.id, email, dto.priceId);
+    return this.billingService.createCheckoutSession(
+      req.user.id,
+      email,
+      dto.priceId,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -42,7 +54,9 @@ export class BillingController {
     const rawBody = req.rawBody;
     const signature = req.headers['stripe-signature'];
     if (!rawBody) {
-      throw new BadRequestException('Raw body required for webhook. Configure server to preserve raw body for POST /billing/webhook.');
+      throw new BadRequestException(
+        'Raw body required for webhook. Configure server to preserve raw body for POST /billing/webhook.',
+      );
     }
     return this.billingService.handleWebhook(rawBody, signature);
   }
