@@ -4,6 +4,15 @@
 
 ---
 
+## 0. DB migration strategy
+
+- **Local / dev:** `pnpm db:migrate` (interactive; creates new migrations).
+- **Production / CI:** `pnpm db:migrate:deploy` only. Never run `prisma migrate dev` in production.
+- **When to run:** Before starting the API after a deploy. Run once per release (e.g. in your API host’s release step or a small job that runs `prisma migrate deploy` then starts the app).
+- **Backups:** Back up Postgres before running migrations in production (e.g. snapshot or `pg_dump`).
+
+---
+
 ## 1. GitHub (main repo)
 
 - **Repo:** Push all work to the **main** branch of your GitHub repo (e.g. `DekuWorks/DayPilot`).
@@ -59,25 +68,51 @@ Deploy the API to a host that runs Node (e.g. **Railway**, **Fly.io**, **Render*
 
 ---
 
-## 4. CI/CD (optional)
+## 4. Staging
 
-Use GitHub Actions to keep **main** and deployments in sync:
-
-- **On push to `main`:**
-  - Run tests/lint (e.g. `pnpm run build`, `pnpm run lint`).
-  - Optionally trigger or notify your deployment (Vercel usually auto-deploys on push; backend can be wired to deploy on success).
-
-Example: see `.github/workflows/ci.yml` (if added) for a simple build-and-lint job that runs toward the repo and keeps main green.
+- **Frontend:** Vercel **Preview** deployments (per PR or branch) give you a staging URL. Set `NEXT_PUBLIC_API_URL` for that preview to your staging API URL.
+- **API:** Deploy the same API to a second app (e.g. Fly.io “staging” app or a separate Railway project) with a **staging** `DATABASE_URL` (separate Postgres DB). Run `pnpm db:migrate:deploy` against that DB on deploy.
+- **Secrets:** Use separate Stripe/OAuth keys for staging if you want to avoid touching production data.
 
 ---
 
-## 5. Summary
+## 5. Env & secrets
+
+Set these in your host (Vercel, Fly.io, Railway, etc.). Never commit `.env` or secrets.
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `DATABASE_URL` | API | Postgres connection string |
+| `JWT_SECRET` | API | Min 32 chars; sign/verify JWTs |
+| `CORS_ORIGIN` | API | Frontend origin (e.g. `https://daypilot.co`) |
+| `PORT` | API | Server port (e.g. 3001) |
+| `FRONTEND_URL` | API | Frontend base URL (OAuth redirects, Stripe) |
+| `API_URL` | API | API base URL (OAuth callback base) |
+| `NEXT_PUBLIC_API_URL` | Web | API base URL (browser) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | API | Billing (optional) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `AI_PROVIDER` | API | AI scheduling (optional) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | API | Google Calendar (optional) |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | API | Outlook Calendar (optional) |
+
+---
+
+## 6. CI/CD
+
+- **`.github/workflows/ci.yml`:** On push/PR to `main`, runs install, Prisma generate, build, and lint. Keeps `main` green.
+- **`.github/workflows/deploy-api.yml`:** On push to `main`, builds the API Docker image and pushes to GHCR. Use that image in your API host; run `prisma migrate deploy` before starting the container.
+
+Vercel usually auto-deploys the frontend on push to `main` (or your connected branch).
+
+---
+
+## 7. Summary
 
 | What              | Where        | Purpose                          |
 |-------------------|-------------|-----------------------------------|
 | Source of truth   | GitHub main | All code and config              |
 | Frontend / domain | Vercel      | Next.js app at daypilot.co       |
-| API               | Railway/Fly/etc. | Nest API at api.daypilot.co |
-| DB                | Hosted Postgres | Production `DATABASE_URL`   |
+| API               | Railway/Fly/Docker | Nest API at api.daypilot.co |
+| DB                | Hosted Postgres | Production `DATABASE_URL`; run `db:migrate:deploy` on release |
+| Staging           | Vercel Preview + staging API/DB | Per-PR or branch preview |
 
 Once the repo is pushed to **main** and the frontend is connected to your domain, your changes are “running towards the domain and the repo via GitHub.”

@@ -1,0 +1,26 @@
+# Dependencies and build outputs
+node_modules
+.next
+dist
+.turbo
+*.tsbuildinfo
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!README.md
+
+# Archive and legacy
+archive
+
+# Tests and misc
+coverage
+*.log
+.DS_Store

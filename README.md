@@ -2,7 +2,7 @@
 
 **Pilot your day with AI.**
 
-DayPilot is an AI-powered scheduling assistant that helps you manage your calendar across platforms. Connect your calendars, let AI plan your day, and pilot your schedule with confidence.
+DayPilot gives you **one calendar with everything**: your own events, connected calendars (e.g. Google, Outlook), and events from shared booking links. One place to see and manage your schedule, with AI to help you plan it.
 
 **Live site:** [daypilot.co](https://daypilot.co) (domain connected; deploys from `main`).
 
@@ -63,16 +63,19 @@ pnpm build                  # Build all
 pnpm lint                   # Lint all
 pnpm dev --filter @daypilot/web   # Dev server for frontend only (port 3000)
 pnpm db:generate                  # Generate Prisma client (after schema changes)
-pnpm db:migrate                   # Run migrations (requires Postgres; see .env.example)
+pnpm db:migrate                   # Run migrations in dev (requires Postgres; see .env.example)
+pnpm db:migrate:deploy            # Apply migrations in production (non-interactive)
 ```
 
-**Database (prisma/):** PostgreSQL schema with User, Organization, Team, Event, Task, Subscription, AuditLog. **Setup:** [docs/SETUP_POSTGRES.md](./docs/SETUP_POSTGRES.md) — copy `.env.example` to `.env`, then `docker compose up -d` and `pnpm db:migrate`. API uses `PrismaService` (global).
+**Unified calendar:** Events are stored with a `source` (`native` \| `google` \| `outlook` \| `booking`). The app shows one calendar that will aggregate your events, connected calendars, and booking-link events in one place. Connected calendars and booking links are wired in later; the data model is ready.
+
+**Database (prisma/):** PostgreSQL schema with User, Organization, Team, Event (with source + externalId), Task, Subscription, AuditLog. **Setup:** [docs/SETUP_POSTGRES.md](./docs/SETUP_POSTGRES.md) — copy `.env.example` to `.env`, then `docker compose up -d` and `pnpm db:migrate`. API uses `PrismaService` (global).
 
 **Frontend (apps/web):** Next.js 16, App Router, TypeScript, Tailwind, ESLint, `src/`. Core deps: axios, zustand, @tanstack/react-query, stripe, @supabase/supabase-js. Folders: `components`, `features`, `hooks`, `lib`, `providers`, `types`, `utils`.
 
 **Backend (apps/api):** NestJS 11, TypeScript. Essentials: @nestjs/config, @nestjs/jwt, @nestjs/passport, passport, passport-jwt, prisma, @prisma/client, class-validator, class-transformer, stripe.
 
-Next: **Phase 6** — Authentication (JWT, refresh tokens, role guards, protected routes).
+**DevOps (Phase 10):** CI (`.github/workflows/ci.yml`), API Docker build + push (`.github/workflows/deploy-api.yml` → GHCR), DB migration strategy (`db:migrate:deploy` in prod), staging + env/secrets — see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
 
 ---
 

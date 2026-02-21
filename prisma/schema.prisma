@@ -33,6 +33,20 @@ enum SubscriptionStatus {
   trialing
 }
 
+enum EventSource {
+  native   // DayPilot-created (manual, AI, etc.)
+  google   // Synced from Google Calendar
+  outlook  // Synced from Outlook/Microsoft
+  apple    // Synced from Apple/iCloud Calendar
+  booking  // From a shared booking link
+}
+
+enum CalendarProvider {
+  google
+  outlook
+  apple
+}
+
 // --- Models ---
 
 model User {
@@ -49,10 +63,45 @@ model User {
   teams             Team[]         @relation("TeamMembers")
   events            Event[]
   tasks             Task[]
-  subscriptions     Subscription[]
-  auditLogs         AuditLog[]
+  subscriptions       Subscription[]
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  calendarConnections CalendarConnection[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String  @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model CalendarConnection {
+  id            String            @id @default(cuid())
+  userId        String            @map("user_id")
+  providerType  CalendarProvider  @map("provider_type")
+  email         String            // account email or display name
+  accessToken   String            @map("access_token")
+  refreshToken  String?           @map("refresh_token")
+  expiresAt     DateTime?        @map("expires_at")
+  calendarId    String?          @map("calendar_id")   // provider's primary calendar id
+  syncedAt      DateTime?        @map("synced_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerType])
+  @@index([userId])
+  @@map("calendar_connections")
 }
 
 model Organization {
@@ -87,22 +136,26 @@ model Team {
 }
 
 model Event {
-  id             String    @id @default(cuid())
+  id             String      @id @default(cuid())
   title          String
   start          DateTime
   end            DateTime
   description    String?
   location       String?
-  userId         String    @map("user_id")
-  organizationId String?   @map("organization_id")
-  teamId         String?   @map("team_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  source         EventSource @default(native)
+  externalId     String?     @map("external_id")  // ID in the external system (Google, booking, etc.)
+  userId         String      @map("user_id")
+  organizationId String?    @map("organization_id")
+  teamId         String?    @map("team_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
+  @@unique([source, externalId])
+  @@index([userId, start])
   @@map("events")
 }
 

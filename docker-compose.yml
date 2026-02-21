@@ -1,5 +1,6 @@
 # Local dev: Postgres for DayPilot
 # Usage: docker compose up -d   (then: pnpm db:migrate)
+# With API: docker compose --profile api up -d   (builds and runs API; run pnpm db:migrate first)
 
 services:
   postgres:
@@ -14,6 +15,25 @@ services:
       POSTGRES_DB: daypilot
     volumes:
       - daypilot_pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles:
+      - api
+    container_name: daypilot-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/daypilot
+      JWT_SECRET: change-me-in-production-min-32-chars
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      - postgres
 
 volumes:
   daypilot_pgdata:
