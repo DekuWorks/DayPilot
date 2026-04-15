@@ -22,6 +22,7 @@ DayPilot is being rebuilt on a modern monorepo stack:
 | AI        | OpenAI                        |
 | Real-time | WebSockets (NestJS Gateway)   |
 | DevOps    | Docker, GitHub Actions, Vercel + backend deploy |
+| Mobile    | Flutter (`daypilot_flutter/`) — see [daypilot_flutter/README.md](./daypilot_flutter/README.md), [docs/FLUTTER_MIGRATION_TASKS.md](./docs/FLUTTER_MIGRATION_TASKS.md), [docs/SUPABASE_API_ALIGNMENT.md](./docs/SUPABASE_API_ALIGNMENT.md) |
 
 ### Monorepo structure (Phase 2 ✓)
 
@@ -33,6 +34,7 @@ daypilot/
 ├── packages/
 │   ├── ui/           # Shared components
 │   └── lib/          # Shared utilities
+├── daypilot_flutter/ # Flutter mobile client (Milestone 1)
 ├── prisma/           # Database schema (Phase 5 ✓)
 ├── docker/           # Dockerfiles & compose (Phase 10)
 ├── package.json      # Root scripts: pnpm dev, pnpm build, pnpm lint
