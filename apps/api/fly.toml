@@ -1,0 +1,37 @@
+# Fly.io config for DayPilot API
+# 1. Install flyctl: https://fly.io/docs/hands-on/install-flyctl/
+# 2. Create Postgres: fly postgres create
+# 3. Get DATABASE_URL from postgres app
+# 4. fly launch (or fly deploy) — uses this config
+
+app = "daypilot-api"
+
+[build]
+  dockerfile = "Dockerfile"
+  context = "../.."
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+
+[[services]]
+  internal_port = 3001
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    path = "/health"

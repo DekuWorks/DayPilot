@@ -1,0 +1,55 @@
+# CI + smoke builds for daypilot_flutter.
+# TestFlight: Xcode Organizer / App Store Connect upload with release signing + IPA export.
+# Play internal: upload AAB to internal testing track (Play Console) using a service account.
+
+name: Flutter mobile CI
+
+on:
+  push:
+    paths:
+      - "daypilot_flutter/**"
+      - ".github/workflows/flutter_mobile_ci.yml"
+  pull_request:
+    paths:
+      - "daypilot_flutter/**"
+      - ".github/workflows/flutter_mobile_ci.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: daypilot_flutter
+
+jobs:
+  analyze-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  build-android-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build apk --debug
+
+  build-ios-no-codesign:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --no-codesign

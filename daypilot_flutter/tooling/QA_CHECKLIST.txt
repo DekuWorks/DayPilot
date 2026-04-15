@@ -1,0 +1,26 @@
+DayPilot Flutter — manual QA before Milestone 1 beta (task 29)
+
+Auth
+- Sign up, sign in, forgot password email, sign out, cold start session restore
+
+Calendar
+- Month / week / day lists load; prev-next controls; realtime: create event elsewhere and confirm list updates (after running tooling/supabase_realtime_events.sql)
+
+Events
+- Create, view detail, edit title, delete; RLS: only own calendars/events
+
+Bookings
+- Active booking_links slug; slots appear; confirm inserts bookings row; guest email required
+
+Attendees / RSVP
+- List attendees on event; RSVP updates row for signed-in email only if attendee row exists
+
+Insights
+- Insights tab shows upcoming count; daily brief
+
+Notifications
+- Local plugin init; with dart-defines + google-services.json / GoogleService-Info.plist, FCM permission and foreground message handler
+
+Release (task 28–30)
+- iOS: archive + TestFlight in Xcode / App Store Connect; Android: signed AAB to Play internal track
+- Run flutter analyze && flutter test in CI (see .github/workflows/flutter_mobile_ci.yml)

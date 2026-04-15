@@ -43,6 +43,10 @@ COPY --from=builder /app/apps/api/src/generated ./src/generated
 # Prisma client lives in apps/api/src/generated; runtime needs it
 RUN ls -la src/generated 2>/dev/null || true
 
+# Start script: run migrations, then start API
+COPY apps/api/scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+CMD ["/app/start.sh"]
