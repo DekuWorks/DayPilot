@@ -1,5 +1,7 @@
 # Supabase and the Nest API (DayPilot)
 
+**Step-by-step setup:** [OPTION_C_SETUP.md](./OPTION_C_SETUP.md)
+
 The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `prisma/schema.prisma`).
 
 ---

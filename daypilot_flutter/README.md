@@ -1,6 +1,6 @@
 # DayPilot Flutter (Milestone 1)
 
-Mobile client for DayPilot. Uses **Supabase** for auth and data (see `../docs/SUPABASE_API_ALIGNMENT.md` for how this relates to the Nest API).
+Mobile client for DayPilot. **Option C:** Supabase auth + Nest API for events — see **`../docs/OPTION_C_SETUP.md`** (full walkthrough) and **`../docs/SUPABASE_API_ALIGNMENT.md`** (architecture).
 
 ## Prerequisites
 
