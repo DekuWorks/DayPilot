@@ -52,6 +52,14 @@ export class EventsService {
     return events.map(toEventPayload);
   }
 
+  async findOne(userId: string, eventId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, userId },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+    return toEventPayload(event);
+  }
+
   async create(userId: string, dto: CreateEventDto) {
     const event = await this.prisma.event.create({
       data: {

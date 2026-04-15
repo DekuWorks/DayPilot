@@ -3,11 +3,13 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'node:crypto';
+import * as jwt from 'jsonwebtoken';
 import type { UserRole } from '../generated/prisma';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -16,12 +18,24 @@ const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+type SupabaseJwtPayload = jwt.JwtPayload & {
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    given_name?: string;
+    family_name?: string;
+  };
+};
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -50,6 +64,75 @@ export class AuthService {
       user.firstName,
       user.lastName,
       user.avatarUrl ?? null,
+    );
+  }
+
+  /**
+   * Option C (hybrid): Flutter signs in with Supabase; exchanges access token for Nest JWTs.
+   * Set SUPABASE_JWT_SECRET in env (Supabase Dashboard → Settings → API → JWT Secret).
+   */
+  async exchangeFromSupabaseAccessToken(accessToken: string) {
+    const secret = this.config.get<string>('SUPABASE_JWT_SECRET');
+    if (!secret) {
+      throw new UnauthorizedException(
+        'SUPABASE_JWT_SECRET is not configured on the API',
+      );
+    }
+    let payload: SupabaseJwtPayload;
+    try {
+      payload = jwt.verify(accessToken, secret, {
+        algorithms: ['HS256'],
+      }) as SupabaseJwtPayload;
+    } catch {
+      throw new UnauthorizedException('Invalid Supabase access token');
+    }
+    const email = payload.email?.toLowerCase().trim();
+    if (!email) {
+      throw new UnauthorizedException('Token has no email claim');
+    }
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      const meta = payload.user_metadata ?? {};
+      let firstName =
+        meta.first_name ??
+        meta.given_name ??
+        (meta.full_name?.split(/\s+/).filter(Boolean)[0] ?? 'User');
+      let lastName =
+        meta.last_name ??
+        meta.family_name ??
+        (meta.full_name?.split(/\s+/).slice(1).join(' ') || ' ');
+      if (lastName.trim().length === 0) lastName = ' ';
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          passwordHash: null,
+          firstName: String(firstName).trim() || 'User',
+          lastName: lastName.trim(),
+        },
+      });
+      await this.prisma.subscription.create({
+        data: { userId: user.id },
+      });
+    }
+
+    await this.audit.log({
+      action: 'auth.supabase_exchange',
+      entityType: 'user',
+      entityId: user.id,
+      userId: user.id,
+    });
+
+    return this.issueTokenPair(
+      user.id,
+      user.email,
+      user.role,
+      user.firstName,
+      user.lastName,
+      user.avatarUrl,
     );
   }
 

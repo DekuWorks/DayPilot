@@ -12,11 +12,18 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SupabaseExchangeDto } from './dto/supabase-exchange.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  /** Hybrid mobile: Supabase Auth → Nest JWT (events/calendar use Nest API). */
+  @Post('supabase-exchange')
+  async supabaseExchange(@Body() dto: SupabaseExchangeDto) {
+    return this.authService.exchangeFromSupabaseAccessToken(dto.accessToken);
+  }
 
   @Post('signup')
   async signup(@Body() dto: SignupDto) {

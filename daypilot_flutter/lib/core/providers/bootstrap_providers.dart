@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/nest_api_session.dart';
 import '../routing/supabase_auth_listenable.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -10,6 +11,11 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
+});
+
+/// Nest JWT session (Option C). Used after Supabase → `/auth/supabase-exchange`.
+final nestApiSessionProvider = Provider<NestApiSession>((ref) {
+  return NestApiSession(ref.watch(sharedPreferencesProvider));
 });
 
 /// Drives go_router redirects when auth session changes.

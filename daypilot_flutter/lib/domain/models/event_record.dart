@@ -50,6 +50,28 @@ class EventRecord {
     );
   }
 
+  /// Nest API `GET/PATCH /events` payload (`start` / `end` ISO strings).
+  static EventRecord fromNestJson(Map<String, dynamic> json) {
+    DateTime parse(String key) {
+      final v = json[key];
+      if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+      return DateTime.parse(v.toString());
+    }
+
+    return EventRecord(
+      id: json['id'].toString(),
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      location: json['location'] as String?,
+      startsAt: parse('start'),
+      endsAt: parse('end'),
+      ownerId: null,
+      calendarId: null,
+      allDay: false,
+      status: 'scheduled',
+    );
+  }
+
   static EventRecord fromSupabaseRow(Map<String, dynamic> row) {
     DateTime parseTime(dynamic v) {
       if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);

@@ -15,10 +15,14 @@ Secrets are **not** committed. Pass values at compile time:
 ```bash
 cd daypilot_flutter
 
+# Option C (recommended): Supabase auth + Nest API for events
 flutter run \
   --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your_anon_key
+  --dart-define=SUPABASE_ANON_KEY=your_anon_key \
+  --dart-define=DAYPILOT_API_URL=https://your-api.example.com
 ```
+
+The API must expose `POST /auth/supabase-exchange` and have **`SUPABASE_JWT_SECRET`** set (see `docs/SUPABASE_API_ALIGNMENT.md`). Omit `DAYPILOT_API_URL` only if you use legacy Supabase-only events.
 
 If `SUPABASE_URL` or `SUPABASE_ANON_KEY` is missing, the app shows a **configuration missing** screen instead of crashing.
 

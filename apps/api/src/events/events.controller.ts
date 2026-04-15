@@ -29,6 +29,14 @@ export class EventsController {
     return this.eventsService.findAll(req.user.id, from, to);
   }
 
+  @Get(':id')
+  async getOne(
+    @Req() req: { user: { id: string } },
+    @Param('id') id: string,
+  ) {
+    return this.eventsService.findOne(req.user.id, id);
+  }
+
   @Post()
   async create(
     @Req() req: { user: { id: string } },

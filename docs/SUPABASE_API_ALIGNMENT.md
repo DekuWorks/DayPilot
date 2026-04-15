@@ -2,34 +2,53 @@
 
 The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `prisma/schema.prisma`).
 
-The **Flutter app** uses **Supabase** (`supabase_flutter`) and reads/writes tables such as `events`, `calendars`, etc.
+---
 
-Those are **not automatically the same database** unless you wire them together.
+## Chosen approach: Option C (hybrid mobile)
 
-## Options
+| Concern | Where it runs |
+|--------|----------------|
+| **Auth (mobile)** | Supabase Auth (PKCE) — users sign in/up in the Flutter app |
+| **Events / calendar (mobile)** | **Nest API** — same Prisma `Event` model as the web app |
+| **Realtime (Supabase)** | Still available for other tables; **not** used for `events` when `DAYPILOT_API_URL` is set (events are not mirrored to Supabase Postgres in this path) |
 
-Pick one direction for production:
+### API: `POST /auth/supabase-exchange`
 
-### A. Supabase as the mobile backend (single Postgres)
+- **Body:** `{ "accessToken": "<Supabase access JWT>" }`
+- **Env:** `SUPABASE_JWT_SECRET` — copy **JWT Secret** from Supabase Dashboard → **Settings** → **API** (same secret the API uses to verify Supabase tokens).
+- **Behavior:** Verifies the JWT, finds or creates a **Prisma `User`** by email (OAuth-style: `passwordHash` may be null), returns Nest **`accessToken`** + **`refreshToken`** like email/password login.
 
-1. Use **Supabase Postgres** as the source of truth.
-2. Mirror or migrate your Prisma schema into Supabase (or generate SQL from Prisma and apply in Supabase).
-3. Point **Nest** at the same Supabase Postgres `DATABASE_URL` (if you keep the API), or retire duplicate writes from web.
-4. Configure **Row Level Security (RLS)** in Supabase for every table the Flutter client touches.
+### Flutter
 
-### B. Nest API only (Flutter calls HTTP, not Supabase tables)
+- **`DAYPILOT_API_URL`** — base URL of the Nest API (no trailing slash), e.g. `https://api.daypilot.co`
+- After Supabase sign-in, the app calls **`/auth/supabase-exchange`**, stores Nest JWTs, and uses **`NestEventRepository`** for `/events` CRUD.
+- If **`DAYPILOT_API_URL`** is omitted, the app keeps **Supabase-only** event storage (legacy).
 
-1. Replace Supabase data calls in Flutter with **REST** (or GraphQL) to your deployed API.
-2. Keep **Supabase Auth** only if you still want it—otherwise use JWT from your API login.
-3. Larger refactor: repositories switch from `SupabaseClient` to `dio`/`http` + your API.
+### Production checklist
 
-### C. Hybrid (common for betas)
+1. Set **`SUPABASE_JWT_SECRET`** on the API host (Railway, Fly, etc.).
+2. Set **`CORS_ORIGIN`** (or equivalent) so the API allows your app origins if needed.
+3. Flutter release builds:  
+   `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=DAYPILOT_API_URL=...`
 
-- Supabase for **auth + realtime** only.
-- **Events/calendar** still go through Nest via a thin API layer. Requires new Flutter repositories and API endpoints.
+---
 
-## What to do next
+## Other options (not selected)
 
-1. Decide **A, B, or C** for Milestone 1.
-2. Document the chosen **URL** and **env** for Flutter (`SUPABASE_*` vs `NEXT_PUBLIC_API_URL`).
-3. Run a **single test user** through: signup → create event → see it on web (or vice versa) to prove alignment.
+### A. Supabase as the only backend
+
+Single Postgres in Supabase; Nest would point at the same DB or be retired for mobile paths.
+
+### B. Nest API only on mobile
+
+Flutter uses HTTP + Nest JWT only; Supabase removed from mobile (larger refactor).
+
+---
+
+## Env reference
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `SUPABASE_JWT_SECRET` | API | Verify Supabase access tokens at `/auth/supabase-exchange` |
+| `DAYPILOT_API_URL` | Flutter `--dart-define` | Nest API base URL (Option C) |
+| `NEXT_PUBLIC_API_URL` | Web | Same API for the Next.js app |

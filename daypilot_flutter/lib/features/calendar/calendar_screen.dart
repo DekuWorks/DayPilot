@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/daypilot_env.dart';
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../data/services/realtime_service.dart';
@@ -36,6 +37,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     _tabs.addListener(_onTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Option C: events live in Nest/Prisma — Supabase `events` realtime does not apply.
+      if (DayPilotEnv.hasDaypilotApi) return;
       final client = ref.read(supabaseClientProvider);
       _realtime = RealtimeService(client).subscribeToEvents((_) {
         ref.invalidate(calendarMonthEventsFamily);
