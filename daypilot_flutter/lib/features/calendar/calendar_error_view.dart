@@ -15,13 +15,22 @@ class CalendarErrorView extends ConsumerWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  static bool _isNestSessionError(Object e) =>
-      e is StateError && e.message.contains('No Nest API session');
+  static bool _isRecoverableSessionOrExchangeError(Object e) {
+    if (e is StateError && e.message.contains('No Nest API session')) {
+      return true;
+    }
+    final s = e.toString();
+    return s.contains('No Nest API session') ||
+        s.contains('Session expired') ||
+        s.contains('API exchange failed') ||
+        s.contains('Invalid exchange response') ||
+        s.contains('Invalid refresh response');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final nest = _isNestSessionError(error);
+    final nest = _isRecoverableSessionOrExchangeError(error);
 
     Future<void> signOut() async {
       await ref.read(authRepositoryProvider).signOut();
@@ -57,8 +66,8 @@ class CalendarErrorView extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(
                     nest
-                        ? 'You’re signed in, but the app doesn’t have a session with the DayPilot server yet. '
-                            'Make sure the API is running, then retry. You can also sign out and sign in again.'
+                        ? 'The DayPilot server didn’t accept your session or the link is missing. '
+                            'Check that the API is running and your keys match, then retry. You can also sign out.'
                         : '$error',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/async_body.dart';
+import '../../core/widgets/daypilot_page_shell.dart';
 import '../../domain/models/booking_slot.dart';
 
 /// Public booking page loaded by slug (task 19–20).
@@ -99,59 +100,76 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
     }
   }
 
+  String _formatSlotRange(BuildContext context, BookingSlot s) {
+    final loc = MaterialLocalizations.of(context);
+    final a = s.startsAt.toLocal();
+    final b = s.endsAt.toLocal();
+    final sameDay =
+        a.year == b.year && a.month == b.month && a.day == b.day;
+    final ta = TimeOfDay.fromDateTime(a).format(context);
+    final tb = TimeOfDay.fromDateTime(b).format(context);
+    if (sameDay) {
+      return '${loc.formatMediumDate(a)} · $ta–$tb';
+    }
+    return '${loc.formatMediumDate(a)} $ta – ${loc.formatMediumDate(b)} $tb';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Book · ${widget.slug}')),
-      body: AsyncBody(
-        isLoading: _loading,
-        error: _error,
-        isEmpty: !_loading && _slots.isEmpty,
-        emptyMessage: 'No availability for this link.',
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Your email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Your name (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Choose a slot',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            ..._slots.map(
-              (s) => ListTile(
-                title: Text(s.startsAt.toLocal().toString()),
-                subtitle: Text(s.isFull ? 'Full' : 'Open'),
-                trailing: Icon(
-                  _selected == s ? Icons.check_circle : Icons.circle_outlined,
-                  color: s.isFull
-                      ? Theme.of(context).disabledColor
-                      : Theme.of(context).colorScheme.primary,
+    return DayPilotPageShell(
+      title: Text('Book · ${widget.slug}'),
+      body: SafeArea(
+        child: AsyncBody(
+          isLoading: _loading,
+          error: _error,
+          isEmpty: !_loading && _slots.isEmpty,
+          emptyMessage: 'No availability for this link.',
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Your email',
+                  border: OutlineInputBorder(),
                 ),
-                onTap: s.isFull ? null : () => setState(() => _selected = s),
               ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _selected == null || _selected!.isFull ? null : _confirm,
-              child: const Text('Confirm'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _name,
+                decoration: const InputDecoration(
+                  labelText: 'Your name (optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Choose a slot',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              ..._slots.map(
+                (s) => ListTile(
+                  title: Text(_formatSlotRange(context, s)),
+                  subtitle: Text(s.isFull ? 'Full' : 'Open'),
+                  trailing: Icon(
+                    _selected == s ? Icons.check_circle : Icons.circle_outlined,
+                    color: s.isFull
+                        ? Theme.of(context).disabledColor
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                  onTap: s.isFull ? null : () => setState(() => _selected = s),
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed:
+                    _selected == null || _selected!.isFull ? null : _confirm,
+                child: const Text('Confirm'),
+              ),
+            ],
+          ),
         ),
       ),
     );

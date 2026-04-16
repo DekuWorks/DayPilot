@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/async_body.dart';
+import '../../core/widgets/daypilot_page_shell.dart';
 import '../../domain/models/attendee.dart';
 import '../../domain/models/rsvp.dart';
 
@@ -50,48 +51,50 @@ class _AttendeeListScreenState extends ConsumerState<AttendeeListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Attendees')),
-      body: AsyncBody(
-        isLoading: _loading,
-        error: _error,
-        isEmpty: !_loading && _attendees.isEmpty,
-        emptyMessage: 'No attendees yet.',
-        child: ListView(
-          padding: const EdgeInsets.all(8),
-          children: [
-            ..._attendees.map(
-              (a) => ListTile(
-                title: Text(a.email),
-                subtitle: Text(a.name ?? ''),
-                trailing: Text(a.rsvpStatus),
+    return DayPilotPageShell(
+      title: const Text('Attendees'),
+      body: SafeArea(
+        child: AsyncBody(
+          isLoading: _loading,
+          error: _error,
+          isEmpty: !_loading && _attendees.isEmpty,
+          emptyMessage: 'No attendees yet.',
+          child: ListView(
+            padding: const EdgeInsets.all(8),
+            children: [
+              ..._attendees.map(
+                (a) => ListTile(
+                  title: Text(a.email),
+                  subtitle: Text(a.name ?? ''),
+                  trailing: Text(a.rsvpStatus),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: FilledButton(
-                onPressed: () async {
-                  try {
-                    await ref.read(attendeeRepositoryProvider).submitRsvp(
-                          eventId: widget.eventId,
-                          status: RsvpStatus.yes,
-                        );
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('RSVP updated.')),
-                    );
-                    await _load();
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('$e')),
-                    );
-                  }
-                },
-                child: const Text('RSVP: Going (your account email)'),
+              const SizedBox(height: 16),
+              Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    try {
+                      await ref.read(attendeeRepositoryProvider).submitRsvp(
+                            eventId: widget.eventId,
+                            status: RsvpStatus.yes,
+                          );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('RSVP updated.')),
+                      );
+                      await _load();
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$e')),
+                      );
+                    }
+                  },
+                  child: const Text('RSVP: Going (your account email)'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

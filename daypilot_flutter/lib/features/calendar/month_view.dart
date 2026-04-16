@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/api_session_sync_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/models/event_record.dart';
 import 'calendar_error_view.dart';
@@ -29,7 +30,10 @@ class MonthCalendarView extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => CalendarErrorView(
         error: e,
-        onRetry: () => ref.invalidate(calendarMonthEventsFamily(key)),
+        onRetry: () async {
+          await ref.read(apiSessionSyncProvider.notifier).sync();
+          ref.invalidate(calendarMonthEventsFamily(key));
+        },
       ),
       data: (events) {
         return _MonthGrid(

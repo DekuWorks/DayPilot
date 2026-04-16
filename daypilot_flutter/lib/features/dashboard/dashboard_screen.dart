@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/providers/api_session_sync_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/gradient_brand_title.dart';
@@ -24,6 +25,7 @@ class DashboardScreen extends ConsumerWidget {
     final email =
         Supabase.instance.client.auth.currentUser?.email ?? 'there';
     final shortName = email.contains('@') ? email.split('@').first : email;
+    final apiSync = ref.watch(apiSessionSyncProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -43,6 +45,67 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (apiSync.status == ApiSessionSyncStatus.syncing)
+                const LinearProgressIndicator(minHeight: 2),
+              if (apiSync.showDashboardBanner)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Card(
+                    elevation: 0,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .errorContainer
+                        .withValues(alpha: 0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _formatApiErrorForBanner(apiSync.error),
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            alignment: WrapAlignment.end,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(apiSessionSyncProvider.notifier)
+                                    .sync(),
+                                child: const Text('Retry'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  await ref
+                                      .read(authRepositoryProvider)
+                                      .signOut();
+                                  if (context.mounted) context.go('/login');
+                                },
+                                child: const Text('Sign out'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
                 child: Row(
@@ -110,4 +173,13 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatApiErrorForBanner(Object? error) {
+  if (error == null) {
+    return 'Could not connect to the DayPilot server. Check the API URL and that the server is running.';
+  }
+  final s = error.toString();
+  if (s.length > 160) return '${s.substring(0, 157)}…';
+  return s;
 }

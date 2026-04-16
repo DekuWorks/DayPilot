@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/api_session_sync_provider.dart';
 import 'calendar_error_view.dart';
 import 'calendar_providers.dart';
 
@@ -18,7 +19,10 @@ class DayCalendarView extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => CalendarErrorView(
         error: e,
-        onRetry: () => ref.invalidate(calendarDayEventsFamily(d)),
+        onRetry: () async {
+          await ref.read(apiSessionSyncProvider.notifier).sync();
+          ref.invalidate(calendarDayEventsFamily(d));
+        },
       ),
       data: (events) {
         if (events.isEmpty) {

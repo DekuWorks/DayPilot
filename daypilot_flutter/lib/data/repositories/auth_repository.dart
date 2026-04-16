@@ -14,17 +14,26 @@ class AuthRepository {
 
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
-  /// After cold start: exchange Supabase session for Nest JWTs (Option C).
-  Future<void> syncApiSession() => _linkApiIfNeeded();
+  /// After cold start / explicit retry: exchange Supabase JWT for Nest tokens.
+  /// No-op if Option C is disabled or there is no Supabase session.
+  /// Throws on network / API errors so the UI can show Retry.
+  Future<void> syncApiSessionStrict() async {
+    final nest = _apiSession;
+    if (!DayPilotEnv.hasDaypilotApi || nest == null) return;
+    final session = _client.auth.currentSession;
+    if (session == null) return;
+    await nest.exchangeFromSupabaseSession();
+  }
 
   Future<void> _linkApiIfNeeded() async {
-    if (!DayPilotEnv.hasDaypilotApi || _apiSession == null) return;
+    final nest = _apiSession;
+    if (!DayPilotEnv.hasDaypilotApi || nest == null) return;
     final session = _client.auth.currentSession;
     if (session == null) return;
     try {
-      await _apiSession.exchangeFromSupabaseSession();
+      await nest.exchangeFromSupabaseSession();
     } catch (_) {
-      // Network / misconfigured API — user can still use Supabase-only flows
+      // Non-blocking after sign-in — dashboard notifier + Retry handle recovery
     }
   }
 

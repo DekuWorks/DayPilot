@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/repository_providers.dart';
+import '../../core/widgets/daypilot_page_shell.dart';
 import '../../domain/models/event_record.dart';
 import '../calendar/calendar_providers.dart';
 import '../insights/insights_providers.dart';
@@ -73,32 +74,38 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
+      return const DayPilotPageShell(
+        title: Text('Edit event'),
         body: Center(child: CircularProgressIndicator()),
       );
     }
     if (_event == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Event')),
+      return DayPilotPageShell(
+        title: const Text('Event'),
         body: const Center(child: Text('Event not found.')),
       );
     }
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit event')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            TextFormField(
-              controller: _title,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(onPressed: _save, child: const Text('Save changes')),
-          ],
+    return DayPilotPageShell(
+      title: const Text('Edit event'),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              TextFormField(
+                controller: _title,
+                decoration: const InputDecoration(labelText: 'Title'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _save,
+                child: const Text('Save changes'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -25,3 +25,8 @@ final supabaseAuthListenableProvider = Provider<SupabaseAuthListenable>((ref) {
   ref.onDispose(listenable.dispose);
   return listenable;
 });
+
+/// Supabase auth stream — used to re-run Nest exchange after sign-in / reset on sign-out.
+final authStateChangeProvider = StreamProvider<AuthState>((ref) {
+  return ref.watch(supabaseClientProvider).auth.onAuthStateChange;
+});
