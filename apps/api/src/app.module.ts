@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -16,10 +19,17 @@ import { CalendarConnectionsModule } from './calendar-connections/calendar-conne
 import { envSchema } from './env.schema';
 import { AuditModule } from './audit/audit.module';
 
+/** `pnpm dev --filter @daypilot/api` runs with cwd `apps/api`; monorepo secrets live in repo-root `.env`. */
+const apiEnvFiles = [
+  join(process.cwd(), '..', '.env'),
+  join(process.cwd(), '.env'),
+].filter((p) => existsSync(p));
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: apiEnvFiles.length > 0 ? apiEnvFiles : ['.env'],
       validate: (env) => envSchema.parse(env),
     }),
     ThrottlerModule.forRootAsync({

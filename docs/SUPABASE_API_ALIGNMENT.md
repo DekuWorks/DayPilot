@@ -17,7 +17,9 @@ The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `pri
 ### API: `POST /auth/supabase-exchange`
 
 - **Body:** `{ "accessToken": "<Supabase access JWT>" }`
-- **Env:** `SUPABASE_JWT_SECRET` — copy **JWT Secret** from Supabase Dashboard → **Settings** → **API** (same secret the API uses to verify Supabase tokens).
+- **Env (pick one or both):**
+  - **`SUPABASE_URL`** — project URL (same as Flutter `SUPABASE_URL`, no trailing slash). The API verifies tokens with **JWKS** at `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` (ES256 / current Supabase signing keys). **Do not** use the dashboard “Key ID” UUID as a secret.
+  - **`SUPABASE_JWT_SECRET`** — optional **legacy** HS256 symmetric secret if your project still uses it; omitted if you only use JWT signing keys.
 - **Behavior:** Verifies the JWT, finds or creates a **Prisma `User`** by email (OAuth-style: `passwordHash` may be null), returns Nest **`accessToken`** + **`refreshToken`** like email/password login.
 
 ### Flutter
@@ -28,7 +30,7 @@ The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `pri
 
 ### Production checklist
 
-1. Set **`SUPABASE_JWT_SECRET`** on the API host (Railway, Fly, etc.).
+1. Set **`SUPABASE_URL`** (and optionally **`SUPABASE_JWT_SECRET`** if legacy HS256) on the API host (Railway, Fly, etc.).
 2. Set **`CORS_ORIGIN`** (or equivalent) so the API allows your app origins if needed.
 3. Flutter release builds:  
    `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=DAYPILOT_API_URL=...`
@@ -51,6 +53,7 @@ Flutter uses HTTP + Nest JWT only; Supabase removed from mobile (larger refactor
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
-| `SUPABASE_JWT_SECRET` | API | Verify Supabase access tokens at `/auth/supabase-exchange` |
+| `SUPABASE_URL` | API | JWKS verification for Supabase access tokens (preferred with ES256 signing keys) |
+| `SUPABASE_JWT_SECRET` | API | Optional legacy HS256 verification for `/auth/supabase-exchange` |
 | `DAYPILOT_API_URL` | Flutter `--dart-define` | Nest API base URL (Option C) |
 | `NEXT_PUBLIC_API_URL` | Web | Same API for the Next.js app |

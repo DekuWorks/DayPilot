@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'calendar_error_view.dart';
 import 'calendar_providers.dart';
 
 class WeekCalendarView extends ConsumerWidget {
@@ -15,7 +16,10 @@ class WeekCalendarView extends ConsumerWidget {
     final async = ref.watch(calendarWeekEventsFamily(d));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('$e')),
+      error: (e, _) => CalendarErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(calendarWeekEventsFamily(d)),
+      ),
       data: (events) {
         if (events.isEmpty) {
           return const Center(child: Text('No events this week.'));

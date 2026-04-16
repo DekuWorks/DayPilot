@@ -31,3 +31,6 @@ node_modules
 
 # Prisma generated client (created by prisma generate)
 apps/api/src/generated
+
+# Flutter local compile-time secrets (see daypilot_flutter/dart-define.example.json)
+daypilot_flutter/dart-define.json

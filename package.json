@@ -5,6 +5,10 @@
   "description": "AI-powered scheduling assistant",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @daypilot/api dev",
+    "db:up": "docker compose up -d postgres",
+    "flutter:run": "bash daypilot_flutter/run.sh",
+    "flutter:run:web": "bash daypilot_flutter/run.sh -d chrome",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "clean": "turbo run clean --force && rm -rf node_modules",

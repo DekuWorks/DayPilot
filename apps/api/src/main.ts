@@ -15,6 +15,51 @@ if (SENTRY_DSN) {
   });
 }
 
+/** CORS: production uses CORS_ORIGIN only; dev also allows any http localhost / 127.0.0.1 port (Flutter web uses random ports). */
+function corsOriginOption(
+  raw: string | undefined,
+):
+  | boolean
+  | string[]
+  | ((
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => void) {
+  if (raw === undefined || raw === '') {
+    return true;
+  }
+  const list = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (process.env.NODE_ENV === 'production') {
+    return list;
+  }
+  return (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (list.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    try {
+      const u = new URL(origin);
+      if (
+        u.protocol === 'http:' &&
+        (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
+      ) {
+        callback(null, true);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    callback(null, false);
+  };
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(
@@ -32,15 +77,8 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new SentryFilter());
-  const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
-    origin:
-      corsOrigin === undefined || corsOrigin === ''
-        ? true
-        : corsOrigin
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean),
+    origin: corsOriginOption(process.env.CORS_ORIGIN),
     credentials: true,
   });
   const port = process.env.PORT ?? 3000;

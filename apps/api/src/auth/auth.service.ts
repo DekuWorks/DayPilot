@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'node:crypto';
 import * as jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 import type { UserRole } from '../generated/prisma';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -69,21 +70,53 @@ export class AuthService {
 
   /**
    * Option C (hybrid): Flutter signs in with Supabase; exchanges access token for Nest JWTs.
-   * Set SUPABASE_JWT_SECRET in env (Supabase Dashboard → Settings → API → JWT Secret).
+   *
+   * Verification supports:
+   * - **Legacy:** `SUPABASE_JWT_SECRET` + HS256 (Dashboard “JWT secret” / symmetric).
+   * - **Current Supabase:** `SUPABASE_URL` + JWKS at `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
+   *   (ES256 / asymmetric — the “Key ID” in the dashboard is not a secret; use project URL).
+   *
+   * If both are set, HS256 is tried first, then JWKS (helps during migration).
    */
   async exchangeFromSupabaseAccessToken(accessToken: string) {
     const secret = this.config.get<string>('SUPABASE_JWT_SECRET');
-    if (!secret) {
-      throw new UnauthorizedException(
-        'SUPABASE_JWT_SECRET is not configured on the API',
-      );
+    const supabaseUrl = this.config
+      .get<string>('SUPABASE_URL')
+      ?.trim()
+      .replace(/\/$/, '');
+
+    let payload: SupabaseJwtPayload | undefined;
+
+    if (secret) {
+      try {
+        payload = jwt.verify(accessToken, secret, {
+          algorithms: ['HS256'],
+        }) as SupabaseJwtPayload;
+      } catch {
+        // Token may be ES256 after JWT signing migration — try JWKS if configured.
+      }
     }
-    let payload: SupabaseJwtPayload;
-    try {
-      payload = jwt.verify(accessToken, secret, {
-        algorithms: ['HS256'],
-      }) as SupabaseJwtPayload;
-    } catch {
+
+    if (!payload && supabaseUrl) {
+      try {
+        const JWKS = jose.createRemoteJWKSet(
+          new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
+        );
+        const { payload: p } = await jose.jwtVerify(accessToken, JWKS, {
+          issuer: `${supabaseUrl}/auth/v1`,
+        });
+        payload = p as SupabaseJwtPayload;
+      } catch {
+        throw new UnauthorizedException('Invalid Supabase access token');
+      }
+    }
+
+    if (!payload) {
+      if (!secret && !supabaseUrl) {
+        throw new UnauthorizedException(
+          'Configure SUPABASE_URL (JWKS) or SUPABASE_JWT_SECRET (legacy HS256) on the API',
+        );
+      }
       throw new UnauthorizedException('Invalid Supabase access token');
     }
     const email = payload.email?.toLowerCase().trim();

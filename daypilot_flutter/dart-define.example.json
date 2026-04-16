@@ -1,0 +1,5 @@
+{
+  "SUPABASE_URL": "https://YOUR_PROJECT_REF.supabase.co",
+  "SUPABASE_ANON_KEY": "sb_publishable_OR_legacy_anon_from_dashboard",
+  "DAYPILOT_API_URL": "http://localhost:3001"
+}

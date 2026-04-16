@@ -30,8 +30,11 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/daypilot
-      JWT_SECRET: change-me-in-production-min-32-chars
-      CORS_ORIGIN: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
+      # Option C: SUPABASE_URL (JWKS) and/or SUPABASE_JWT_SECRET (legacy HS256) — set in root .env
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
     depends_on:
       - postgres
 

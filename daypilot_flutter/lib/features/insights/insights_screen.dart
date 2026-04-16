@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
 import 'insights_providers.dart';
 
 class InsightsScreen extends ConsumerWidget {
@@ -10,11 +11,30 @@ class InsightsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snap = ref.watch(latestInsightProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Insights')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            DayPilotColors.cream,
+            DayPilotColors.creamLight,
+            DayPilotColors.cream,
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Insights'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
+          ),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
           snap.when(
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text('Could not load insights: $e'),
@@ -44,6 +64,7 @@ class InsightsScreen extends ConsumerWidget {
             child: const Text('Open daily brief'),
           ),
         ],
+        ),
       ),
     );
   }

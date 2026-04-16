@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/repository_providers.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/gradient_brand_title.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -36,7 +38,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             email: _email.text.trim(),
             password: _password.text,
           );
-      if (mounted) context.go('/calendar');
+      if (mounted) context.go('/dashboard');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,6 +58,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            const Center(child: GradientBrandTitle()),
+            const SizedBox(height: 8),
+            Text(
+              'Create account',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: DayPilotColors.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,

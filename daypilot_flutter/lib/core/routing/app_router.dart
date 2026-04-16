@@ -7,7 +7,7 @@ import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/booking/public_booking_screen.dart';
-import '../../features/calendar/calendar_screen.dart';
+import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../features/events/event_edit_screen.dart';
 import '../../features/events/event_create_screen.dart';
@@ -22,17 +22,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(supabaseAuthListenableProvider);
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/calendar',
+    initialLocation: '/dashboard',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final session = Supabase.instance.client.auth.currentSession;
       final loc = state.matchedLocation;
+      if (loc == '/calendar') {
+        return '/dashboard';
+      }
+      final session = Supabase.instance.client.auth.currentSession;
       final isPublic = _isPublicRoute(loc);
       if (session == null && !isPublic) {
         return '/login';
       }
       if (session != null && _isAuthOnlyRoute(loc)) {
-        return '/calendar';
+        return '/dashboard';
       }
       return null;
     },
@@ -60,8 +63,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(
-            path: '/calendar',
-            builder: (context, state) => const CalendarScreen(),
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
             path: '/insights',

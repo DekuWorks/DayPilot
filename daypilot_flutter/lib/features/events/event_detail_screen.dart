@@ -105,7 +105,7 @@ class EventDetailScreen extends ConsumerWidget {
       ref.invalidate(calendarWeekEventsFamily);
       ref.invalidate(calendarDayEventsFamily);
       ref.invalidate(latestInsightProvider);
-      if (context.mounted) context.go('/calendar');
+      if (context.mounted) context.go('/dashboard');
     }
   }
 }
