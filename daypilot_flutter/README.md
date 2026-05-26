@@ -90,4 +90,4 @@ flutter build apk   # or ios, appbundle
 
 1. Run through **`docs/FLUTTER_QA_CHECKLIST.md`** on a device.
 2. Resolve **Supabase vs Nest** data alignment for production (`docs/SUPABASE_API_ALIGNMENT.md`).
-3. **Internal testing**: TestFlight / Play Console (see `docs/FLUTTER_MIGRATION_TASKS.md` Phase H).
+3. **Internal testing**: TestFlight / Play Console — **`docs/MOBILE_INTERNAL_RELEASE.md`** and GitHub workflow **Flutter release**.

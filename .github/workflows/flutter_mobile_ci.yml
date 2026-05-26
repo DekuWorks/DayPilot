@@ -21,7 +21,7 @@ defaults:
 
 jobs:
   analyze-test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -29,6 +29,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - run: flutter clean
       - run: flutter analyze
       - run: flutter test
 

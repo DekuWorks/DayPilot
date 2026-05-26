@@ -56,7 +56,7 @@ Use this checklist for Milestone 1 mobile beta. Check items off as you complete 
 ## Phase H — Polish & release (27–30)
 
 - [x] **27.** Add dark mode and responsive tablet polish (`ThemeMode.system`, `NavigationRail` ≥840px)
-- [ ] **28.** Prepare TestFlight and Play internal testing builds
+- [x] **28.** Prepare TestFlight and Play internal testing builds — see **`docs/MOBILE_INTERNAL_RELEASE.md`**, workflow **Flutter release** (secrets + manual upload)
 - [ ] **29.** Run QA pass for auth, calendar, events, bookings, RSVP, insights, notifications
 - [ ] **30.** Launch Milestone 1 mobile beta
 
@@ -73,5 +73,5 @@ Use this checklist for Milestone 1 mobile beta. Check items off as you complete 
 
 1. **Decide backend alignment** (Supabase-only vs API vs hybrid) — `docs/SUPABASE_API_ALIGNMENT.md`.
 2. **Run manual QA** — `docs/FLUTTER_QA_CHECKLIST.md`.
-3. **Ship internal builds** — Apple TestFlight + Google Play internal track (signing, store listings, privacy).
+3. **Ship internal builds** — run **Actions → Flutter release** after adding secrets (`docs/MOBILE_INTERNAL_RELEASE.md`).
 4. **Beta** — invite testers after QA sign-off.
