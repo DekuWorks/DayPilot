@@ -7,7 +7,7 @@ After sign-in, the app opens a **single dashboard** (`/dashboard`) with the **cr
 ## Prerequisites
 
 - Flutter stable (SDK `^3.11` per `pubspec.yaml`)
-- Xcode (iOS), Android Studio / SDK (Android)
+- Xcode (iOS **15.0+** deployment target — required by Firebase 12.x), Android Studio / SDK (Android)
 - A Supabase project with tables the app expects (`events`, `calendars`, etc.—align with your Supabase schema)
 
 ## Configuration
