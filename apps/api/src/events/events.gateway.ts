@@ -82,4 +82,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .to(USER_ROOM_PREFIX + payload.userId)
       .emit('event:deleted', { id: payload.eventId });
   }
+
+  @OnEvent('calendar.synced')
+  handleCalendarSynced(payload: { userId: string }) {
+    this.server
+      .to(USER_ROOM_PREFIX + payload.userId)
+      .emit('calendar:synced', {});
+  }
 }

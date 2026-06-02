@@ -11,6 +11,7 @@ class EventRecord {
     this.calendarId,
     this.allDay = false,
     this.status = 'scheduled',
+    this.source = 'native',
   });
 
   final String id;
@@ -23,6 +24,9 @@ class EventRecord {
   final String? calendarId;
   final bool allDay;
   final String status;
+  final String source;
+
+  bool get isSyncedExternal => source == 'google' || source == 'outlook';
 
   EventRecord copyWith({
     String? id,
@@ -35,6 +39,7 @@ class EventRecord {
     String? calendarId,
     bool? allDay,
     String? status,
+    String? source,
   }) {
     return EventRecord(
       id: id ?? this.id,
@@ -47,6 +52,7 @@ class EventRecord {
       calendarId: calendarId ?? this.calendarId,
       allDay: allDay ?? this.allDay,
       status: status ?? this.status,
+      source: source ?? this.source,
     );
   }
 
@@ -69,6 +75,7 @@ class EventRecord {
       calendarId: null,
       allDay: false,
       status: 'scheduled',
+      source: json['source'] as String? ?? 'native',
     );
   }
 
@@ -92,6 +99,7 @@ class EventRecord {
       calendarId: row['calendar_id']?.toString(),
       allDay: row['all_day'] as bool? ?? false,
       status: row['status'] as String? ?? 'scheduled',
+      source: 'native',
     );
   }
 

@@ -31,8 +31,11 @@ export default function IntegrationsPage() {
       .then((data) => {
         if (!cancelled) setConnections(data);
       })
-      .catch(() => {
-        if (!cancelled) setConnections([]);
+      .catch((e) => {
+        if (!cancelled) {
+          setConnections([]);
+          setError(e instanceof Error ? e.message : "Failed to load connections");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -87,6 +90,12 @@ export default function IntegrationsPage() {
       <h1 className="text-2xl md:text-3xl font-bold text-[#2B3448] mb-2">Connected calendars</h1>
       <p className="text-[#4f4f4f] mb-6">
         Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.
+        Edits and deletes in DayPilot sync back to Google and Outlook.
+      </p>
+      <p className="text-sm text-[#4f4f4f] mb-6">
+        First-time setup: add OAuth credentials to the API <code className="text-xs bg-white/60 px-1 rounded">.env</code> — see{" "}
+        <code className="text-xs bg-white/60 px-1 rounded">docs/CALENDAR_INTEGRATIONS_SETUP.md</code>.
+        If Outlook was connected before write access was enabled, disconnect and reconnect.
       </p>
 
       {connected && !err && (
@@ -180,7 +189,7 @@ export default function IntegrationsPage() {
       </div>
 
       <p className="mt-6">
-        <Link href="/calendar" className="text-[#4FB3B3] font-medium hover:underline">← Back to Calendar</Link>
+        <Link href="/dashboard" className="text-[#4FB3B3] font-medium hover:underline">← Back to Calendar</Link>
       </p>
     </div>
   );

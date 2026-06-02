@@ -11,6 +11,17 @@ import 'calendar_providers.dart';
 bool _sameCalendarDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
+Color _chipColorForSource(String source) {
+  switch (source) {
+    case 'google':
+      return Colors.blue.withValues(alpha: 0.22);
+    case 'outlook':
+      return Colors.indigo.withValues(alpha: 0.22);
+    default:
+      return DayPilotColors.teal.withValues(alpha: 0.2);
+  }
+}
+
 /// Month view: classic grid + event chips (replaces plain list).
 class MonthCalendarView extends ConsumerWidget {
   const MonthCalendarView({
@@ -200,7 +211,7 @@ class _DayCell extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 2),
                                   child: Material(
-                                    color: DayPilotColors.teal.withValues(alpha: 0.2),
+                                    color: _chipColorForSource(e.source),
                                     borderRadius: BorderRadius.circular(4),
                                     child: InkWell(
                                       onTap: () => onEventTap(e.id),

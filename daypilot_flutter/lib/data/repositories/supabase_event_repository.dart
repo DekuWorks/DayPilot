@@ -37,8 +37,8 @@ class SupabaseEventRepository implements EventRepository {
         .select(
           'id, title, description, location, start, end, start_time, end_time, user_id, calendar_id, all_day, status',
         )
-        .gte('start', fromIso)
         .lte('start', toIso)
+        .gte('end', fromIso)
         .order('start', ascending: true);
     final list = (rows as List<dynamic>)
         .map((e) => EventRecord.fromSupabaseRow(Map<String, dynamic>.from(e as Map)))

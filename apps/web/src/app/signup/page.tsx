@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
@@ -14,11 +14,16 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signup, isAuthenticated } = useAuth();
+  const { signup, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  if (isAuthenticated) {
-    router.replace("/dashboard");
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || isAuthenticated) {
     return null;
   }
 
@@ -40,7 +45,12 @@ export default function SignupPage() {
       await signup(email, password, trimmedFirst, trimmedLast);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed");
+      const msg = err instanceof Error ? err.message : "Sign up failed";
+      setError(
+        msg.includes("already exists")
+          ? "An account with this email already exists. Sign in instead."
+          : msg,
+      );
     } finally {
       setLoading(false);
     }

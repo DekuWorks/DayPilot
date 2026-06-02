@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders } from "./api";
+import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
 
 export type CalendarProvider = "google" | "outlook" | "apple";
 
@@ -14,7 +14,10 @@ export async function listConnections(): Promise<CalendarConnection[]> {
   const res = await fetch(`${getApiUrl()}/calendar-connections`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to load connections");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getApiErrorMessage(err, "Failed to load connections"));
+  }
   return res.json();
 }
 
@@ -24,7 +27,7 @@ export async function getConnectUrl(provider: CalendarProvider): Promise<{ redir
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to get connect URL");
+    throw new Error(getApiErrorMessage(err, "Failed to get connect URL"));
   }
   return res.json();
 }
@@ -34,7 +37,10 @@ export async function disconnectConnection(id: string): Promise<{ ok: boolean }>
     method: "DELETE",
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to disconnect");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getApiErrorMessage(err, "Failed to disconnect"));
+  }
   return res.json();
 }
 
@@ -42,6 +48,9 @@ export async function syncConnection(id: string): Promise<{ ok: boolean }> {
   const res = await fetch(`${getApiUrl()}/calendar-connections/${id}/sync`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to sync");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getApiErrorMessage(err, "Failed to sync"));
+  }
   return res.json();
 }

@@ -11,6 +11,7 @@ import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../features/events/event_edit_screen.dart';
 import '../../features/events/event_create_screen.dart';
+import '../../features/integrations/integrations_screen.dart';
 import '../../features/insights/daily_brief_screen.dart';
 import '../../features/insights/insights_screen.dart';
 import '../../features/shell/app_shell.dart';
@@ -69,6 +70,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/insights',
             builder: (context, state) => const InsightsScreen(),
+          ),
+          GoRoute(
+            path: '/integrations',
+            builder: (context, state) => const IntegrationsScreen(),
           ),
           GoRoute(
             path: '/insights/brief',

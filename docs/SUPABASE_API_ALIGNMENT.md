@@ -26,6 +26,8 @@ The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `pri
 
 - **`DAYPILOT_API_URL`** — base URL of the Nest API (no trailing slash), e.g. `https://api.daypilot.co`
 - After Supabase sign-in, the app calls **`/auth/supabase-exchange`**, stores Nest JWTs, and uses **`NestEventRepository`** for `/events` CRUD.
+- **Insights / daily brief** use the same event source as the calendar (`NestEventRepository` when Option C is enabled).
+- **Live calendar refresh** uses Nest WebSocket (`/ws`, `event:created|updated|deleted`) when Option C is enabled; legacy path uses Supabase Realtime on `events`.
 - If **`DAYPILOT_API_URL`** is omitted, the app keeps **Supabase-only** event storage (legacy).
 
 ### Production checklist

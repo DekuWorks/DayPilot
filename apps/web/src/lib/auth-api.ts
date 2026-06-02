@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders } from "./api";
+import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
 
 export type User = {
   id: string;
@@ -17,7 +17,7 @@ export async function updateProfile(data: { avatarUrl?: string | null }): Promis
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to update profile");
+    throw new Error(getApiErrorMessage(err, "Failed to update profile"));
   }
   return res.json();
 }
@@ -40,7 +40,7 @@ export async function login(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Login failed");
+    throw new Error(getApiErrorMessage(err, "Login failed"));
   }
   return res.json();
 }
@@ -58,7 +58,7 @@ export async function signup(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Signup failed");
+    throw new Error(getApiErrorMessage(err, "Signup failed"));
   }
   return res.json();
 }

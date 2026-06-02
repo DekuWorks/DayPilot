@@ -128,6 +128,11 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Connected calendars',
+                      icon: const Icon(Icons.link_rounded),
+                      onPressed: () => context.push('/integrations'),
+                    ),
+                    IconButton(
                       tooltip: 'Insights',
                       icon: const Icon(Icons.insights_outlined),
                       onPressed: () => context.push('/insights'),

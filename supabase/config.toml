@@ -1,0 +1,7 @@
+# DayPilot Supabase project (remote: wmkytyrcxbzjqiykbauw)
+# Apply migrations: supabase link && supabase db push
+
+project_id = "wmkytyrcxbzjqiykbauw"
+
+[db]
+major_version = 17

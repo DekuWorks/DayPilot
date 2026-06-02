@@ -32,11 +32,17 @@ export function useEventsSocket(onSync: () => void) {
     socket.on("event:created", handleSync);
     socket.on("event:updated", handleSync);
     socket.on("event:deleted", handleSync);
+    socket.on("calendar:synced", handleSync);
+    socket.on("connect_error", () => {
+      // Auth may still be refreshing; calendar refetch on next successful connect.
+    });
 
     return () => {
       socket.off("event:created", handleSync);
       socket.off("event:updated", handleSync);
       socket.off("event:deleted", handleSync);
+      socket.off("calendar:synced", handleSync);
+      socket.off("connect_error");
       socket.disconnect();
     };
   }, []);

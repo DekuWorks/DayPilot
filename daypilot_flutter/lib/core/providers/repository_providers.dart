@@ -6,6 +6,7 @@ import '../../data/repositories/booking_repository.dart';
 import '../../data/repositories/event_repository.dart';
 import '../../data/repositories/nest_event_repository.dart';
 import '../../data/repositories/supabase_event_repository.dart';
+import '../../data/repositories/calendar_connections_repository.dart';
 import '../../data/repositories/insights_repository.dart';
 import '../../data/repositories/local_cache_repository.dart';
 import '../../domain/models/event_record.dart';
@@ -26,6 +27,11 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
   return SupabaseEventRepository(ref.watch(supabaseClientProvider));
 });
 
+final calendarConnectionsRepositoryProvider =
+    Provider<CalendarConnectionsRepository>((ref) {
+  return CalendarConnectionsRepository(ref.watch(nestApiSessionProvider));
+});
+
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
   return BookingRepository(ref.watch(supabaseClientProvider));
 });
@@ -35,7 +41,10 @@ final attendeeRepositoryProvider = Provider<AttendeeRepository>((ref) {
 });
 
 final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
-  return InsightsRepository(ref.watch(supabaseClientProvider));
+  return InsightsRepository(
+    ref.watch(eventRepositoryProvider),
+    ref.watch(supabaseClientProvider),
+  );
 });
 
 final localCacheRepositoryProvider = Provider<LocalCacheRepository>((ref) {

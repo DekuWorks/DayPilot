@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditService } from '../audit/audit.service';
+import { CalendarConnectionsService } from '../calendar-connections/calendar-connections.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -33,18 +34,26 @@ export class EventsService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
+    private readonly calendarConnections: CalendarConnectionsService,
   ) {}
 
   async findAll(userId: string, from?: string, to?: string) {
     const where: {
       userId: string;
-      start?: { gte?: Date };
-      end?: { lte?: Date };
+      start?: { lte?: Date };
+      end?: { gte?: Date };
     } = {
       userId,
     };
-    if (from) where.start = { gte: new Date(from) };
-    if (to) where.end = { lte: new Date(to) };
+    // Overlap with [from, to]: event.start <= to AND event.end >= from
+    if (from && to) {
+      where.start = { lte: new Date(to) };
+      where.end = { gte: new Date(from) };
+    } else if (from) {
+      where.end = { gte: new Date(from) };
+    } else if (to) {
+      where.start = { lte: new Date(to) };
+    }
     const events = await this.prisma.event.findMany({
       where,
       orderBy: { start: 'asc' },
@@ -88,6 +97,33 @@ export class EventsService {
       where: { id: eventId, userId },
     });
     if (!existing) throw new NotFoundException('Event not found');
+
+    const nextTitle = dto.title ?? existing.title;
+    const nextStart = dto.start != null ? new Date(dto.start) : existing.start;
+    const nextEnd = dto.end != null ? new Date(dto.end) : existing.end;
+    const nextDescription =
+      dto.description !== undefined ? dto.description ?? null : existing.description;
+    const nextLocation =
+      dto.location !== undefined ? dto.location ?? null : existing.location;
+
+    if (
+      (existing.source === 'google' || existing.source === 'outlook') &&
+      existing.externalId
+    ) {
+      await this.calendarConnections.pushExternalEventUpdate(
+        userId,
+        existing.source,
+        existing.externalId,
+        {
+          title: nextTitle,
+          start: nextStart,
+          end: nextEnd,
+          description: nextDescription,
+          location: nextLocation,
+        },
+      );
+    }
+
     const event = await this.prisma.event.update({
       where: { id: eventId },
       data: {
@@ -110,6 +146,18 @@ export class EventsService {
       where: { id: eventId, userId },
     });
     if (!existing) throw new NotFoundException('Event not found');
+
+    if (
+      (existing.source === 'google' || existing.source === 'outlook') &&
+      existing.externalId
+    ) {
+      await this.calendarConnections.pushExternalEventDelete(
+        userId,
+        existing.source,
+        existing.externalId,
+      );
+    }
+
     await this.prisma.event.delete({ where: { id: eventId } });
     this.eventEmitter.emit('event.deleted', { userId, eventId });
     await this.audit.log({

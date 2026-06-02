@@ -4,8 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/daypilot_env.dart';
 import '../../core/providers/bootstrap_providers.dart';
+import '../../core/providers/calendar_refresh_provider.dart';
 import '../../data/services/realtime_service.dart';
-import 'calendar_providers.dart';
 import 'day_view.dart';
 import 'month_view.dart';
 import 'week_view.dart';
@@ -37,11 +37,10 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (DayPilotEnv.hasDaypilotApi) return;
+      // Supabase Realtime on `events` (legacy path). Option C uses NestEventsSocketListener.
       final client = ref.read(supabaseClientProvider);
       _realtime = RealtimeService(client).subscribeToEvents((_) {
-        ref.invalidate(calendarMonthEventsFamily);
-        ref.invalidate(calendarWeekEventsFamily);
-        ref.invalidate(calendarDayEventsFamily);
+        ref.read(calendarDataVersionProvider.notifier).bump();
       });
     });
   }

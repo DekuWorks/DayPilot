@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CalendarConnectionsModule } from '../calendar-connections/calendar-connections.module';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { EventsGateway } from './events.gateway';
@@ -9,6 +10,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [
     PrismaModule,
+    CalendarConnectionsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({

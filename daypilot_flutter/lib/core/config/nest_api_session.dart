@@ -22,6 +22,9 @@ class NestApiSession {
 
   bool get hasSession => _access != null && _access!.isNotEmpty;
 
+  /// Nest access JWT (Option C WebSocket auth at `/ws`).
+  String? get accessToken => _access;
+
   Future<void> clear() async {
     await _prefs.remove(_kAccess);
     await _prefs.remove(_kRefresh);

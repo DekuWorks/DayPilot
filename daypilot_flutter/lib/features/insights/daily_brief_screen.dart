@@ -38,7 +38,7 @@ class DailyBriefScreen extends ConsumerWidget {
                   Text(
                     'You have '
                     '${insight.metrics['upcoming_event_count'] ?? 0} '
-                    'events in the next week (from Supabase).',
+                    'events starting in the next week.',
                   ),
                 ],
               );
