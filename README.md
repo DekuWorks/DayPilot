@@ -10,19 +10,19 @@ DayPilot gives you **one calendar with everything**: your own events, connected 
 
 ## Modern stack (in progress)
 
-DayPilot is being rebuilt on a modern monorepo stack:
+DayPilot is being rebuilt on a modern monorepo stack. **Decided direction (2026-07-21):**
 
 | Layer      | Technology                    |
 |-----------|--------------------------------|
-| Frontend  | Next.js (App Router), TypeScript, Tailwind |
-| Backend   | NestJS, TypeScript, Prisma     |
-| Database  | PostgreSQL + Prisma           |
-| Auth      | JWT (access + refresh), roles |
-| Billing   | Stripe                        |
-| AI        | OpenAI                        |
-| Real-time | WebSockets (NestJS Gateway)   |
-| DevOps    | Docker, GitHub Actions, Vercel + backend deploy |
-| Mobile    | Flutter (`daypilot_flutter/`) — see [daypilot_flutter/README.md](./daypilot_flutter/README.md), [docs/FLUTTER_MIGRATION_TASKS.md](./docs/FLUTTER_MIGRATION_TASKS.md), [docs/SUPABASE_API_ALIGNMENT.md](./docs/SUPABASE_API_ALIGNMENT.md) |
+| Frontend  | Next.js (App Router), TypeScript, Tailwind — dark + electric green brand |
+| Backend   | **Supabase** (Auth, Postgres, RLS, Storage, Realtime, Edge Functions) — primary |
+| Legacy API | NestJS + Prisma — frozen; migrating to Supabase ([docs/architecture/SUPABASE_MIGRATION.md](./docs/architecture/SUPABASE_MIGRATION.md)) |
+| Billing   | Stripe (via Edge Functions after cutover) |
+| AI / Pilot Brief | Edge Functions (server-side keys only) |
+| DevOps    | Docker, GitHub Actions, Vercel + Supabase |
+| Mobile    | **Flutter iOS** (`daypilot_flutter/`) — Android frozen this milestone |
+
+See [docs/progress/DECISIONS.md](./docs/progress/DECISIONS.md), [docs/BRAND_GUIDELINES.md](./docs/BRAND_GUIDELINES.md), [docs/architecture/REPOSITORY_AUDIT.md](./docs/architecture/REPOSITORY_AUDIT.md).
 
 ### Monorepo structure (Phase 2 ✓)
 

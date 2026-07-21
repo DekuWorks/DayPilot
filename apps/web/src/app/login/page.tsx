@@ -12,8 +12,9 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -41,37 +42,40 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-white/20">
+      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
         <Link href="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity">
           DayPilot
         </Link>
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/features" className="text-[#2B3448] hover:text-[#4FB3B3] font-medium text-sm md:text-base">Features</Link>
-          <Link href="/pricing" className="text-[#2B3448] hover:text-[#4FB3B3] font-medium text-sm md:text-base">Pricing</Link>
-          <Link href="/login" className="text-[#4FB3B3] font-medium text-sm md:text-base">Sign In</Link>
-          <Link href="/signup" className="text-[#2B3448] hover:text-[#4FB3B3] font-medium text-sm md:text-base">Get Started</Link>
+          <Link href="/features" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Features</Link>
+          <Link href="/pricing" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Pricing</Link>
+          <Link href="/login" className="text-[var(--brand-500)] font-medium text-sm md:text-base">Sign In</Link>
+          <Link href="/signup" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Get Started</Link>
         </div>
       </nav>
       <section className="container-width section-padding py-16 md:py-24 max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-[#2B3448] mb-4">Sign in</h1>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Sign in</h1>
+        <p className="text-sm text-[var(--text-secondary)] mb-6">
+          Use your DayPilot account (Supabase Auth).
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-[var(--error)] text-sm bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] rounded-lg px-3 py-2">{error}</p>
           )}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#2B3448] mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Email</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 rounded-xl border border-[#4FB3B3]/30 focus:ring-2 focus:ring-[#4FB3B3] focus:border-[#4FB3B3] outline-none"
+              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#2B3448] mb-1">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Password</label>
             <div className="relative">
               <input
                 id="password"
@@ -79,12 +83,12 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-2 pr-11 rounded-xl border border-[#4FB3B3]/30 focus:ring-2 focus:ring-[#4FB3B3] focus:border-[#4FB3B3] outline-none"
+                className="w-full px-4 py-2 pr-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4f4f4f] hover:text-[#4FB3B3] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -105,11 +109,36 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
-        <p className="mt-6 text-[#4f4f4f] text-sm">
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+          <span className="text-xs text-[var(--text-tertiary)]">or</span>
+          <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={googleLoading}
+          onClick={async () => {
+            setError("");
+            setGoogleLoading(true);
+            try {
+              await loginWithGoogle();
+            } catch (err) {
+              setError(
+                err instanceof Error ? err.message : "Google sign-in failed"
+              );
+              setGoogleLoading(false);
+            }
+          }}
+        >
+          {googleLoading ? "Redirecting…" : "Continue with Google"}
+        </Button>
+        <p className="mt-6 text-[var(--text-secondary)] text-sm">
           Don’t have an account?{" "}
-          <Link href="/signup" className="text-[#4FB3B3] font-medium hover:underline">Sign up</Link>
+          <Link href="/signup" className="text-[var(--brand-500)] font-medium hover:underline">Sign up</Link>
         </p>
-        <Link href="/" className="inline-block mt-4 text-[#4FB3B3] font-medium hover:underline">← Back to home</Link>
+        <Link href="/" className="inline-block mt-4 text-[var(--brand-500)] font-medium hover:underline">← Back to home</Link>
       </section>
     </div>
   );

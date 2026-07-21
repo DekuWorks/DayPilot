@@ -1,0 +1,105 @@
+/**
+ * DayPilot design tokens — dark UI + electric green brand.
+ * Semantic tokens only; avoid raw hex in components.
+ */
+
+:root {
+  /* Brand scale */
+  --brand-50: #f0ffe8;
+  --brand-100: #d9ffc2;
+  --brand-200: #b4ff8a;
+  --brand-300: #8cff3f;
+  --brand-400: #6ef24a;
+  --brand-500: #42e85f;
+  --brand-600: #16b947;
+  --brand-700: #0f8f38;
+  --brand-800: #0c6b2c;
+  --brand-900: #0a5224;
+
+  /* Neutral dark theme */
+  --background-primary: #0a0b0d;
+  --background-secondary: #101215;
+  --surface-primary: #14161a;
+  --surface-secondary: #1a1d23;
+  --surface-elevated: #22262e;
+  --border-subtle: #2a2f38;
+  --border-strong: #3d4450;
+  --text-primary: #f4f5f7;
+  --text-secondary: #9aa3b2;
+  --text-tertiary: #6b7380;
+  --text-inverse: #0a0b0d;
+
+  /* Semantic */
+  --success: #42e85f;
+  --warning: #f5a524;
+  --error: #f04438;
+  --information: #3b82f6;
+  --ai: #42e85f;
+  --ai-accent: #22d3ee;
+
+  /* Category */
+  --meetings: #3b82f6;
+  --tasks: #42e85f;
+  --projects: #a855f7;
+  --focus: #22d3ee;
+  --calendar-personal: #f97316;
+  --calendar-work: #3b82f6;
+  --calendar-school: #a855f7;
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-display: 2.5rem;
+  --text-page-title: 1.75rem;
+  --text-section-title: 1.25rem;
+  --text-card-title: 1rem;
+  --text-body: 0.9375rem;
+  --text-body-sm: 0.875rem;
+  --text-caption: 0.75rem;
+  --text-button: 0.875rem;
+  --text-nav: 0.875rem;
+  --text-data-value: 1.5rem;
+  --text-data-label: 0.75rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Radius / space */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--brand-500);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+  }
+}

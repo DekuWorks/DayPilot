@@ -5,10 +5,17 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import type { User } from "@/lib/auth-api";
-import * as authApi from "@/lib/auth-api";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  clearNestSession,
+  exchangeNestSession,
+  fetchProfile,
+  mapSupabaseUser,
+} from "@/lib/supabase/auth";
 
 type AuthState = {
   user: User | null;
@@ -18,32 +25,18 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-const STORAGE_KEYS = {
-  accessToken: "accessToken",
-  refreshToken: "refreshToken",
-  user: "user",
-} as const;
-
-function persistAuth(data: authApi.AuthResponse) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEYS.accessToken, data.accessToken);
-  localStorage.setItem(STORAGE_KEYS.refreshToken, data.refreshToken);
-  localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(data.user));
-}
-
-function clearAuth() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(STORAGE_KEYS.accessToken);
-  localStorage.removeItem(STORAGE_KEYS.refreshToken);
-  localStorage.removeItem(STORAGE_KEYS.user);
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -52,101 +45,159 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
 
-  const refresh = useCallback(async () => {
+  const supabase = useMemo(() => {
+    if (!isSupabaseConfigured()) return null;
     try {
-      const data = await authApi.refreshTokens();
-      persistAuth(data);
-      setState({
-        user: data.user,
-        isLoading: false,
-        isAuthenticated: true,
-      });
+      return createClient();
     } catch {
-      clearAuth();
-      setState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      return null;
     }
   }, []);
 
-  const loadUser = useCallback(async () => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(STORAGE_KEYS.user);
-    const accessToken = localStorage.getItem(STORAGE_KEYS.accessToken);
-    if (stored && accessToken) {
-      try {
-        const user = await authApi.fetchMe();
-        if (user) {
-          setState({
-            user,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-          return;
-        }
-      } catch {
-        // try refresh
-      }
-      try {
-        await refresh();
-        return;
-      } catch {
-        clearAuth();
-      }
+  const hydrateFromSession = useCallback(async () => {
+    if (!supabase) {
+      setState({ user: null, isLoading: false, isAuthenticated: false });
+      return;
     }
-    setState({
-      user: null,
-      isLoading: false,
-      isAuthenticated: false,
-    });
-  }, [refresh]);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      clearNestSession();
+      setState({ user: null, isLoading: false, isAuthenticated: false });
+      return;
+    }
+
+    const profile = await fetchProfile(session.user.id);
+    const user = mapSupabaseUser(session.user, profile);
+    await exchangeNestSession(session.access_token);
+    setState({ user, isLoading: false, isAuthenticated: true });
+  }, [supabase]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadUser());
-  }, [loadUser]);
+    void hydrateFromSession();
+    if (!supabase) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void (async () => {
+        if (!session?.user) {
+          clearNestSession();
+          setState({ user: null, isLoading: false, isAuthenticated: false });
+          return;
+        }
+        const profile = await fetchProfile(session.user.id);
+        const user = mapSupabaseUser(session.user, profile);
+        await exchangeNestSession(session.access_token);
+        setState({ user, isLoading: false, isAuthenticated: true });
+      })();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, hydrateFromSession]);
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const data = await authApi.login(email, password);
-      persistAuth(data);
-      setState({
-        user: data.user,
-        isLoading: false,
-        isAuthenticated: true,
+      if (!supabase) throw new Error("Supabase is not configured");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+      if (error) throw new Error(error.message);
+      if (!data.user || !data.session) throw new Error("Login failed");
+      const profile = await fetchProfile(data.user.id);
+      const user = mapSupabaseUser(data.user, profile);
+      await exchangeNestSession(data.session.access_token);
+      setState({ user, isLoading: false, isAuthenticated: true });
     },
-    []
+    [supabase]
   );
 
   const signup = useCallback(
-    async (email: string, password: string, firstName: string, lastName: string) => {
-      const data = await authApi.signup(email, password, firstName, lastName);
-      persistAuth(data);
-      setState({
-        user: data.user,
-        isLoading: false,
-        isAuthenticated: true,
+    async (
+      email: string,
+      password: string,
+      firstName: string,
+      lastName: string
+    ) => {
+      if (!supabase) throw new Error("Supabase is not configured");
+      const displayName = `${firstName} ${lastName}`.trim();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            full_name: displayName,
+            name: displayName,
+          },
+        },
       });
+      if (error) throw new Error(error.message);
+      if (!data.user) throw new Error("Signup failed");
+
+      // If email confirmation is required, session may be null
+      if (!data.session) {
+        throw new Error(
+          "Check your email to confirm your account, then sign in."
+        );
+      }
+
+      // Best-effort profile update
+      await supabase
+        .from("profiles")
+        .update({
+          name: displayName,
+          display_name: displayName,
+        })
+        .eq("id", data.user.id);
+
+      const profile = await fetchProfile(data.user.id);
+      const user = mapSupabaseUser(data.user, profile);
+      await exchangeNestSession(data.session.access_token);
+      setState({ user, isLoading: false, isAuthenticated: true });
     },
-    []
+    [supabase]
   );
 
-  const logout = useCallback(async () => {
-    await authApi.logout();
-    clearAuth();
-    setState({
-      user: null,
-      isLoading: false,
-      isAuthenticated: false,
+  const loginWithGoogle = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase is not configured");
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
     });
-  }, []);
+    if (error) throw new Error(error.message);
+  }, [supabase]);
+
+  const logout = useCallback(async () => {
+    if (supabase) await supabase.auth.signOut();
+    clearNestSession();
+    setState({ user: null, isLoading: false, isAuthenticated: false });
+  }, [supabase]);
+
+  const refresh = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase is not configured");
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session?.user) throw new Error("Refresh failed");
+    const profile = await fetchProfile(data.session.user.id);
+    const user = mapSupabaseUser(data.session.user, profile);
+    await exchangeNestSession(data.session.access_token);
+    setState({ user, isLoading: false, isAuthenticated: true });
+  }, [supabase]);
 
   const value: AuthContextValue = {
     ...state,
     login,
     signup,
+    loginWithGoogle,
     logout,
     refresh,
   };

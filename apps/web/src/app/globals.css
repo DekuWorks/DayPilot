@@ -1,55 +1,94 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
-/* DayPilot legacy theme (Tailwind 4) */
+/* DayPilot — dark + electric green (Tailwind 4 theme bridge) */
 @theme {
-  --color-gradient-start: #efbf4d;
-  --color-gradient-end: #4fb3b3;
-  --color-gradient-cream: #efebe2;
-  --color-gradient-dark: #2b3448;
-  --color-gradient-dark-teal: #1d5a6e;
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-background: var(--background-primary);
+  --color-background-secondary: var(--background-secondary);
+  --color-surface: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-dim: var(--text-tertiary);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-information: var(--information);
+
+  --font-sans: var(--font-sans);
+
+  /* Legacy aliases (remove after full rebrand of pages) */
+  --color-gradient-start: var(--brand-400);
+  --color-gradient-end: var(--brand-500);
+  --color-gradient-cream: var(--background-secondary);
+  --color-gradient-dark: var(--text-primary);
+  --color-gradient-dark-teal: var(--brand-700);
 }
 
 :root {
-  --background: #f5e6d3;
-  --foreground: #2b3448;
+  --background: var(--background-primary);
+  --foreground: var(--text-primary);
+  color-scheme: dark;
 }
 
 body {
-  background: linear-gradient(to bottom right, #f5e6d3, #efebe2, #f5e6d3);
-  color: var(--foreground);
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   margin: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
-  color: #2b3448;
-  line-height: 1.2;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  line-height: var(--leading-tight);
 }
 
 a {
-  transition: color 0.2s;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 button {
-  transition: all 0.2s;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
 }
 
-/* Legacy utility classes */
 .gradient-text {
-  background: linear-gradient(to right, #efbf4d, #4fb3b3);
+  background: linear-gradient(to right, var(--brand-400), var(--brand-500));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .glass-effect {
-  background: rgb(255 255 255 / 0.5);
+  background: color-mix(in srgb, var(--surface-primary) 80%, transparent);
   backdrop-filter: blur(12px);
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid var(--border-subtle);
 }
 
 .section-padding {
@@ -79,8 +118,14 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 *:focus-visible {
-  outline: 2px solid #4fb3b3;
+  outline: 2px solid var(--brand-500);
   outline-offset: 2px;
 }
 
@@ -89,14 +134,14 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #efebe2;
+  background: var(--background-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #efbf4d, #4fb3b3);
-  border-radius: 9999px;
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  opacity: 0.8;
+  background: var(--brand-600);
 }

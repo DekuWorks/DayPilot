@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { MonthCalendarView } from "@/components/calendar/MonthCalendarView";
 
 export default function CalendarPage() {
-  redirect("/dashboard");
+  return <MonthCalendarView />;
 }

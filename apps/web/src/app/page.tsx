@@ -1,41 +1,52 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/Button";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-white/20">
+    <div className="min-h-screen bg-[var(--background-primary)]">
+      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
         <Link
           href="/"
-          className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-[var(--text-primary)] hover:opacity-90 transition-opacity"
         >
+          <Image
+            src="/brand/daypilot-logo-mark.png"
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8"
+            priority
+          />
           DayPilot
         </Link>
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/features"
-            className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
+            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
           >
             Features
           </Link>
           <Link
             href="/pricing"
-            className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
+            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
           >
             Pricing
           </Link>
           <Link
             href="/login"
-            className="text-[#2B3448] hover:text-[#4FB3B3] font-medium transition-colors text-sm md:text-base"
+            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
           >
             Sign In
           </Link>
           <Link href="/signup" className="inline-block">
-            <Button size="lg">Get Started</Button>
+            <Button size="lg">Get Started Free</Button>
           </Link>
         </div>
-        <button className="md:hidden p-2 text-[#2B3448]" aria-label="Menu">
+        <button
+          className="md:hidden p-2 text-[var(--text-primary)]"
+          aria-label="Menu"
+        >
           <svg
             className="w-6 h-6"
             fill="none"
@@ -52,20 +63,23 @@ export default function HomePage() {
         </button>
       </nav>
 
-      {/* Hero Section */}
-      <section className="container-width section-padding py-16 md:py-24 lg:py-32 text-center">
+      <section className="container-width section-padding pt-16 md:pt-24 lg:pt-28 pb-10 md:pb-14 text-center">
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#2B3448] leading-tight">
-            Pilot Your Day with <span className="gradient-text">AI</span>
+          <p className="text-sm font-medium tracking-wide text-[var(--brand-500)]">
+            Plan. Pilot. Perform.
+          </p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[var(--text-primary)] leading-tight">
+            Plan smarter.{" "}
+            <span className="gradient-text">Perform better.</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-[#4f4f4f] max-w-3xl mx-auto leading-relaxed px-4">
-            Connect your calendars, let AI plan your day, and pilot your
-            schedule with confidence.
+          <p className="text-base sm:text-lg md:text-xl text-[var(--text-secondary)] max-w-3xl mx-auto leading-relaxed px-4">
+            Bring your calendar, tasks, meetings, and daily planning into one
+            intelligent workspace.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2 md:pt-4 px-4">
             <Link href="/signup" className="w-full sm:w-auto inline-block">
               <Button size="lg" className="w-full sm:w-auto min-w-[180px]">
-                Start Free Trial
+                Get Started Free
               </Button>
             </Link>
             <Link href="/features" className="w-full sm:w-auto inline-block">
@@ -74,55 +88,62 @@ export default function HomePage() {
                 size="lg"
                 className="w-full sm:w-auto min-w-[180px]"
               >
-                Learn More
+                View Demo
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features Preview */}
-      <section className="container-width section-padding py-16 md:py-24 lg:py-32">
+      <section className="container-width section-padding pb-16 md:pb-24">
+        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_0_80px_rgba(66,232,95,0.08)]">
+          <Image
+            src="/brand/dashboard-preview.png"
+            alt="DayPilot dashboard preview"
+            width={1200}
+            height={750}
+            className="h-auto w-full"
+            priority
+          />
+        </div>
+      </section>
+
+      <section className="container-width section-padding py-16 md:py-24">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#2B3448] mb-3 md:mb-4">
-            Everything you need to manage your time
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 md:mb-4">
+            One workspace for your day
           </h2>
-          <p className="text-base md:text-lg text-[#4f4f4f] max-w-2xl mx-auto px-4">
-            Powerful features designed to help you take control of your schedule
+          <p className="text-base md:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto px-4">
+            Calendar, tasks, meetings, notes, and Pilot Brief — unified and
+            intelligent.
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {[
             {
-              icon: "🤖",
-              title: "AI-Powered Planning",
+              title: "Connected calendars",
               description:
-                "Let AI analyze your schedule and suggest optimal times for tasks and meetings.",
+                "See Google, Outlook, and booking events in one schedule.",
             },
             {
-              icon: "📅",
-              title: "Multi-Calendar Sync",
+              title: "Tasks & focus",
               description:
-                "Connect Google Calendar, Outlook, and Apple Calendar in one place.",
+                "Prioritize what matters with reminders, due dates, and focus blocks.",
             },
             {
-              icon: "🔗",
-              title: "Booking Links",
+              title: "Pilot Brief",
               description:
-                "Share your availability with clients and let them book time directly.",
+                "Start each day with an AI summary grounded in your real schedule.",
             },
-          ].map((feature, index) => (
+          ].map((feature) => (
             <div
-              key={index}
-              className="glass-effect rounded-2xl p-6 md:p-8 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              key={feature.title}
+              className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8"
             >
-              <div className="text-4xl md:text-5xl mb-4 md:mb-6">
-                {feature.icon}
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold text-[#2B3448] mb-2 md:mb-3">
+              <h3 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-2 md:mb-3">
                 {feature.title}
               </h3>
-              <p className="text-sm md:text-base text-[#4f4f4f] leading-relaxed">
+              <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
                 {feature.description}
               </p>
             </div>
@@ -130,15 +151,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container-width section-padding py-16 md:py-24 lg:py-32 text-center">
-        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 glass-effect rounded-3xl p-8 md:p-12 lg:p-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#2B3448]">
-            Ready to take control of your schedule?
+      <section className="container-width section-padding py-16 md:py-24 text-center">
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-8 md:p-12 lg:p-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+            Ready to pilot your day?
           </h2>
-          <p className="text-base md:text-lg lg:text-xl text-[#4f4f4f]">
-            Join thousands of professionals who use DayPilot to manage their
-            time better.
+          <p className="text-base md:text-lg text-[var(--text-secondary)]">
+            Get started free. Bring your calendars and take control of your
+            schedule.
           </p>
           <Link href="/signup" className="inline-block">
             <Button size="lg">Get Started Free</Button>

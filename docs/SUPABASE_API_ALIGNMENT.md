@@ -1,18 +1,29 @@
 # Supabase and the Nest API (DayPilot)
 
-**Step-by-step setup:** [OPTION_C_SETUP.md](./OPTION_C_SETUP.md)
+> **Superseded for new work:** Backend SOT is now **Supabase** (ADR-001). See [architecture/SUPABASE_MIGRATION.md](./architecture/SUPABASE_MIGRATION.md). Nest is frozen; do not add new Nest features.
 
-The **web app** and **Nest API** use **PostgreSQL via Prisma** (`apps/api`, `prisma/schema.prisma`).
+**Step-by-step setup (legacy Option C):** [OPTION_C_SETUP.md](./OPTION_C_SETUP.md)
+
+The historical web/API path used **PostgreSQL via Prisma** (`apps/api`, `prisma/schema.prisma`). Flutter used Supabase Auth with optional Nest event exchange.
 
 ---
 
-## Chosen approach: Option C (hybrid mobile)
+## Chosen approach going forward: Supabase primary
 
 | Concern | Where it runs |
 |--------|----------------|
-| **Auth (mobile)** | Supabase Auth (PKCE) — users sign in/up in the Flutter app |
-| **Events / calendar (mobile)** | **Nest API** — same Prisma `Event` model as the web app |
-| **Realtime (Supabase)** | Still available for other tables; **not** used for `events` when `DAYPILOT_API_URL` is set (events are not mirrored to Supabase Postgres in this path) |
+| **Auth** | Supabase Auth (web + Flutter) |
+| **Data** | Supabase Postgres + RLS |
+| **Trusted server logic** | Edge Functions |
+| **Nest API** | Legacy — migrate then decommission |
+
+### Historical: Option C (hybrid mobile) — during transition only
+
+| Concern | Where it runs |
+|--------|----------------|
+| **Auth (mobile)** | Supabase Auth (PKCE) |
+| **Events / calendar (mobile)** | Nest API when `DAYPILOT_API_URL` set; target is Supabase-only |
+| **Realtime** | Prefer Supabase Realtime after cutover |
 
 ### API: `POST /auth/supabase-exchange`
 

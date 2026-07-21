@@ -86,15 +86,15 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="container-width section-padding py-8 md:py-12">
-      <h1 className="text-2xl md:text-3xl font-bold text-[#2B3448] mb-2">Connected calendars</h1>
-      <p className="text-[#4f4f4f] mb-6">
+    <div className="max-w-4xl">
+      <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Connected calendars</h1>
+      <p className="text-[var(--text-secondary)] mb-6">
         Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.
         Edits and deletes in DayPilot sync back to Google and Outlook.
       </p>
-      <p className="text-sm text-[#4f4f4f] mb-6">
-        First-time setup: add OAuth credentials to the API <code className="text-xs bg-white/60 px-1 rounded">.env</code> — see{" "}
-        <code className="text-xs bg-white/60 px-1 rounded">docs/CALENDAR_INTEGRATIONS_SETUP.md</code>.
+      <p className="text-sm text-[var(--text-secondary)] mb-6">
+        First-time setup: add OAuth credentials to the API <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">.env</code> — see{" "}
+        <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">docs/CALENDAR_INTEGRATIONS_SETUP.md</code>.
         If Outlook was connected before write access was enabled, disconnect and reconnect.
       </p>
 
@@ -106,7 +106,7 @@ export default function IntegrationsPage() {
         </div>
       )}
       {err && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
           {err === "missing_params" && "Missing OAuth parameters. Try connecting again."}
           {err === "google_callback" && "Google connection failed. Try again."}
           {err === "outlook_callback" && "Outlook connection failed. Try again."}
@@ -114,26 +114,26 @@ export default function IntegrationsPage() {
         </div>
       )}
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">{error}</div>
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">{error}</div>
       )}
 
       <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-6">
-        <h2 className="text-lg font-semibold text-[#2B3448]">Your connections</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Your connections</h2>
         {loading ? (
-          <p className="text-[#4f4f4f]">Loading…</p>
+          <p className="text-[var(--text-secondary)]">Loading…</p>
         ) : connections.length === 0 ? (
-          <p className="text-[#4f4f4f]">No calendars connected yet. Connect one below.</p>
+          <p className="text-[var(--text-secondary)]">No calendars connected yet. Connect one below.</p>
         ) : (
           <ul className="space-y-3">
             {connections.map((c) => (
               <li
                 key={c.id}
-                className="flex flex-wrap items-center gap-3 py-3 px-4 rounded-xl bg-white/60 border border-[#4FB3B3]/20"
+                className="flex flex-wrap items-center gap-3 py-3 px-4 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)]"
               >
-                <span className="font-medium text-[#2B3448] capitalize">{c.provider}</span>
-                <span className="text-[#4f4f4f] text-sm">{c.email}</span>
+                <span className="font-medium text-[var(--text-primary)] capitalize">{c.provider}</span>
+                <span className="text-[var(--text-secondary)] text-sm">{c.email}</span>
                 {c.syncedAt && (
-                  <span className="text-xs text-[#4f4f4f]">
+                  <span className="text-xs text-[var(--text-secondary)]">
                     Synced {new Date(c.syncedAt).toLocaleString()}
                   </span>
                 )}
@@ -149,7 +149,7 @@ export default function IntegrationsPage() {
                   type="button"
                   onClick={() => handleDisconnect(c.id)}
                   disabled={!!actionLoading}
-                  className="text-sm text-red-600 hover:underline"
+                  className="text-sm text-[var(--error)] hover:underline"
                 >
                   {actionLoading === c.id ? "Disconnecting…" : "Disconnect"}
                 </button>
@@ -158,21 +158,21 @@ export default function IntegrationsPage() {
           </ul>
         )}
 
-        <h2 className="text-lg font-semibold text-[#2B3448] pt-4">Add a calendar</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] pt-4">Add a calendar</h2>
         <ul className="space-y-4">
           {PROVIDERS.map((p) => {
             const isConnected = connections.some((c) => c.provider === p.id);
             return (
               <li
                 key={p.id}
-                className="flex flex-wrap items-center gap-4 py-4 px-4 rounded-xl bg-white/60 border border-[#4FB3B3]/20"
+                className="flex flex-wrap items-center gap-4 py-4 px-4 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)]"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[#2B3448]">{p.name}</p>
-                  <p className="text-sm text-[#4f4f4f]">{p.description}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{p.description}</p>
                 </div>
                 {isConnected ? (
-                  <span className="text-sm text-[#4FB3B3] font-medium">Connected</span>
+                  <span className="text-sm text-[var(--brand-500)] font-medium">Connected</span>
                 ) : (
                   <Button
                     variant="outline"
@@ -189,7 +189,7 @@ export default function IntegrationsPage() {
       </div>
 
       <p className="mt-6">
-        <Link href="/dashboard" className="text-[#4FB3B3] font-medium hover:underline">← Back to Calendar</Link>
+        <Link href="/dashboard" className="text-[var(--brand-500)] font-medium hover:underline">← Back to Calendar</Link>
       </p>
     </div>
   );

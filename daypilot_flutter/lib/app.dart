@@ -16,9 +16,9 @@ class DayPilotApp extends ConsumerWidget {
       child: NestEventsSocketListener(
         child: MaterialApp.router(
           title: 'DayPilot',
-          theme: AppTheme.light(),
+          theme: AppTheme.dark(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.dark,
           routerConfig: router,
         ),
       ),

@@ -1,6 +1,6 @@
 # DayPilot Supabase schema
 
-Migrations for the Flutter mobile app (auth, bookings, attendees, insights) and shared profile/calendar bootstrap.
+Migrations for DayPilot (Supabase primary — ADR-001). Used by Flutter iOS and the web cutover.
 
 **Project:** `wmkytyrcxbzjqiykbauw` — [dashboard](https://supabase.com/dashboard/project/wmkytyrcxbzjqiykbauw)
 
@@ -13,6 +13,13 @@ supabase link --project-ref wmkytyrcxbzjqiykbauw --password "$SUPABASE_DB_PASSWO
 supabase db push
 ```
 
+Local:
+
+```bash
+supabase start
+supabase db reset   # applies all migrations + seed when present
+```
+
 ## What’s included
 
 | Migration | Contents |
@@ -23,13 +30,8 @@ supabase db push
 | `20260602190004` | Booking links, availability, bookings |
 | `20260602190005` | Attendees, tasks, share links, preferences, reminders |
 | `20260602190006` | Realtime on `events`, attendee RSVP policies |
+| `20260721180000` | **Rebrand gaps:** workspaces, projects, notes, subtasks, focus_sessions, pilot_briefs, notifications, device_tokens, integration_connections, profile/preference/calendar/event/task enhancements + RLS |
 
-## Option C note
+## Nest freeze note
 
-With **`DAYPILOT_API_URL`** set, calendar **CRUD** and **insights** use the Nest API (Prisma). Supabase still provides:
-
-- Auth + profile/default calendar on signup
-- Public booking pages
-- Attendee RSVP
-
-Legacy Stripe/Google/billing migrations are **not** included (web uses Nest for those paths).
+Nest/Prisma is legacy. New schema work belongs here. See `docs/architecture/SUPABASE_MIGRATION.md`.

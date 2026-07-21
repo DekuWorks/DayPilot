@@ -66,16 +66,16 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="container-width section-padding py-8 md:py-12">
-        <p className="text-[#4f4f4f]">Loading billing…</p>
+      <div className="max-w-4xl">
+        <p className="text-[var(--text-secondary)]">Loading billing…</p>
       </div>
     );
   }
 
   return (
-    <div className="container-width section-padding py-8 md:py-12">
-      <h1 className="text-2xl md:text-3xl font-bold text-[#2B3448] mb-2">Billing & Subscription</h1>
-      <p className="text-[#4f4f4f] mb-6">Manage your plan and payment method.</p>
+    <div className="max-w-4xl">
+      <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Billing & Subscription</h1>
+      <p className="text-[var(--text-secondary)] mb-6">Manage your plan and payment method.</p>
 
       {success && (
         <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800">
@@ -88,7 +88,7 @@ export default function BillingPage() {
         </div>
       )}
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
           {error}
         </div>
       )}
@@ -97,9 +97,9 @@ export default function BillingPage() {
         {subscription && (
           <>
             <div>
-              <h2 className="text-lg font-semibold text-[#2B3448] mb-1">Current plan</h2>
-              <p className="text-[#4f4f4f]">
-                <span className="font-medium text-[#2B3448]">{subscription.tier}</span>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Current plan</h2>
+              <p className="text-[var(--text-secondary)]">
+                <span className="font-medium text-[var(--text-primary)]">{subscription.tier}</span>
                 {" · "}
                 {subscription.status}
                 {subscription.currentPeriodEnd && (
@@ -129,14 +129,14 @@ export default function BillingPage() {
           </>
         )}
         {!PRICE_ID && (
-          <p className="text-sm text-[#4f4f4f]">
+          <p className="text-sm text-[var(--text-secondary)]">
             To enable upgrades, set <code className="bg-black/5 px-1 rounded">NEXT_PUBLIC_STRIPE_PRICE_ID</code> to your Stripe Price ID.
           </p>
         )}
       </div>
 
       <p className="mt-6">
-        <Link href="/settings" className="text-[#4FB3B3] font-medium hover:underline">← Settings</Link>
+        <Link href="/settings" className="text-[var(--brand-500)] font-medium hover:underline">← Settings</Link>
       </p>
     </div>
   );

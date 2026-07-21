@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" role="img" aria-label="DayPilot">
+  <defs>
+    <linearGradient id="dpGreen" x1="24" y1="12" x2="104" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8CFF3F"/>
+      <stop offset="1" stop-color="#42E85F"/>
+    </linearGradient>
+  </defs>
+  <!-- Stylized D with integrated forward arrow / aircraft mark -->
+  <path fill="url(#dpGreen)" d="M34 20h28c22.5 0 40 17.5 40 44s-17.5 44-40 44H34V20zm18 16v56h10c13.8 0 24-12.1 24-28s-10.2-28-24-28H52z"/>
+  <path fill="url(#dpGreen)" d="M22 52h48l-10 12 10 12H22l12-12-12-12z"/>
+  <path fill="#0A0B0D" d="M58 58h8.5c2.2 4.1 2.2 7.9 0 12H58l4-6-4-6z"/>
+</svg>
