@@ -11,12 +11,13 @@ export default function HomePage() {
           className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-[var(--text-primary)] hover:opacity-90 transition-opacity"
         >
           <Image
-            src="/brand/daypilot-logo-mark.png"
-            alt=""
+            src="/brand/daypilot-logo-mark.svg"
+            alt="DayPilot"
             width={32}
             height={32}
             className="h-8 w-8"
             priority
+            unoptimized
           />
           DayPilot
         </Link>
@@ -104,6 +105,7 @@ export default function HomePage() {
             height={750}
             className="h-auto w-full"
             priority
+            unoptimized
           />
         </div>
       </section>

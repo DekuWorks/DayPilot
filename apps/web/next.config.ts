@@ -4,6 +4,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "export",
+  // Required for GitHub Pages / static hosting — no image optimizer server
+  images: {
+    unoptimized: true,
+  },
   turbopack: {
     root: path.join(__dirname, "..", ".."),
   },

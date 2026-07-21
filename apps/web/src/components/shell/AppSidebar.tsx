@@ -97,12 +97,13 @@ export function AppSidebar() {
           className="flex items-center gap-2.5 min-w-0"
         >
           <Image
-            src="/brand/daypilot-logo-mark.png"
+            src="/brand/daypilot-logo-mark.svg"
             alt=""
             width={32}
             height={32}
-            className="h-8 w-8 shrink-0 rounded-lg"
+            className="h-8 w-8 shrink-0"
             priority
+            unoptimized
           />
           {!collapsed && (
             <span className="truncate text-base font-bold tracking-tight text-[var(--text-primary)]">
