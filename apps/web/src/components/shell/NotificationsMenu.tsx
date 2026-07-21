@@ -4,8 +4,31 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import * as notifApi from "@/lib/notifications-supabase";
 import type { AppNotification } from "@/lib/notifications-supabase";
+
+function mapRow(row: {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}): AppNotification {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    resourceType: row.resource_type,
+    resourceId: row.resource_id,
+    readAt: row.read_at,
+    createdAt: row.created_at,
+  };
+}
 
 export function NotificationsMenu() {
   const { user } = useAuth();
@@ -14,13 +37,14 @@ export function NotificationsMenu() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [live, setLive] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      await notifApi.syncUpcomingMeetingReminders(user.id);
+      await notifApi.syncReminderNotifications(user.id);
       const [list, count] = await Promise.all([
         notifApi.listNotifications(),
         notifApi.unreadCount(),
@@ -36,9 +60,56 @@ export function NotificationsMenu() {
 
   useEffect(() => {
     void refresh();
-    const id = window.setInterval(() => void refresh(), 60_000);
-    return () => window.clearInterval(id);
   }, [refresh]);
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured()) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const n = mapRow(
+              payload.new as Parameters<typeof mapRow>[0]
+            );
+            setItems((prev) => [n, ...prev.filter((x) => x.id !== n.id)]);
+            if (!n.readAt) setUnread((c) => c + 1);
+          } else if (payload.eventType === "UPDATE") {
+            const n = mapRow(
+              payload.new as Parameters<typeof mapRow>[0]
+            );
+            setItems((prev) => {
+              const prevItem = prev.find((x) => x.id === n.id);
+              if (prevItem && !prevItem.readAt && n.readAt) {
+                setUnread((c) => Math.max(0, c - 1));
+              }
+              return prev.map((x) => (x.id === n.id ? n : x));
+            });
+          } else if (payload.eventType === "DELETE") {
+            const old = payload.old as { id?: string; read_at?: string | null };
+            if (old.id) {
+              setItems((prev) => prev.filter((x) => x.id !== old.id));
+              if (!old.read_at) setUnread((c) => Math.max(0, c - 1));
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        setLive(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!open) return;
@@ -96,9 +167,14 @@ export function NotificationsMenu() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-xl">
           <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-2.5">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              Notifications
-            </p>
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                Notifications
+              </p>
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                {live ? "Live" : "Connecting…"}
+              </p>
+            </div>
             {unread > 0 && (
               <button
                 type="button"

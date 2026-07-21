@@ -92,11 +92,30 @@ export default function IntegrationsPage() {
         Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.
         Edits and deletes in DayPilot sync back to Google and Outlook.
       </p>
-      <p className="text-sm text-[var(--text-secondary)] mb-6">
-        First-time setup: add OAuth credentials to the API <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">.env</code> — see{" "}
-        <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">docs/CALENDAR_INTEGRATIONS_SETUP.md</code>.
-        If Outlook was connected before write access was enabled, disconnect and reconnect.
-      </p>
+      <div className="mb-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4 text-sm text-[var(--text-secondary)] space-y-2">
+        <p className="font-medium text-[var(--text-primary)]">Setup checklist</p>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>
+            Add Google / Microsoft OAuth clients (see{" "}
+            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">
+              docs/CALENDAR_INTEGRATIONS_SETUP.md
+            </code>
+            ).
+          </li>
+          <li>
+            Set <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">GOOGLE_CLIENT_ID</code> and{" "}
+            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">GOOGLE_CLIENT_SECRET</code> in the API{" "}
+            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">.env</code>, then restart Nest.
+          </li>
+          <li>
+            For <strong className="text-[var(--text-primary)]">login</strong> with Google (not calendar), follow{" "}
+            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">
+              docs/GOOGLE_AUTH_SETUP.md
+            </code>
+            .
+          </li>
+        </ol>
+      </div>
 
       {connected && !err && (
         <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800">

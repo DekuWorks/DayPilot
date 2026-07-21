@@ -160,3 +160,61 @@ export async function syncUpcomingMeetingReminders(
     await supabase.from("notifications").insert(inserts);
   }
 }
+
+/** Reminders for tasks due today / overdue (open only). */
+export async function syncTaskDueReminders(userId: string): Promise<void> {
+  const supabase = createClient();
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("id, title, due_at, status")
+    .neq("status", "completed")
+    .neq("status", "cancelled")
+    .not("due_at", "is", null)
+    .lte("due_at", end.toISOString())
+    .limit(30);
+
+  const rows = tasks ?? [];
+  if (rows.length === 0) return;
+
+  const { data: existing } = await supabase
+    .from("notifications")
+    .select("resource_id")
+    .eq("user_id", userId)
+    .eq("type", "task_due")
+    .in(
+      "resource_id",
+      rows.map((t) => t.id)
+    );
+
+  const have = new Set((existing ?? []).map((n) => n.resource_id));
+  const now = Date.now();
+
+  const inserts = rows
+    .filter((t) => !have.has(t.id))
+    .map((t) => {
+      const due = t.due_at ? new Date(t.due_at).getTime() : now;
+      const overdue = due < now;
+      return {
+        user_id: userId,
+        type: "task_due",
+        title: t.title || "Task due",
+        body: overdue ? "Overdue" : "Due today",
+        resource_type: "task",
+        resource_id: t.id,
+      };
+    });
+
+  if (inserts.length > 0) {
+    await supabase.from("notifications").insert(inserts);
+  }
+}
+
+export async function syncReminderNotifications(userId: string): Promise<void> {
+  await Promise.all([
+    syncUpcomingMeetingReminders(userId),
+    syncTaskDueReminders(userId),
+  ]);
+}

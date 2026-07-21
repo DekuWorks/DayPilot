@@ -37,6 +37,15 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]
 
 ## Session log
 
+### 2026-07-21 — Due dates, realtime notifs, Google setup docs
+
+- **Feature:** Task due-date picker; realtime notification channel; task due reminders; Google Auth + Calendar setup docs/UI
+- **Status:** [x]
+- **Owner:** agent
+- **Related files:** `tasks/page.tsx`, `NotificationsMenu.tsx`, `GOOGLE_AUTH_SETUP.md`, migration realtime
+- **Blockers:** Google Client ID/Secret still empty — user must create OAuth clients
+- **Next action:** Paste Google credentials into Supabase Auth + API `.env`
+
 ### 2026-07-21 — Notifications, richer ⌘K, tasks polish
 
 - **Feature:** Header notifications (meeting reminders), palette search across data, task priorities/subtasks/projects

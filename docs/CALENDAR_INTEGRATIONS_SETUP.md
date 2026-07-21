@@ -35,7 +35,18 @@ OAuth redirect URIs (must match **exactly**):
 | Google   | `http://localhost:3001/calendar-connections/google/callback` |
 | Outlook  | `http://localhost:3001/calendar-connections/outlook/callback` |
 
-For production, replace `localhost:3001` with your deployed API URL and set `FRONTEND_URL` to your web app URL.
+For production, replace `localhost:3001` with your deployed API URL and set `FRONTEND_URL` to `https://www.daypilot.co`.
+
+Production redirect examples:
+
+| Provider | Production redirect URI |
+|----------|-------------------------|
+| Google   | `https://<your-api-host>/calendar-connections/google/callback` |
+| Outlook  | `https://<your-api-host>/calendar-connections/outlook/callback` |
+
+Also add those URIs in Google Cloud / Azure app settings.
+
+**Sign in with Google** (login button) is separate — see [GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md).
 
 ---
 

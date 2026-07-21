@@ -45,11 +45,31 @@ export default function TasksPage() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<(typeof priorities)[number]>("medium");
   const [projectId, setProjectId] = useState("");
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [newSubtask, setNewSubtask] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  function toDateInput(iso: string | null) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function dueAtFromInput(day: string) {
+    if (!day) return null;
+    return new Date(`${day}T23:59:59`).toISOString();
+  }
   const load = useCallback(async () => {
     if (!isSupabaseConfigured()) {
       setError("Supabase is not configured");
@@ -123,14 +143,12 @@ export default function TasksPage() {
     e.preventDefault();
     if (!title.trim() || !user || !isSupabaseConfigured()) return;
     const supabase = createClient();
-    const due = new Date();
-    due.setHours(23, 59, 59, 999);
     const { error: insErr } = await supabase.from("tasks").insert({
       user_id: user.id,
       title: title.trim(),
       status: "pending",
       priority,
-      due_at: due.toISOString(),
+      due_at: dueAtFromInput(dueDate),
       project_id: projectId || null,
     });
     if (insErr) {
@@ -141,6 +159,14 @@ export default function TasksPage() {
     await load();
   }
 
+  async function setTaskDue(task: Task, day: string) {
+    const supabase = createClient();
+    const due_at = dueAtFromInput(day);
+    await supabase.from("tasks").update({ due_at }).eq("id", task.id);
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, due_at } : t))
+    );
+  }
   async function toggle(task: Task) {
     if (!isSupabaseConfigured()) return;
     const supabase = createClient();
@@ -251,6 +277,13 @@ export default function TasksPage() {
           <Button type="submit">Add</Button>
         </div>
         <div className="flex flex-wrap gap-2">
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs outline-none"
+            aria-label="Due date"
+          />
           <select
             value={priority}
             onChange={(e) =>
@@ -345,6 +378,13 @@ export default function TasksPage() {
                       {kids.length}
                     </span>
                   )}
+                  <input
+                    type="date"
+                    value={toDateInput(task.due_at)}
+                    onChange={(e) => void setTaskDue(task, e.target.value)}
+                    className="max-w-[8.5rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[10px] text-[var(--text-tertiary)] hover:border-[var(--border-subtle)] focus:border-[var(--brand-500)] outline-none"
+                    aria-label="Due date"
+                  />
                   <button
                     type="button"
                     onClick={() => void cyclePriority(task)}
