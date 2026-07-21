@@ -157,11 +157,12 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("display_name, name, email")
+      .select("first_name, last_name, display_name, name, username, email")
       .eq("id", user.id)
       .maybeSingle();
 
     const name =
+      profile?.first_name ||
       profile?.display_name ||
       profile?.name ||
       user.user_metadata?.first_name ||

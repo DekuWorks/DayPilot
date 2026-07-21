@@ -70,12 +70,14 @@ export function AppSidebar() {
   const { collapsed, mobileOpen, toggleCollapsed, setMobileOpen } =
     useSidebarStore();
 
-  const displayName =
-    user?.firstName && user?.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : user?.email ?? "Account";
+  const legalName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    user?.email ||
+    "Account";
+  const handleLabel = user?.username ? `@${user.username}` : user?.email;
   const initials =
     `${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`.toUpperCase() ||
+    user?.username?.[0]?.toUpperCase() ||
     user?.email?.[0]?.toUpperCase() ||
     "?";
 
@@ -222,10 +224,10 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
-                {displayName}
+                {user?.username ? handleLabel : legalName}
               </p>
               <p className="truncate text-xs text-[var(--text-tertiary)]">
-                {user?.email}
+                {user?.username ? legalName : user?.email}
               </p>
             </div>
           )}

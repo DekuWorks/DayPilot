@@ -15,6 +15,7 @@ import {
   exchangeNestSession,
   fetchProfile,
   mapSupabaseUser,
+  normalizeUsername,
 } from "@/lib/supabase/auth";
 
 type AuthState = {
@@ -30,7 +31,8 @@ type AuthContextValue = AuthState & {
     email: string,
     password: string,
     firstName: string,
-    lastName: string
+    lastName: string,
+    username?: string
   ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -139,9 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string,
       password: string,
       firstName: string,
-      lastName: string
+      lastName: string,
+      username?: string
     ) => {
       if (!supabase) throw new Error("Supabase is not configured");
+      const handle = username ? normalizeUsername(username) : "";
       const displayName = `${firstName} ${lastName}`.trim();
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -150,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
+            username: handle || undefined,
             full_name: displayName,
             name: displayName,
           },
@@ -165,14 +170,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Best-effort profile update
-      await supabase
+      // Best-effort profile update (trigger may have already inserted)
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({
           name: displayName,
           display_name: displayName,
+          first_name: firstName,
+          last_name: lastName || null,
+          username: handle || null,
         })
         .eq("id", data.user.id);
+      if (profileError?.code === "23505") {
+        throw new Error("That username is already taken");
+      }
 
       const profile = await fetchProfile(data.user.id);
       const user = mapSupabaseUser(data.user, profile);

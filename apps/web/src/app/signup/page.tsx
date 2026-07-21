@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/Button";
 import { BrandLogo } from "@/components/BrandLogo";
+import { normalizeUsername } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -34,8 +36,13 @@ export default function SignupPage() {
     setError("");
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
+    const handle = normalizeUsername(username);
     if (!trimmedFirst || !trimmedLast) {
       setError("First name and last name are required");
+      return;
+    }
+    if (!handle || handle.length < 3) {
+      setError("Username must be at least 3 characters (a-z, 0-9, _)");
       return;
     }
     if (password.length < 8) {
@@ -44,7 +51,7 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signup(email, password, trimmedFirst, trimmedLast);
+      await signup(email, password, trimmedFirst, trimmedLast, handle);
       router.push("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
@@ -75,29 +82,51 @@ export default function SignupPage() {
           {error && (
             <p className="text-[var(--error)] text-sm bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] rounded-lg px-3 py-2">{error}</p>
           )}
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">First name</label>
-            <input
-              id="firstName"
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
-              placeholder="First name"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">First name</label>
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
+                placeholder="Marcus"
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Last name</label>
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
+                placeholder="Brown"
+              />
+            </div>
           </div>
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Last name</label>
-            <input
-              id="lastName"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
-              placeholder="Last name"
-            />
+            <label htmlFor="username" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Username</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">@</span>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(normalizeUsername(e.target.value))}
+                required
+                minLength={3}
+                autoComplete="username"
+                className="w-full pl-8 pr-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:ring-2 focus:ring-[var(--brand-500)] focus:border-[var(--brand-500)] outline-none"
+                placeholder="deku"
+              />
+            </div>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+              Public handle — greetings use your first name
+            </p>
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Email</label>

@@ -5,6 +5,8 @@ export type User = {
   email: string;
   firstName: string;
   lastName: string;
+  /** Public handle (e.g. deku), separate from legal first/last name. */
+  username: string | null;
   avatarUrl?: string | null;
   role: string;
 };
