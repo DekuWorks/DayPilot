@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/Button";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const features = [
   { icon: "🤖", title: "AI-Powered Scheduling", description: "Let AI analyze your calendar and suggest optimal times for meetings and tasks based on your preferences and energy levels." },
@@ -16,7 +17,7 @@ const features = [
 function Nav() {
   return (
     <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-      <Link href="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity">DayPilot</Link>
+      <BrandLogo />
       <div className="hidden md:flex items-center gap-6">
         <Link href="/features" className="text-[var(--brand-500)] font-medium text-sm md:text-base">Features</Link>
         <Link href="/pricing" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Pricing</Link>

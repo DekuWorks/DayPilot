@@ -16,7 +16,7 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]
 | 1 | Foundation | [~] |
 | 2 | Rebrand | [~] |
 | 3 | Backend core (Supabase) | [ ] |
-| 4 | Web core experience | [ ] |
+| 4 | Web core experience | [~] |
 | 5 | Pilot Brief & Insights | [ ] |
 | 6 | Sharing & booking | [ ] |
 | 7 | Integrations | [ ] |
@@ -36,6 +36,19 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]
 ---
 
 ## Session log
+
+### 2026-07-21 — Official logo + calendar views + notes/projects + magic link
+
+- **Feature:** Official green D mark via `BrandLogo`; month/week/day calendar; Notes + Projects MVP; magic-link auth
+- **Status:** [x]
+- **Owner:** agent
+- **Date started:** 2026-07-21
+- **Date completed:** 2026-07-21
+- **Related files:** `BrandLogo.tsx`, `CalendarApp.tsx`, `notes-supabase.ts`, `projects-supabase.ts`, `AuthProvider`, login
+- **Tests added:** none (web lint + build passed)
+- **Notes:** Calendar view switcher with timed create; notes list/editor; projects list/detail; magic link uses `signInWithOtp` → `/auth/callback`
+- **Blockers:** Enable Google + confirm Site URL / redirect URLs in Supabase Auth for production
+- **Next action:** Meetings MVP; command palette; push deploy when ready
 
 ### 2026-07-21 — Events on Supabase + Pilot Brief + Google OAuth
 

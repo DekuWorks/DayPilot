@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/Button";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const plans = [
   { name: "Free", price: "$0", period: "forever", description: "Perfect for individuals getting started", features: ["Personal calendar", "Basic event management", "Recurring events", "1 booking link", "AI suggestions"], cta: "Get Started", highlight: false },
@@ -11,7 +12,7 @@ const plans = [
 function Nav() {
   return (
     <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-      <Link href="/" className="text-xl md:text-2xl font-bold gradient-text hover:opacity-80 transition-opacity">DayPilot</Link>
+      <BrandLogo />
       <div className="hidden md:flex items-center gap-6">
         <Link href="/features" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Features</Link>
         <Link href="/pricing" className="text-[var(--brand-500)] font-medium text-sm md:text-base">Pricing</Link>

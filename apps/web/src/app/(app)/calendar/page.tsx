@@ -1,7 +1,7 @@
 "use client";
 
-import { MonthCalendarView } from "@/components/calendar/MonthCalendarView";
+import { CalendarApp } from "@/components/calendar/CalendarApp";
 
 export default function CalendarPage() {
-  return <MonthCalendarView />;
+  return <CalendarApp />;
 }

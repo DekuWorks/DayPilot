@@ -1,26 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/Button";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
       <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 text-xl md:text-2xl font-bold text-[var(--text-primary)] hover:opacity-90 transition-opacity"
-        >
-          <Image
-            src="/brand/daypilot-logo-mark.svg"
-            alt="DayPilot"
-            width={32}
-            height={32}
-            className="h-8 w-8"
-            priority
-            unoptimized
-          />
-          DayPilot
-        </Link>
+        <BrandLogo />
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/features"

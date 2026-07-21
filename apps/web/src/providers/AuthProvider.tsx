@@ -25,6 +25,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
+  loginWithMagicLink: (email: string) => Promise<void>;
   signup: (
     email: string,
     password: string,
@@ -116,6 +117,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [supabase]
   );
 
+  const loginWithMagicLink = useCallback(
+    async (email: string) => {
+      if (!supabase) throw new Error("Supabase is not configured");
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${origin}/auth/callback`,
+          shouldCreateUser: true,
+        },
+      });
+      if (error) throw new Error(error.message);
+    },
+    [supabase]
+  );
+
   const signup = useCallback(
     async (
       email: string,
@@ -196,6 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = {
     ...state,
     login,
+    loginWithMagicLink,
     signup,
     loginWithGoogle,
     logout,

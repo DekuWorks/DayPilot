@@ -1,7 +1,8 @@
 "use client";
 
+"use client";
+
 import type { ComponentType } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarStore } from "@/stores/sidebar-store";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   defaultWorkspaces,
   primaryNav,
@@ -87,30 +89,24 @@ export function AppSidebar() {
   const sidebarInner = (
     <div className="flex h-full flex-col">
       <div
-        className={`flex items-center gap-2.5 border-b border-[var(--border-subtle)] px-4 py-4 ${
+        className={`flex items-center border-b border-[var(--border-subtle)] px-4 py-4 ${
           collapsed ? "justify-center px-2" : ""
         }`}
       >
-        <Link
-          href="/dashboard"
-          onClick={closeMobile}
-          className="flex items-center gap-2.5 min-w-0"
-        >
-          <Image
-            src="/brand/daypilot-logo-mark.svg"
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 shrink-0"
-            priority
-            unoptimized
+        {collapsed ? (
+          <BrandLogo
+            href="/dashboard"
+            showWordmark={false}
+            size={32}
+            onClick={closeMobile}
           />
-          {!collapsed && (
-            <span className="truncate text-base font-bold tracking-tight text-[var(--text-primary)]">
-              DayPilot
-            </span>
-          )}
-        </Link>
+        ) : (
+          <BrandLogo
+            href="/dashboard"
+            className="min-w-0"
+            onClick={closeMobile}
+          />
+        )}
       </div>
 
       <nav
