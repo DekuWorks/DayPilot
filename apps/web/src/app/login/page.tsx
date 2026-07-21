@@ -44,7 +44,14 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign in failed");
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      if (/invalid login credentials/i.test(msg)) {
+        setError(
+          "Invalid login credentials. If you don’t have an account yet, sign up first — or try Magic link."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
