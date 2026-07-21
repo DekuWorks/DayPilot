@@ -132,6 +132,7 @@ export async function createEvent(
     end: string;
     description?: string;
     location?: string;
+    meetingUrl?: string;
   }
 ): Promise<CalendarEvent> {
   const supabase = createClient();
@@ -144,6 +145,7 @@ export async function createEvent(
       title: data.title,
       description: data.description ?? null,
       location: data.location ?? null,
+      meeting_url: data.meetingUrl ?? null,
       start: data.start,
       end: data.end,
       start_time: data.start,
@@ -167,6 +169,7 @@ export async function updateEvent(
     end?: string;
     description?: string;
     location?: string;
+    meetingUrl?: string | null;
   }
 ): Promise<CalendarEvent> {
   const supabase = createClient();
@@ -174,6 +177,7 @@ export async function updateEvent(
   if (data.title !== undefined) patch.title = data.title;
   if (data.description !== undefined) patch.description = data.description;
   if (data.location !== undefined) patch.location = data.location;
+  if (data.meetingUrl !== undefined) patch.meeting_url = data.meetingUrl;
   if (data.start !== undefined) {
     patch.start = data.start;
     patch.start_time = data.start;

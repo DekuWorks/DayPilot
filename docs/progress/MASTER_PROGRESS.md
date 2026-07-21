@@ -37,6 +37,19 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]
 
 ## Session log
 
+### 2026-07-21 — Meetings, contacts, insights, command palette
+
+- **Feature:** Meetings list/schedule, Contacts CRUD, Insights + focus timer, ⌘K palette
+- **Status:** [x]
+- **Owner:** agent
+- **Date started:** 2026-07-21
+- **Date completed:** 2026-07-21
+- **Related files:** `meetings/page.tsx`, `contacts/*`, `insights/page.tsx`, `CommandPalette.tsx`, migration `20260721210000_contacts`
+- **Tests added:** none (web lint + build)
+- **Notes:** Contacts table + RLS applied remotely; focus sessions wired on Insights
+- **Blockers:** Google OAuth still needs provider credentials in Supabase
+- **Next action:** Notifications; deeper search in palette; calendar drag/resize
+
 ### 2026-07-21 — Official logo + calendar views + notes/projects + magic link
 
 - **Feature:** Official green D mark via `BrandLogo`; month/week/day calendar; Notes + Projects MVP; magic-link auth

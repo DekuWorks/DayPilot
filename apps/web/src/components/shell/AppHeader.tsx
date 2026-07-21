@@ -21,9 +21,11 @@ function greetingForHour(hour: number) {
 export function AppHeader({
   title,
   subtitle,
+  onOpenSearch,
 }: {
   title?: string;
   subtitle?: string;
+  onOpenSearch?: () => void;
 }) {
   const { user } = useAuth();
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
@@ -65,12 +67,18 @@ export function AppHeader({
 
         <button
           type="button"
+          className="sm:hidden rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+          aria-label="Search"
+          onClick={() => onOpenSearch?.()}
+        >
+          <Search className="h-5 w-5" />
+        </button>
+
+        <button
+          type="button"
           className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 text-left text-sm text-[var(--text-tertiary)] hover:border-[var(--border-strong)] transition-colors"
           aria-label="Search (Command K)"
-          title="Command palette coming soon"
-          onClick={() => {
-            /* Command palette Phase 4 */
-          }}
+          onClick={() => onOpenSearch?.()}
         >
           <Search className="h-4 w-4 shrink-0" />
           <span className="flex-1 truncate">Search anything...</span>

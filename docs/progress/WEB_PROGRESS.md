@@ -12,8 +12,9 @@
 | Calendar CRUD UI | [x] | agent | 2026-07-21 | 2026-07-21 | `CalendarApp` + month/week/day | — | View switcher + timeline create | — | Drag/resize polish |
 | Tasks UI | [x] | agent | 2026-07-21 | 2026-07-21 | `(app)/tasks` | — | Supabase CRUD + filters | — | Subtasks/priority polish |
 | Auth screens rebrand | [x] | agent | 2026-07-21 | 2026-07-21 | AuthProvider + login/signup | — | Password + magic link + Google | Enable Google in dashboard | Confirm redirect URLs |
-| Projects / Meetings / Notes | [~] | agent | 2026-07-21 | — | notes + projects MVP; meetings stub | — | Notes editor + projects list/detail | — | Meetings MVP |
+| Projects / Meetings / Notes | [x] | agent | 2026-07-21 | 2026-07-21 | notes, projects, meetings | — | Supabase CRUD MVPs | — | Meeting notes link |
 | Pilot Brief UI | [x] | agent | 2026-07-21 | 2026-07-21 | `/pilot-brief` + Home card | — | Edge Function wired | Optional OPENAI secret | Ask flow |
-| Command palette ⌘K | [~] | agent | 2026-07-21 | — | AppHeader | — | Search UI placeholder | — | Implement palette |
-| Insights charts | [~] | agent | 2026-07-21 | — | `(app)/insights` | — | Stub | Data queries | Phase 5 |
+| Command palette ⌘K | [x] | agent | 2026-07-21 | 2026-07-21 | `CommandPalette.tsx` | — | Nav jump + keyboard | — | Search events/tasks |
+| Insights charts | [x] | agent | 2026-07-21 | 2026-07-21 | `(app)/insights` + focus | — | Weekly stats + focus timer | — | Deeper analytics |
+| Contacts | [x] | agent | 2026-07-21 | 2026-07-21 | contacts table + page | — | CRUD + search | — | Link to meetings |
 | Brand asset wiring | [x] | agent | 2026-07-21 | 2026-07-21 | official D mark + `BrandLogo` | — | Transparent PNG across nav/auth/shell | — | OG image polish |
