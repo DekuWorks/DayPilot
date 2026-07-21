@@ -14,3 +14,4 @@
 | KI-008 | Medium | Prisma Task model with no API/UI | Product | — | Open |
 | KI-009 | Medium | Flutter Android present; milestone forbids Android work | Process | Do not expand Android | Accepted |
 | KI-010 | Low | Marketing missing legal/FAQ/OG assets | Web | — | Open |
+| KI-011 | High | Auth emails used Site URL `localhost:3000` | Auth | Set Site URL to `https://www.daypilot.co` + allow list | Fixed 2026-07-21 |

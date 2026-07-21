@@ -127,7 +127,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${origin}/auth/callback`,
+          emailRedirectTo: origin
+            ? `${origin}/auth/callback`
+            : "https://www.daypilot.co/auth/callback",
           shouldCreateUser: true,
         },
       });
@@ -147,10 +149,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!supabase) throw new Error("Supabase is not configured");
       const handle = username ? normalizeUsername(username) : "";
       const displayName = `${firstName} ${lastName}`.trim();
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: origin
+            ? `${origin}/auth/callback`
+            : "https://www.daypilot.co/auth/callback",
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -200,7 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback`,
+        redirectTo: origin
+          ? `${origin}/auth/callback`
+          : "https://www.daypilot.co/auth/callback",
       },
     });
     if (error) throw new Error(error.message);

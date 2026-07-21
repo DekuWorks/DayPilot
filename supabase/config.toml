@@ -5,3 +5,20 @@ project_id = "wmkytyrcxbzjqiykbauw"
 
 [db]
 major_version = 17
+
+# Production Auth URL config is managed remotely (Supabase Dashboard / Management API).
+# Keep local defaults aligned for documentation and local `supabase start`.
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback",
+  "http://127.0.0.1:3000/auth/callback",
+  "https://www.daypilot.co/auth/callback",
+  "https://daypilot.co/auth/callback",
+]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+# Production currently requires email confirmation (mailer_autoconfirm = false).
+enable_confirmations = true
