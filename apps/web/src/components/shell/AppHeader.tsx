@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import {
-  Bell,
   CalendarDays,
   Menu,
   Search,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarStore } from "@/stores/sidebar-store";
+import { NotificationsMenu } from "./NotificationsMenu";
 
 function greetingForHour(hour: number) {
   if (hour < 12) return "Good morning";
@@ -88,15 +88,7 @@ export function AppHeader({
         </button>
 
         <div className="flex items-center gap-1 md:gap-2">
-          <button
-            type="button"
-            className="relative rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
-            aria-label="Notifications"
-            title="Notifications coming soon"
-          >
-            <Bell className="h-5 w-5" strokeWidth={1.75} />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--brand-500)]" />
-          </button>
+          <NotificationsMenu />
           <Link
             href="/calendar"
             className="rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"

@@ -37,6 +37,14 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]
 
 ## Session log
 
+### 2026-07-21 — Notifications, richer ⌘K, tasks polish
+
+- **Feature:** Header notifications (meeting reminders), palette search across data, task priorities/subtasks/projects
+- **Status:** [x]
+- **Owner:** agent
+- **Related files:** `NotificationsMenu.tsx`, `notifications-supabase.ts`, `CommandPalette.tsx`, `tasks/page.tsx`
+- **Next action:** Realtime notifications; due-date picker; Google OAuth credentials
+
 ### 2026-07-21 — Meetings, contacts, insights, command palette
 
 - **Feature:** Meetings list/schedule, Contacts CRUD, Insights + focus timer, ⌘K palette
