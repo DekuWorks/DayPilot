@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
-    void hydrateFromSession();
+    void Promise.resolve().then(() => hydrateFromSession());
     if (!supabase) return;
 
     const {

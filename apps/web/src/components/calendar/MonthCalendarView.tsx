@@ -110,7 +110,7 @@ export function MonthCalendarView() {
   }, [viewDate]);
 
   useEffect(() => {
-    refetch();
+    void Promise.resolve().then(() => refetch());
   }, [refetch]);
 
   const grid = buildMonthGrid(viewDate, events);
