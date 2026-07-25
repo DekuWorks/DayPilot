@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/Button";
-import { BrandLogo } from "@/components/BrandLogo";
+import { PublicNav } from "@/components/PublicNav";
 import { normalizeUsername } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
@@ -67,15 +67,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-        <BrandLogo />
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/features" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Features</Link>
-          <Link href="/pricing" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Pricing</Link>
-          <Link href="/login" className="text-[var(--text-primary)] hover:text-[var(--brand-500)] font-medium text-sm md:text-base">Sign In</Link>
-          <Link href="/signup" className="text-[var(--brand-500)] font-medium text-sm md:text-base">Get Started</Link>
-        </div>
-      </nav>
+      <PublicNav />
       <section className="container-width section-padding py-16 md:py-24 max-w-md mx-auto">
         <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Get started</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

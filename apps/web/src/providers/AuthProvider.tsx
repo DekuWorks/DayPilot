@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
 import type { User } from "@/lib/auth-api";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
@@ -40,6 +41,37 @@ type AuthContextValue = AuthState & {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const AUTH_HYDRATION_TIMEOUT_MS = 5000;
+
+function resolveWithTimeout<T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = AUTH_HYDRATION_TIMEOUT_MS
+) {
+  let settled = false;
+
+  return new Promise<T>((resolve) => {
+    const timeout = window.setTimeout(() => {
+      settled = true;
+      resolve(fallback);
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        if (!settled) {
+          settled = true;
+          resolve(value);
+        }
+      })
+      .catch(() => {
+        if (!settled) {
+          settled = true;
+          resolve(fallback);
+        }
+      })
+      .finally(() => window.clearTimeout(timeout));
+  });
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -57,27 +89,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const hydrateAuthenticatedSession = useCallback(async (session: Session) => {
+    const profile = await resolveWithTimeout(fetchProfile(session.user.id), null);
+    const user = mapSupabaseUser(session.user, profile);
+    await exchangeNestSession(session.access_token);
+    setState({ user, isLoading: false, isAuthenticated: true });
+  }, []);
+
   const hydrateFromSession = useCallback(async () => {
     if (!supabase) {
       setState({ user: null, isLoading: false, isAuthenticated: false });
       return;
     }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data, error } = await resolveWithTimeout(
+      supabase.auth.getSession(),
+      { data: { session: null }, error: null }
+    );
+    const { session } = data;
 
-    if (!session?.user) {
+    if (error || !session?.user) {
       clearNestSession();
       setState({ user: null, isLoading: false, isAuthenticated: false });
       return;
     }
 
-    const profile = await fetchProfile(session.user.id);
-    const user = mapSupabaseUser(session.user, profile);
-    await exchangeNestSession(session.access_token);
-    setState({ user, isLoading: false, isAuthenticated: true });
-  }, [supabase]);
+    await hydrateAuthenticatedSession(session);
+  }, [supabase, hydrateAuthenticatedSession]);
 
   useEffect(() => {
     void Promise.resolve().then(() => hydrateFromSession());
@@ -92,10 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setState({ user: null, isLoading: false, isAuthenticated: false });
           return;
         }
-        const profile = await fetchProfile(session.user.id);
-        const user = mapSupabaseUser(session.user, profile);
-        await exchangeNestSession(session.access_token);
-        setState({ user, isLoading: false, isAuthenticated: true });
+        await hydrateAuthenticatedSession(session);
       })();
     });
 
