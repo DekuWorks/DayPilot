@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
-import { buttonClassName } from "@/components/Button";
+import { buttonClassName } from "@/components/button-styles";
 
 const links = [
   { href: "/features", label: "Features" },

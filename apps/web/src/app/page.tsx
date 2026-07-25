@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { buttonClassName } from "@/components/Button";
 import { PublicNav } from "@/components/PublicNav";
+import { buttonClassName } from "@/components/button-styles";
 
 export default function HomePage() {
   return (

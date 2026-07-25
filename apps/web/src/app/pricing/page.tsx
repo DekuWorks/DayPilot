@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { buttonClassName } from "@/components/Button";
 import { PublicNav } from "@/components/PublicNav";
+import { buttonClassName } from "@/components/button-styles";
 
 const plans = [
   { name: "Free", price: "$0", period: "forever", description: "Perfect for individuals getting started", features: ["Personal calendar", "Basic event management", "Recurring events", "1 booking link", "AI suggestions"], cta: "Get Started", highlight: false },

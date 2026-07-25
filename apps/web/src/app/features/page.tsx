@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { buttonClassName } from "@/components/Button";
 import { PublicNav } from "@/components/PublicNav";
+import { buttonClassName } from "@/components/button-styles";
 
 const features = [
   { icon: "🤖", title: "AI-Powered Scheduling", description: "Let AI analyze your calendar and suggest optimal times for meetings and tasks based on your preferences and energy levels." },
