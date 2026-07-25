@@ -8,6 +8,7 @@ const NEST_KEYS = {
   refreshToken: "refreshToken",
   user: "user",
 } as const;
+const NEST_EXCHANGE_TIMEOUT_MS = 5000;
 
 export type ProfileRow = {
   email?: string | null;
@@ -73,11 +74,17 @@ export async function fetchProfile(userId: string) {
 export async function exchangeNestSession(supabaseAccessToken: string) {
   const apiUrl = getApiUrl();
   if (!apiUrl || typeof window === "undefined") return null;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    NEST_EXCHANGE_TIMEOUT_MS
+  );
   try {
     const res = await fetch(`${apiUrl}/auth/supabase-exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accessToken: supabaseAccessToken }),
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {
@@ -91,6 +98,8 @@ export async function exchangeNestSession(supabaseAccessToken: string) {
     return data;
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 

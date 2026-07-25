@@ -1,55 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/Button";
-import { BrandLogo } from "@/components/BrandLogo";
+import { PublicNav } from "@/components/PublicNav";
+import { buttonClassName } from "@/components/button-styles";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
-      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-        <BrandLogo />
-        <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/features"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Features
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/login"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Sign In
-          </Link>
-          <Link href="/signup" className="inline-block">
-            <Button size="lg">Get Started Free</Button>
-          </Link>
-        </div>
-        <button
-          className="md:hidden p-2 text-[var(--text-primary)]"
-          aria-label="Menu"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-      </nav>
+      <PublicNav />
 
       <section className="container-width section-padding pt-16 md:pt-24 lg:pt-28 pb-10 md:pb-14 text-center">
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
@@ -65,19 +22,24 @@ export default function HomePage() {
             intelligent workspace.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2 md:pt-4 px-4">
-            <Link href="/signup" className="w-full sm:w-auto inline-block">
-              <Button size="lg" className="w-full sm:w-auto min-w-[180px]">
-                Get Started Free
-              </Button>
+            <Link
+              href="/signup"
+              className={buttonClassName({
+                size: "lg",
+                className: "w-full sm:w-auto min-w-[180px]",
+              })}
+            >
+              Get Started Free
             </Link>
-            <Link href="/features" className="w-full sm:w-auto inline-block">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto min-w-[180px]"
-              >
-                View Demo
-              </Button>
+            <Link
+              href="/features"
+              className={buttonClassName({
+                variant: "outline",
+                size: "lg",
+                className: "w-full sm:w-auto min-w-[180px]",
+              })}
+            >
+              View Demo
             </Link>
           </div>
         </div>
@@ -149,8 +111,11 @@ export default function HomePage() {
             Get started free. Bring your calendars and take control of your
             schedule.
           </p>
-          <Link href="/signup" className="inline-block">
-            <Button size="lg">Get Started Free</Button>
+          <Link
+            href="/signup"
+            className={buttonClassName({ size: "lg", className: "inline-flex" })}
+          >
+            Get Started Free
           </Link>
         </div>
       </section>
