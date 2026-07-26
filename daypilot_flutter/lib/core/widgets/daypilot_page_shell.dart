@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/app_theme.dart';
 
-/// Shared cream gradient + app chrome for subpages (matches [DashboardScreen]).
+/// Shared page chrome for secondary routes (title bar + body).
 class DayPilotPageShell extends StatelessWidget {
   const DayPilotPageShell({
     super.key,
@@ -11,7 +11,7 @@ class DayPilotPageShell extends StatelessWidget {
     required this.body,
     this.actions,
     this.bottom,
-    this.fallbackRoute = '/dashboard',
+    this.fallbackRoute = '/home',
   });
 
   final Widget title;
@@ -20,8 +20,8 @@ class DayPilotPageShell extends StatelessWidget {
   final PreferredSizeWidget? bottom;
   final String fallbackRoute;
 
-  /// When the route stack is empty, navigates to [fallbackRoute] (default dashboard).
-  static void popOrFallback(BuildContext context, {String fallbackRoute = '/dashboard'}) {
+  /// When the route stack is empty, navigates to [fallbackRoute] (default home).
+  static void popOrFallback(BuildContext context, {String fallbackRoute = '/home'}) {
     if (context.canPop()) {
       context.pop();
     } else {

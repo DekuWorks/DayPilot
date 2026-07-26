@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/api_session_bootstrap.dart';
 import 'core/widgets/nest_events_socket_listener.dart';
 
+/// Root widget: Nest session bootstrap + realtime listener wrap [MaterialApp.router].
 class DayPilotApp extends ConsumerWidget {
   const DayPilotApp({super.key});
 
@@ -16,6 +17,7 @@ class DayPilotApp extends ConsumerWidget {
       child: NestEventsSocketListener(
         child: MaterialApp.router(
           title: 'DayPilot',
+          debugShowCheckedModeBanner: false,
           theme: AppTheme.dark(),
           darkTheme: AppTheme.dark(),
           themeMode: ThemeMode.dark,

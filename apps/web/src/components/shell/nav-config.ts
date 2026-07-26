@@ -1,3 +1,8 @@
+/**
+ * Sidebar + command-palette navigation sources.
+ * Keep hrefs aligned with app/(app) routes; badges are UI-only hints.
+ */
+
 import type { LucideIcon } from "lucide-react";
 import {
   Home,

@@ -19,9 +19,14 @@ class EventEditScreen extends ConsumerStatefulWidget {
 
 class _EventEditScreenState extends ConsumerState<EventEditScreen> {
   final _title = TextEditingController();
+  final _desc = TextEditingController();
+  final _location = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _loading = true;
   EventRecord? _event;
+  late DateTime _start;
+  late DateTime _end;
+  bool _allDay = false;
 
   @override
   void initState() {
@@ -33,6 +38,11 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
     final e = await ref.read(eventRepositoryProvider).getById(widget.eventId);
     if (e != null) {
       _title.text = e.title;
+      _desc.text = e.description ?? '';
+      _location.text = e.location ?? '';
+      _start = e.startsAt;
+      _end = e.endsAt;
+      _allDay = e.allDay;
     }
     setState(() {
       _event = e;
@@ -43,24 +53,85 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
   @override
   void dispose() {
     _title.dispose();
+    _desc.dispose();
+    _location.dispose();
     super.dispose();
+  }
+
+  String _format(BuildContext context, DateTime d) {
+    final loc = MaterialLocalizations.of(context);
+    if (_allDay) return loc.formatMediumDate(d);
+    return '${loc.formatMediumDate(d)} · ${TimeOfDay.fromDateTime(d).format(context)}';
+  }
+
+  Future<void> _pickStart() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _start,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (d == null) return;
+    if (_allDay) {
+      setState(() => _start = DateTime(d.year, d.month, d.day));
+      return;
+    }
+    if (!mounted) return;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_start),
+    );
+    if (t == null) return;
+    setState(() {
+      _start = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+    });
+  }
+
+  Future<void> _pickEnd() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (d == null) return;
+    if (_allDay) {
+      setState(() => _end = DateTime(d.year, d.month, d.day, 23, 59));
+      return;
+    }
+    if (!mounted) return;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_end),
+    );
+    if (t == null) return;
+    setState(() {
+      _end = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+    });
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final current = _event;
     if (current == null) return;
+    if (!_end.isAfter(_start)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('End time must be after start.')),
+      );
+      return;
+    }
     final updated = EventRecord(
       id: current.id,
       title: _title.text.trim(),
-      description: current.description,
-      location: current.location,
-      startsAt: current.startsAt,
-      endsAt: current.endsAt,
+      description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
+      location: _location.text.trim().isEmpty ? null : _location.text.trim(),
+      startsAt: _start,
+      endsAt: _end,
       ownerId: current.ownerId,
       calendarId: current.calendarId,
-      allDay: current.allDay,
+      allDay: _allDay,
       status: current.status,
+      source: current.source,
     );
     await ref.read(eventRepositoryProvider).update(updated);
     ref.invalidate(eventDetailProvider(widget.eventId));
@@ -80,9 +151,9 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
       );
     }
     if (_event == null) {
-      return DayPilotPageShell(
-        title: const Text('Event'),
-        body: const Center(child: Text('Event not found.')),
+      return const DayPilotPageShell(
+        title: Text('Event'),
+        body: Center(child: Text('Event not found.')),
       );
     }
     return DayPilotPageShell(
@@ -98,6 +169,35 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
                 decoration: const InputDecoration(labelText: 'Title'),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: _desc,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 3,
+              ),
+              TextFormField(
+                controller: _location,
+                decoration: const InputDecoration(
+                  labelText: 'Location / meeting URL',
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('All day'),
+                value: _allDay,
+                onChanged: (v) => setState(() => _allDay = v),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Starts'),
+                subtitle: Text(_format(context, _start)),
+                onTap: _pickStart,
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Ends'),
+                subtitle: Text(_format(context, _end)),
+                onTap: _pickEnd,
               ),
               const SizedBox(height: 24),
               FilledButton(

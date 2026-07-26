@@ -1,3 +1,14 @@
+/// GoRouter for DayPilot mobile.
+///
+/// Auth: unauthenticated users are redirected to `/login` except public routes
+/// (`/book/:slug`, auth screens). Signed-in users hitting auth-only routes go
+/// to `/home`. Legacy `/dashboard` redirects to `/home`.
+///
+/// Shell: bottom tabs use [StatefulShellRoute.indexedStack] (Home · Calendar ·
+/// Tasks · Insights · Profile). Secondary features are top-level routes outside
+/// the tab stack so the back stack stays predictable.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,15 +18,27 @@ import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
 import '../../features/billing/billing_screen.dart';
+import '../../features/booking/booking_links_screen.dart';
 import '../../features/booking/public_booking_screen.dart';
-import '../../features/dashboard/dashboard_screen.dart';
+import '../../features/calendar/calendar_screen.dart';
+import '../../features/contacts/contacts_screen.dart';
+import '../../features/events/event_create_screen.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../features/events/event_edit_screen.dart';
-import '../../features/events/event_create_screen.dart';
+import '../../features/home/home_screen.dart';
 import '../../features/integrations/integrations_screen.dart';
 import '../../features/insights/daily_brief_screen.dart';
 import '../../features/insights/insights_screen.dart';
+import '../../features/meetings/meetings_screen.dart';
+import '../../features/notes/notes_screen.dart';
+import '../../features/notifications/notifications_screen.dart';
+import '../../features/profile/profile_screen.dart';
+import '../../features/projects/projects_screen.dart';
+import '../../features/search/search_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/tasks/task_detail_screen.dart';
+import '../../features/tasks/tasks_screen.dart';
 import '../providers/bootstrap_providers.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -24,20 +47,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(supabaseAuthListenableProvider);
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/dashboard',
+    initialLocation: '/home',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      if (loc == '/calendar') {
-        return '/dashboard';
-      }
+      if (loc == '/dashboard') return '/home';
       final session = Supabase.instance.client.auth.currentSession;
       final isPublic = _isPublicRoute(loc);
       if (session == null && !isPublic) {
         return '/login';
       }
       if (session != null && _isAuthOnlyRoute(loc)) {
-        return '/dashboard';
+        return '/home';
       }
       return null;
     },
@@ -61,48 +82,139 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return PublicBookingScreen(slug: slug);
         },
       ),
-      ShellRoute(
-        builder: (context, state, child) => AppShell(child: child),
-        routes: [
-          GoRoute(
-            path: '/dashboard',
-            builder: (context, state) => const DashboardScreen(),
-          ),
-          GoRoute(
-            path: '/insights',
-            builder: (context, state) => const InsightsScreen(),
-          ),
-          GoRoute(
-            path: '/integrations',
-            builder: (context, state) => const IntegrationsScreen(),
-          ),
-          GoRoute(
-            path: '/insights/brief',
-            builder: (context, state) => const DailyBriefScreen(),
-          ),
-          GoRoute(
-            path: '/events/new',
-            builder: (context, state) => const EventCreateScreen(),
-          ),
-          GoRoute(
-            path: '/events/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return EventDetailScreen(eventId: id);
-            },
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
             routes: [
               GoRoute(
-                path: 'edit',
-                builder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  return EventEditScreen(eventId: id);
-                },
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/calendar',
+                builder: (context, state) => const CalendarScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/tasks',
+                builder: (context, state) => const TasksScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/insights',
+                builder: (context, state) => const InsightsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/tasks/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return TaskDetailScreen(taskId: id);
+        },
+      ),
+      GoRoute(
+        path: '/notes',
+        builder: (context, state) => const NotesScreen(),
+        routes: [
           GoRoute(
-            path: '/billing',
-            builder: (context, state) => const BillingScreen(),
+            path: ':id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return NoteEditorScreen(noteId: id);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/projects',
+        builder: (context, state) => const ProjectsScreen(),
+      ),
+      GoRoute(
+        path: '/meetings',
+        builder: (context, state) => const MeetingsScreen(),
+      ),
+      GoRoute(
+        path: '/contacts',
+        builder: (context, state) => const ContactsScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ContactDetailScreen(contactId: id);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/booking-links',
+        builder: (context, state) => const BookingLinksScreen(),
+      ),
+      GoRoute(
+        path: '/billing',
+        builder: (context, state) => const BillingScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/integrations',
+        builder: (context, state) => const IntegrationsScreen(),
+      ),
+      GoRoute(
+        path: '/insights/brief',
+        builder: (context, state) => const DailyBriefScreen(),
+      ),
+      GoRoute(
+        path: '/events/new',
+        builder: (context, state) => const EventCreateScreen(),
+      ),
+      GoRoute(
+        path: '/events/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return EventDetailScreen(eventId: id);
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return EventEditScreen(eventId: id);
+            },
           ),
         ],
       ),

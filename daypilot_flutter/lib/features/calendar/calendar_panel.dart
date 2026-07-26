@@ -10,7 +10,7 @@ import 'day_view.dart';
 import 'month_view.dart';
 import 'week_view.dart';
 
-/// Month / week / day calendar views (shared by [DashboardScreen]).
+/// Month / week / day calendar views (used by [CalendarScreen]).
 class CalendarPanel extends ConsumerStatefulWidget {
   const CalendarPanel({super.key});
 

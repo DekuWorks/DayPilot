@@ -1,3 +1,12 @@
+/**
+ * Nest billing API (Stripe).
+ *
+ * Checkout/portal sessions are created server-side; the browser only receives
+ * redirect URLs. `configured` reflects whether STRIPE_SECRET_KEY is set on the
+ * API — when false, the billing page should stay on Free / show a soft notice
+ * rather than offering broken checkout.
+ */
+
 import { getApiUrl, getAuthHeaders } from "./api";
 
 export type SubscriptionTier = "Free" | "Personal" | "Business" | "Enterprise";

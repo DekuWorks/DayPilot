@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    // Warm the dashboard chunk while the user is on the sign-in screen.
+    // Prefetch the post-login route while the form is visible.
     router.prefetch("/dashboard");
   }, [router]);
 

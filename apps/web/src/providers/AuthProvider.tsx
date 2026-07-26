@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * AuthProvider — Supabase session is the source of truth for the web app.
+ *
+ * Performance contract (do not regress):
+ * - Unlock UI as soon as a Supabase session exists (map JWT/user metadata).
+ * - Enrich in the background: Nest JWT exchange + profiles row. Never block
+ *   login/RequireAuth on Nest or a slow profiles fetch.
+ * - Never await network work inside onAuthStateChange; Supabase's auth lock
+ *   deadlocks signInWithPassword if listeners do async work on that stack.
+ *   Defer with setTimeout(0) / fire-and-forget instead.
+ */
+
 import React, {
   createContext,
   useCallback,

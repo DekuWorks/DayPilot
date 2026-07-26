@@ -62,6 +62,24 @@ class AuthRepository {
     return _client.auth.resetPasswordForEmail(email);
   }
 
+  /// Email magic link (same flow as web). Opens via emailRedirectTo.
+  Future<void> signInWithMagicLink(String email) {
+    return _client.auth.signInWithOtp(
+      email: email.trim(),
+      shouldCreateUser: true,
+      emailRedirectTo: 'https://www.daypilot.co/auth/callback',
+    );
+  }
+
+  /// Google OAuth — opens browser; returns via deep link.
+  Future<bool> signInWithGoogle() {
+    return _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'com.daypilot.daypilot://login-callback/',
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
+  }
+
   Future<void> signOut() async {
     await _client.auth.signOut();
     if (_apiSession != null) {

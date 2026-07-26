@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Friends UI: search, requests, list, and pin-favorites (max 5).
+ * All data access goes through friends-supabase RPCs/tables — see that module
+ * for the social-graph rules.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pin, PinOff, Search, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/Button";

@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * In-app billing: load subscription + Stripe plans from Nest, then redirect
+ * through Checkout or the Customer Portal. Falls back to Free when the API
+ * is down; can still offer a single plan via NEXT_PUBLIC_STRIPE_PRICE_ID.
+ */
+
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";

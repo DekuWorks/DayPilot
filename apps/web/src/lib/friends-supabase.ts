@@ -1,3 +1,15 @@
+/**
+ * Friends / social graph client (Supabase).
+ *
+ * Discovery uses SECURITY DEFINER RPCs so search never exposes email:
+ *   - search_daypilot_users, get_public_profiles
+ * Mutations go through RPCs that enforce request/friendship rules:
+ *   - send_friend_request, respond_friend_request, cancel_friend_request,
+ *     remove_friend
+ * Favorites are a capped pin list (MAX_FAVORITES) on user_favorites; friendships
+ * are bidirectional rows written by the respond RPC.
+ */
+
 import { createClient } from "@/lib/supabase/client";
 
 export type PublicUser = {

@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * App sidebar — desktop rail + mobile drawer.
+ *
+ * Nav items live in nav-config (primary + secondary). Collapse state and the
+ * mobile open flag are shared via useSidebarStore so the header hamburger and
+ * this rail stay in sync. Workspaces are local placeholders until org APIs land.
+ */
+
 import { useEffect, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";

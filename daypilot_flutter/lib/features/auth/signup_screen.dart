@@ -38,7 +38,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             email: _email.text.trim(),
             password: _password.text,
           );
-      if (mounted) context.go('/dashboard');
+      if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,31 +53,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      backgroundColor: DayPilotColors.backgroundPrimary,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           children: [
-            const Center(child: GradientBrandTitle()),
-            const SizedBox(height: 8),
+            const Center(child: BrandLockup(markSize: 88, fontSize: 30)),
+            const SizedBox(height: 28),
             Text(
               'Create account',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: DayPilotColors.ink,
+                    color: DayPilotColors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextField(
               controller: _password,
               obscureText: true,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.newPassword],
               decoration: const InputDecoration(
                 labelText: 'Password',
                 helperText: 'Minimum 8 characters',

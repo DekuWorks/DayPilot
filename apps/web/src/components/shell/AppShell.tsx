@@ -1,15 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { CommandPalette } from "./CommandPalette";
 
-const CommandPalette = dynamic(
-  () => import("./CommandPalette").then((m) => m.CommandPalette),
-  { ssr: false }
-);
-
+/**
+ * Authenticated app chrome: sidebar + header + main content.
+ * Cmd/Ctrl+K toggles the command palette (loaded eagerly with the shell).
+ */
 export function AppShell({
   children,
   title,

@@ -14,25 +14,46 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   bool _busy = false;
+  bool _obscure = true;
+  bool _magicMode = false;
+  bool _magicSent = false;
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    final email = _email.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your email')),
+      );
+      return;
+    }
     setState(() => _busy = true);
     try {
-      await ref.read(authRepositoryProvider).signInWithPassword(
-            email: _email.text.trim(),
-            password: _password.text,
-          );
-      if (mounted) context.go('/dashboard');
+      if (_magicMode) {
+        await ref.read(authRepositoryProvider).signInWithMagicLink(email);
+        if (mounted) setState(() => _magicSent = true);
+      } else {
+        await ref.read(authRepositoryProvider).signInWithPassword(
+              email: email,
+              password: _password.text,
+            );
+        if (mounted) context.go('/home');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -47,53 +68,184 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      backgroundColor: DayPilotColors.backgroundPrimary,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const Center(child: GradientBrandTitle()),
-            const SizedBox(height: 8),
-            Text(
-              'Sign in',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: DayPilotColors.ink,
-                    fontWeight: FontWeight.w700,
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              children: [
+                const Center(
+                  child: BrandLockup(markSize: 88, fontSize: 30),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'Sign in',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: DayPilotColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Password'),
+                        selected: !_magicMode,
+                        onSelected: (_) => setState(() {
+                          _magicMode = false;
+                          _magicSent = false;
+                        }),
+                        selectedColor: DayPilotColors.brand500,
+                        labelStyle: TextStyle(
+                          color: !_magicMode
+                              ? DayPilotColors.textInverse
+                              : DayPilotColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        showCheckmark: false,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Magic link'),
+                        selected: _magicMode,
+                        onSelected: (_) => setState(() {
+                          _magicMode = true;
+                          _magicSent = false;
+                        }),
+                        selectedColor: DayPilotColors.brand500,
+                        labelStyle: TextStyle(
+                          color: _magicMode
+                              ? DayPilotColors.textInverse
+                              : DayPilotColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        showCheckmark: false,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (_magicSent)
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: DayPilotColors.brand500.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: DayPilotColors.brand500),
+                    ),
+                    child: const Text(
+                      'Check your email for a magic link. After you open it, come back and the app will pick up your session (or sign in with password).',
+                      style: TextStyle(color: DayPilotColors.textPrimary),
+                    ),
                   ),
-              textAlign: TextAlign.center,
+                TextFormField(
+                  controller: _email,
+                  focusNode: _emailFocus,
+                  enabled: !_busy,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: _magicMode
+                      ? TextInputAction.done
+                      : TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  style: const TextStyle(color: DayPilotColors.textPrimary),
+                  onFieldSubmitted: (_) {
+                    if (_magicMode) {
+                      _submit();
+                    } else {
+                      _passwordFocus.requestFocus();
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'you@example.com',
+                  ),
+                ),
+                if (!_magicMode) ...[
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _password,
+                    focusNode: _passwordFocus,
+                    enabled: !_busy,
+                    obscureText: _obscure,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
+                    style: const TextStyle(color: DayPilotColors.textPrimary),
+                    onFieldSubmitted: (_) => _busy ? null : _submit(),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: DayPilotColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(_magicMode ? 'Email magic link' : 'Continue'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          setState(() => _busy = true);
+                          try {
+                            await ref
+                                .read(authRepositoryProvider)
+                                .signInWithGoogle();
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Google sign-in failed: $e'),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _busy = false);
+                          }
+                        },
+                  icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+                  label: const Text('Continue with Google'),
+                ),
+                if (!_magicMode)
+                  TextButton(
+                    onPressed:
+                        _busy ? null : () => context.push('/forgot-password'),
+                    child: const Text('Forgot password'),
+                  ),
+                TextButton(
+                  onPressed: _busy ? null : () => context.push('/signup'),
+                  child: const Text('Create an account'),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Continue'),
-            ),
-            TextButton(
-              onPressed: () => context.push('/forgot-password'),
-              child: const Text('Forgot password'),
-            ),
-            TextButton(
-              onPressed: () => context.push('/signup'),
-              child: const Text('Create an account'),
-            ),
-          ],
+          ),
         ),
       ),
     );

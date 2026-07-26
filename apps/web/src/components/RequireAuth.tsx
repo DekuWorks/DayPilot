@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Gate for (app) routes. Relies on AuthProvider unlocking quickly from the
+ * Supabase session so this is a brief check, not a Nest/profile wait.
+ */
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthLoading } from "@/components/AuthLoading";

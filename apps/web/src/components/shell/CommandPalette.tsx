@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Cmd/Ctrl+K palette: nav shortcuts plus live event/people search.
+ * Mounted from AppShell (static import — not code-split).
+ */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
