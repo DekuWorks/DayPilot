@@ -14,6 +14,14 @@ export function BrandLogo({
   className?: string;
   onClick?: () => void;
 }) {
+  // Prefer optimized raster mark (real bevelled brand asset) over SVG approximation.
+  const src =
+    size <= 40
+      ? "/brand/daypilot-logo-mark-64.png"
+      : size <= 96
+        ? "/brand/daypilot-logo-mark-128.png"
+        : "/brand/daypilot-logo-mark.png";
+
   return (
     <Link
       href={href}
@@ -21,15 +29,13 @@ export function BrandLogo({
       className={`flex items-center gap-2.5 font-bold text-[var(--text-primary)] hover:opacity-90 transition-opacity ${className}`}
     >
       <Image
-        // SVG mark is ~0.7KB vs 138KB PNG — critical for nav on every page.
-        src="/brand/daypilot-logo-mark.svg"
+        src={src}
         alt="DayPilot"
         width={size}
         height={size}
-        className="shrink-0"
+        className="shrink-0 rounded-[22%]"
         style={{ width: size, height: size }}
         priority
-        unoptimized
       />
       {showWordmark && (
         <span className="text-xl md:text-2xl tracking-tight">DayPilot</span>

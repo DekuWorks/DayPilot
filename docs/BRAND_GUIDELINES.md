@@ -14,13 +14,15 @@ The mark is a stylized **D** with an integrated forward arrow / aircraft shape (
 
 | Asset | Path |
 |-------|------|
+| Logo mark source | `assets/brand/daypilot-logo-mark-source.jpg` |
 | Logo mark (PNG reference) | `assets/brand/daypilot-logo-mark.png` |
-| Logo mark (SVG) | `assets/brand/daypilot-logo-mark.svg` |
+| Logo mark (SVG approx / mono fallback) | `assets/brand/daypilot-logo-mark.svg` |
 | Horizontal wordmark | `assets/brand/daypilot-logo-horizontal.svg` |
 | White mono | `assets/brand/daypilot-logo-white.svg` |
 | Black mono | `assets/brand/daypilot-logo-black.svg` |
-| Favicon | `assets/brand/favicon.svg` |
-| iOS app icon source | `assets/brand/daypilot-app-icon-ios.png` |
+| Favicon | `assets/brand/favicon.svg` / `apps/web/public/brand/favicon*.png` |
+| Open Graph | `apps/web/public/brand/og-image.png` |
+| iOS app icon source | `assets/brand/daypilot-app-icon-ios.png` / `daypilot_flutter/assets/branding/app_icon.png` |
 | Dashboard mockup | `assets/brand/daypilot-dashboard-mockup.png` |
 | iOS UI showcase | `assets/brand/daypilot-ios-ui-showcase.png` |
 
@@ -29,7 +31,8 @@ The mark is a stylized **D** with an integrated forward arrow / aircraft shape (
 - Do not distort the mark; keep clear space ≈ ¼ mark height
 - Prefer green mark on dark surfaces; use mono white/black for contrast
 - Do not place the green logo on low-contrast green backgrounds
-- Prefer SVG on web; use PNG sources for iOS icon / splash rasterization
+- Prefer the photographic PNG mark for app icon, favicon, splash, and in-app BrandLogo; use SVG mono marks only when a flat/single-color treatment is required
+- Regenerate Flutter icons with `dart run flutter_launcher_icons` and splash with `dart run flutter_native_splash:create` after updating `assets/branding/`
 
 ## Color
 

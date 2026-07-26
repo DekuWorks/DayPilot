@@ -1,11 +1,11 @@
 {
-    "name": "daypilot_flutter",
-    "short_name": "daypilot_flutter",
+    "name": "DayPilot",
+    "short_name": "DayPilot",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0B0D",
+    "theme_color": "#0A0B0D",
+    "description": "DayPilot — Plan. Pilot. Perform.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
