@@ -99,7 +99,7 @@ Set these in your host (Vercel, Fly.io, Railway, etc.). Never commit `.env` or s
 ## 6. CI/CD
 
 - **`.github/workflows/ci.yml`:** On push/PR to `main`, runs install, Prisma generate, build, and lint. Keeps `main` green.
-- **`.github/workflows/deploy-api.yml`:** On push to `main`, builds the API Docker image and pushes to GHCR. Use that image in your API host; run `prisma migrate deploy` before starting the container.
+- **`.github/workflows/deploy-api.yml`:** On push to `main`, builds the API Docker image and pushes to GHCR. If secret `FLY_API_TOKEN` is set, also runs `fly deploy` for `daypilot-api`. See [PRODUCTION_API_SETUP.md](./PRODUCTION_API_SETUP.md) for Fly trial/DNS unblock steps.
 
 Vercel usually auto-deploys the frontend on push to `main` (or your connected branch).
 

@@ -4,7 +4,46 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 ---
 
-## Option A: Railway (fastest)
+## Current production status (2026-07-26)
+
+| Check | Result |
+|-------|--------|
+| `https://api.daypilot.co` DNS | **Missing** — no A/AAAA/CNAME at GoDaddy (`ns01/ns02.domaincontrol.com`) |
+| Fly app `daypilot-api` | Exists but **suspended** (`trial has ended`) |
+| Fly app `daypilot-db` | Exists but **suspended** |
+| Fly public IPv4 (when live) | `66.241.124.30` |
+| GH Actions `deploy-api.yml` | Builds + pushes `ghcr.io/<owner>/daypilot-api:latest` only (does not start a host by itself) |
+| GitHub Actions var `NEXT_PUBLIC_API_URL` | **Not set** — Pages build defaults to `https://api.daypilot.co` |
+
+### Unblock checklist (Fly — preferred if you keep this host)
+
+1. Add a payment method: [https://fly.io/trial](https://fly.io/trial) (or Billing in the Fly dashboard).
+2. Unsuspend / redeploy:
+   ```bash
+   fly auth login
+   cd apps/api
+   fly deploy -a daypilot-api
+   ```
+3. Confirm secrets on the app (`fly secrets list -a daypilot-api`), at minimum:
+   - `DATABASE_URL` (Postgres — Fly Postgres or Supabase pooler)
+   - `JWT_SECRET` (≥32 chars)
+   - `CORS_ORIGIN=https://www.daypilot.co,https://daypilot.co`
+   - `FRONTEND_URL=https://www.daypilot.co`
+   - `API_URL=https://api.daypilot.co` (or `https://daypilot-api.fly.dev` until DNS is ready)
+   - Optional billing: `STRIPE_*`, `APPLE_*`
+4. DNS at GoDaddy for `daypilot.co`:
+   - **A** record: host `api` → `66.241.124.30` (Fly shared IPv4; re-check with `fly ips list -a daypilot-api` after unsuspend)
+   - Or **CNAME** `api` → `daypilot-api.fly.dev` if Fly documents CNAME for your plan
+5. GitHub → Settings → Secrets and variables → Actions → **Variables**:
+   - `NEXT_PUBLIC_API_URL=https://api.daypilot.co`
+6. Push to `main` (or re-run **Deploy to GitHub Pages**) so the web build picks up the API URL.
+7. Verify: `curl -sS https://api.daypilot.co/health` → healthy JSON.
+
+Until the API is reachable, the web app already defers Nest exchange and billing falls back to Free with a soft notice.
+
+---
+
+## Option A: Railway (fastest alternative)
 
 1. **Sign up** at [railway.app](https://railway.app).
 
@@ -12,7 +51,8 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 3. **Add Postgres**  
    - In the project: **New** → **Database** → **PostgreSQL**  
-   - Railway creates a `DATABASE_URL` for you.
+   - Railway creates a `DATABASE_URL` for you.  
+   - Or point `DATABASE_URL` at Supabase Postgres if you prefer one DB.
 
 4. **Add the API service**  
    - **New** → **GitHub Repo** → select DayPilot  
@@ -30,15 +70,18 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
    |----------|-------|
    | `DATABASE_URL` | From Railway Postgres (usually auto-linked) |
    | `JWT_SECRET` | A long random string (min 32 chars) |
-   | `CORS_ORIGIN` | `https://daypilot.co` or your frontend URL |
-   | `API_URL` | `https://<your-app>.up.railway.app` |
+   | `CORS_ORIGIN` | `https://www.daypilot.co,https://daypilot.co` |
+   | `FRONTEND_URL` | `https://www.daypilot.co` |
+   | `API_URL` | `https://<your-app>.up.railway.app` (or `https://api.daypilot.co` after DNS) |
    | `PORT` | `3001` |
 
-7. **Deploy** — Railway gives you a URL like `https://daypilot-api-production.up.railway.app`.
+7. **Deploy** — Railway gives a URL like `https://daypilot-api-production.up.railway.app`.
 
-8. **Add `NEXT_PUBLIC_API_URL` to GitHub Actions**  
+8. **DNS** — CNAME `api` → your Railway hostname (or use Railway’s custom domain UI).
+
+9. **Add `NEXT_PUBLIC_API_URL` to GitHub Actions**  
    - Repo → **Settings** → **Secrets and variables** → **Actions** → **Variables**  
-   - Add `NEXT_PUBLIC_API_URL` = `https://<your-app>.up.railway.app`
+   - Add `NEXT_PUBLIC_API_URL` = `https://api.daypilot.co` (or the Railway URL temporarily)
 
 ---
 
@@ -54,32 +97,36 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
    fly auth login
    ```
 
-3. **Create Postgres**
+3. **Billing** — Fly requires a card after the trial. Without it, apps stay suspended and `fly deploy` fails with `trial has ended`.
+
+4. **Postgres**
    ```bash
    fly postgres create
    ```
-   Note the `DATABASE_URL` (or attach it later).
+   Note the `DATABASE_URL` (or attach it later). Existing app name in this repo’s history: `daypilot-db`.
 
-4. **Launch the API** (from repo root)
+5. **Launch / deploy the API** (from `apps/api`)
    ```bash
    cd apps/api
-   fly launch
+   fly deploy -a daypilot-api
    ```
-   Use the existing `fly.toml`, or let `fly launch` create one.
+   Config: `apps/api/fly.toml` (`app = "daypilot-api"`, health check `/health`).
 
-5. **Set secrets**
+6. **Set secrets**
    ```bash
-   fly secrets set DATABASE_URL="postgresql://..." JWT_SECRET="your-32-char-secret" CORS_ORIGIN="https://daypilot.co" API_URL="https://daypilot-api.fly.dev"
+   fly secrets set \
+     DATABASE_URL="postgresql://..." \
+     JWT_SECRET="your-32-char-secret" \
+     CORS_ORIGIN="https://www.daypilot.co,https://daypilot.co" \
+     FRONTEND_URL="https://www.daypilot.co" \
+     API_URL="https://api.daypilot.co"
    ```
 
-6. **Deploy**
-   ```bash
-   fly deploy
-   ```
+7. Your default hostname is `https://daypilot-api.fly.dev`. Point `api.daypilot.co` at the Fly IPs (see status table above).
 
-7. Your API URL will be `https://daypilot-api.fly.dev` (or the app name you chose).
+8. Add `NEXT_PUBLIC_API_URL` in GitHub Actions (same as Railway step 9).
 
-8. Add `NEXT_PUBLIC_API_URL` in GitHub Actions (same as Railway step 8).
+Optional CI: set repo secret `FLY_API_TOKEN` so `.github/workflows/deploy-api.yml` can run `fly deploy` after pushing the image.
 
 ---
 
@@ -92,3 +139,4 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 3. **Verify**
    - Visit `https://your-api-url/health` — should return `{"status":"ok"}` or similar.
+   - Billing: `GET /billing/plans` returns `{ configured, plans }` (empty plans until `STRIPE_PRICE_*` are set).

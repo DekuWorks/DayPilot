@@ -231,39 +231,71 @@ Webhook events handled: `checkout.session.completed`, `customer.subscription.cre
 
 Tiers align with web: **Free**, **Personal**, **Business**, **Enterprise**.
 
+**Repo status:** Flutter IAP (`in_app_purchase`), `daypilot_flutter/ios/Runner/DayPilot.storekit`, and Nest `POST /billing/apple/confirm` are already wired. You still need App Store Connect products + a reachable API for entitlement sync.
+
 ### Step 2b.1 — Create subscriptions in App Store Connect
 
-1. Open [App Store Connect](https://appstoreconnect.apple.com) → your DayPilot iOS app.
+1. Open [App Store Connect](https://appstoreconnect.apple.com) → your DayPilot iOS app (create the app record if it does not exist yet — use your real Apple Developer account; this doc does not invent credentials).
 2. **Subscriptions** → create a subscription group (e.g. “DayPilot Plans”).
-3. Add auto-renewable products with these Product IDs (must match the app / API):
-   - `co.daypilot.personal.monthly`
-   - `co.daypilot.business.monthly`
-   - `co.daypilot.enterprise.monthly`
+3. Add auto-renewable products with these **Product IDs** (must match Flutter + Nest defaults):
+
+   | Product ID | Tier | StoreKit display price (local) |
+   |------------|------|--------------------------------|
+   | `co.daypilot.personal.monthly` | Personal | $9.99 / month |
+   | `co.daypilot.business.monthly` | Business | $29.99 / month |
+   | `co.daypilot.enterprise.monthly` | Enterprise | $99.99 / month |
+
 4. Set pricing, localization, and review information for each.
 5. If you use different Product IDs, set matching env on the API:
    `APPLE_PRODUCT_PERSONAL`, `APPLE_PRODUCT_BUSINESS`, `APPLE_PRODUCT_ENTERPRISE`.
 
-### Step 2b.2 — Local StoreKit testing (Xcode)
+### Step 2b.2 — Local StoreKit testing (Xcode) — fastest path
+
+No App Store Connect products or sandbox Apple ID required for this path.
 
 1. Open `daypilot_flutter/ios/Runner.xcworkspace` in Xcode.
 2. **Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration** → select  
-   `Runner/DayPilot.storekit` (in the repo under `daypilot_flutter/ios/Runner/DayPilot.storekit`).
-3. Run on a simulator or device. Purchases use the local StoreKit config (no sandbox Apple ID required).
-4. On the API, set `APPLE_IAP_SKIP_VERIFY=1` (or run non-production) so `POST /billing/apple/confirm` accepts local transactions.
+   `Runner/DayPilot.storekit` (repo path: `daypilot_flutter/ios/Runner/DayPilot.storekit`).
+3. Run on a simulator or device. Purchases use the local StoreKit config.
+4. API must be reachable from the device/simulator:
+   - Local: `DAYPILOT_API_URL` / Flutter env pointing at `http://127.0.0.1:3001` (or your LAN IP).
+   - Set `APPLE_IAP_SKIP_VERIFY=1` on the API (or run with `NODE_ENV` ≠ `production`) so `POST /billing/apple/confirm` accepts local transactions.
+5. In the app: **Profile → Billing** → purchase a plan → confirm tier updates after Nest confirm.
 
-### Step 2b.3 — Flutter / API wiring
+### Step 2b.3 — Flutter / API wiring (already in repo)
 
-- Flutter uses `in_app_purchase` and product IDs from `lib/features/billing/iap_products.dart`.
-- After a successful StoreKit purchase, the app calls `POST /billing/apple/confirm` with `{ productId, transactionId }` (Nest JWT via Supabase exchange).
-- Production: configure App Store Server API keys (`APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`) and turn off `APPLE_IAP_SKIP_VERIFY`. Full JWS verification can be hooked into `BillingService.confirmApplePurchase`.
+- Product IDs: `lib/features/billing/iap_products.dart` (keep in sync with StoreKit + App Store Connect).
+- Purchase flow: `iap_billing_service.dart` → StoreKit → `POST /billing/apple/confirm` with `{ productId, transactionId }` (Nest JWT via Supabase exchange).
+- Nest mapping: `BillingService.confirmApplePurchase` → subscription tier in Prisma.
+- Production verification: set `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY` (App Store Server API key from App Store Connect → Users and Access → Integrations → In-App Purchase) and **unset** `APPLE_IAP_SKIP_VERIFY`. Full JWS verification can be tightened further in `BillingService.confirmApplePurchase`.
 
 ### Step 2b.4 — Sandbox / TestFlight
 
-1. Create a Sandbox Apple ID in App Store Connect → Users and Access → Sandbox.
-2. On a device, sign out of the Media & Purchases account (or use Settings → Developer → Sandbox Account).
-3. Build with a real App Store Connect product and exercise Purchase / Restore on the Billing screen.
+1. Create a **Sandbox** Apple ID in App Store Connect → Users and Access → Sandbox (do not use your real Apple ID).
+2. On a device: Settings → App Store → Sandbox Account (or sign out of Media & Purchases on older iOS).
+3. Ensure App Store Connect products are in a state that allows sandbox purchases ( Cleared for Sale / ready for submit as applicable).
+4. Build a TestFlight or development build **without** the StoreKit Configuration file selected (so the app talks to Sandbox, not the local `.storekit` file).
+5. Exercise Purchase / Restore on the Billing screen; confirm Nest updates the subscription when the API is online.
 
 **Result:** iOS users can buy Personal/Business/Enterprise; entitlements sync to the same subscription model as Stripe web users.
+
+### Stripe Dashboard checklist (web) — when keys are ready
+
+Local/repo code already handles checkout, portal, plans, and Free fallback. Paste these into API env (never commit):
+
+| Env var | Where to get it |
+|---------|-----------------|
+| `STRIPE_SECRET_KEY` | Stripe → Developers → API keys (`sk_test_…` / `sk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe → Developers → Webhooks → endpoint signing secret (`whsec_…`) |
+| `STRIPE_PRICE_PERSONAL` | Product catalog → Price ID (`price_…`) |
+| `STRIPE_PRICE_BUSINESS` | optional |
+| `STRIPE_PRICE_ENTERPRISE` | optional |
+| `FRONTEND_URL` | `https://www.daypilot.co` in prod |
+| `NEXT_PUBLIC_STRIPE_PRICE_ID` | optional single-plan fallback in `apps/web` / Pages vars |
+
+Production webhook endpoint (after API is public): `https://api.daypilot.co/billing/webhook`  
+Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.  
+Local: `stripe listen --forward-to localhost:3001/billing/webhook`.
 
 ---
 

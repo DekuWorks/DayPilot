@@ -1,7 +1,9 @@
 # Build and push API Docker image to GitHub Container Registry (GHCR).
 # Usage: Push to main; image is ghcr.io/OWNER/daypilot-api:latest.
-# Deploy the image to Fly.io, Railway, or any host that runs Docker;
-# run `prisma migrate deploy` before starting the container (see docs/DEPLOYMENT.md).
+#
+# Optional Fly deploy: set repo secret FLY_API_TOKEN (fly tokens create).
+# Requires a paid / unsuspended Fly account — see docs/PRODUCTION_API_SETUP.md.
+# Hosting still needs DNS for api.daypilot.co and secrets on the Fly app.
 
 name: Deploy API (build + push)
 
@@ -12,6 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  FLY_APP: daypilot-api
 
 jobs:
   build-and-push:
@@ -51,3 +54,33 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-fly:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect Fly token
+        id: fly
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -n "$FLY_API_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "FLY_API_TOKEN not set — skipping Fly deploy (image still in GHCR). See docs/PRODUCTION_API_SETUP.md"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.fly.outputs.enabled == 'true'
+
+      - name: Setup flyctl
+        if: steps.fly.outputs.enabled == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        if: steps.fly.outputs.enabled == 'true'
+        working-directory: apps/api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only -a ${{ env.FLY_APP }}

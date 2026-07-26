@@ -161,6 +161,12 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             NavTile(
+              icon: Icons.people_outline_rounded,
+              title: 'Friends',
+              onTap: () => context.push('/friends'),
+            ),
+            const SizedBox(height: 8),
+            NavTile(
               icon: Icons.auto_awesome_rounded,
               title: 'Pilot Brief',
               onTap: () => context.push('/insights/brief'),

@@ -25,6 +25,7 @@ import '../../features/contacts/contacts_screen.dart';
 import '../../features/events/event_create_screen.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../features/events/event_edit_screen.dart';
+import '../../features/friends/friends_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/integrations/integrations_screen.dart';
 import '../../features/insights/daily_brief_screen.dart';
@@ -169,6 +170,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+      GoRoute(
+        path: '/friends',
+        builder: (context, state) => const FriendsScreen(),
       ),
       GoRoute(
         path: '/settings',

@@ -77,17 +77,19 @@ flutter:
     - assets/branding/
 
 flutter_launcher_icons:
-  android: false
+  android: true
   ios: true
   image_path: assets/branding/app_icon.png
   remove_alpha_ios: true
   background_color_ios: "#000000"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/branding/app_icon.png
 
 flutter_native_splash:
   color: "#000000"
   image: assets/branding/splash_logo.png
   ios: true
-  android: false
+  android: true
   fullscreen: true
   ios_content_mode: center
   android_12:
