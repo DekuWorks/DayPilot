@@ -585,7 +585,7 @@ export function HomeDashboard() {
                   color: "var(--projects)",
                 },
                 {
-                  href: "/insights",
+                  href: "/insights#focus-timer",
                   label: "Focus Timer",
                   icon: Timer,
                   color: "var(--calendar-personal)",

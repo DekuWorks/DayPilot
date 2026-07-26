@@ -37,6 +37,13 @@ export default function InsightsPage() {
   const [elapsed, setElapsed] = useState(0);
   const [focusBusy, setFocusBusy] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#focus-timer") return;
+    const el = document.getElementById("focus-timer");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [loading]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -217,7 +224,10 @@ export default function InsightsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div
+        id="focus-timer"
+        className="scroll-mt-24 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             Focus timer

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
+import '../../features/billing/billing_screen.dart';
 import '../../features/booking/public_booking_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/events/event_detail_screen.dart';
@@ -98,6 +99,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: '/billing',
+            builder: (context, state) => const BillingScreen(),
           ),
         ],
       ),

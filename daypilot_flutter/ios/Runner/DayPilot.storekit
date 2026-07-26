@@ -1,0 +1,164 @@
+{
+  "identifier" : "DayPilot",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21480001",
+      "localizations" : [
+        {
+          "description" : "DayPilot paid plans",
+          "displayName" : "DayPilot Plans",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "DayPilot Plans",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "21480011",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Personal plan — full DayPilot for individuals.",
+              "displayName" : "Personal",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "co.daypilot.personal.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Personal Monthly",
+          "subscriptionGroupID" : "21480001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "29.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "21480012",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Business plan — teams and power users.",
+              "displayName" : "Business",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "co.daypilot.business.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Business Monthly",
+          "subscriptionGroupID" : "21480001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "99.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "21480013",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Enterprise plan — advanced controls and scale.",
+              "displayName" : "Enterprise",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "co.daypilot.enterprise.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Enterprise Monthly",
+          "subscriptionGroupID" : "21480001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

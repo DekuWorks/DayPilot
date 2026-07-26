@@ -221,6 +221,50 @@ Redeploy or restart the web app. The Billing page will show an “Upgrade” but
 
 **Result:** Checkout, subscription sync, and (if configured) billing portal work.
 
+The Billing page also loads `GET /billing/plans` from the API (prices from `STRIPE_PRICE_*`). If that catalog is empty, it falls back to `NEXT_PUBLIC_STRIPE_PRICE_ID`. When the billing API is offline, the UI shows the Free plan with a soft notice (not a hard error).
+
+Webhook events handled: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+
+---
+
+## Part 2b: Optional — App Store subscriptions (Flutter / iOS)
+
+Tiers align with web: **Free**, **Personal**, **Business**, **Enterprise**.
+
+### Step 2b.1 — Create subscriptions in App Store Connect
+
+1. Open [App Store Connect](https://appstoreconnect.apple.com) → your DayPilot iOS app.
+2. **Subscriptions** → create a subscription group (e.g. “DayPilot Plans”).
+3. Add auto-renewable products with these Product IDs (must match the app / API):
+   - `co.daypilot.personal.monthly`
+   - `co.daypilot.business.monthly`
+   - `co.daypilot.enterprise.monthly`
+4. Set pricing, localization, and review information for each.
+5. If you use different Product IDs, set matching env on the API:
+   `APPLE_PRODUCT_PERSONAL`, `APPLE_PRODUCT_BUSINESS`, `APPLE_PRODUCT_ENTERPRISE`.
+
+### Step 2b.2 — Local StoreKit testing (Xcode)
+
+1. Open `daypilot_flutter/ios/Runner.xcworkspace` in Xcode.
+2. **Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration** → select  
+   `Runner/DayPilot.storekit` (in the repo under `daypilot_flutter/ios/Runner/DayPilot.storekit`).
+3. Run on a simulator or device. Purchases use the local StoreKit config (no sandbox Apple ID required).
+4. On the API, set `APPLE_IAP_SKIP_VERIFY=1` (or run non-production) so `POST /billing/apple/confirm` accepts local transactions.
+
+### Step 2b.3 — Flutter / API wiring
+
+- Flutter uses `in_app_purchase` and product IDs from `lib/features/billing/iap_products.dart`.
+- After a successful StoreKit purchase, the app calls `POST /billing/apple/confirm` with `{ productId, transactionId }` (Nest JWT via Supabase exchange).
+- Production: configure App Store Server API keys (`APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`) and turn off `APPLE_IAP_SKIP_VERIFY`. Full JWS verification can be hooked into `BillingService.confirmApplePurchase`.
+
+### Step 2b.4 — Sandbox / TestFlight
+
+1. Create a Sandbox Apple ID in App Store Connect → Users and Access → Sandbox.
+2. On a device, sign out of the Media & Purchases account (or use Settings → Developer → Sandbox Account).
+3. Build with a real App Store Connect product and exercise Purchase / Restore on the Billing screen.
+
+**Result:** iOS users can buy Personal/Business/Enterprise; entitlements sync to the same subscription model as Stripe web users.
+
 ---
 
 ## Part 3: Optional — Google Calendar (Integrations)

@@ -1,8 +1,6 @@
 "use client";
 
-"use client";
-
-import type { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -87,6 +85,15 @@ export function AppSidebar() {
   }
 
   const closeMobile = () => setMobileOpen(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen, setMobileOpen]);
 
   const sidebarInner = (
     <div className="flex h-full flex-col">

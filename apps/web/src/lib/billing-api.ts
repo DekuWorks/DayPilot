@@ -8,6 +8,20 @@ export type Subscription = {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
+  /** True when the API has STRIPE_SECRET_KEY configured. */
+  configured?: boolean;
+};
+
+export type BillingPlan = {
+  tier: SubscriptionTier;
+  priceId: string;
+  label: string;
+  interval: "month";
+};
+
+export type BillingPlansResponse = {
+  configured: boolean;
+  plans: BillingPlan[];
 };
 
 export async function getSubscription(): Promise<Subscription> {
@@ -15,6 +29,16 @@ export async function getSubscription(): Promise<Subscription> {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to load subscription");
+  return res.json();
+}
+
+export async function getPlans(): Promise<BillingPlansResponse> {
+  const res = await fetch(`${getApiUrl()}/billing/plans`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    return { configured: false, plans: [] };
+  }
   return res.json();
 }
 

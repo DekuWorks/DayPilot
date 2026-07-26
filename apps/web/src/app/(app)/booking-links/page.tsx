@@ -15,6 +15,7 @@ export default function BookingLinksPage() {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("Book time with me");
   const [creating, setCreating] = useState(false);
+  const slugPlaceholder = "your-slug";
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -32,6 +33,13 @@ export default function BookingLinksPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user?.username) return;
+    setSlug((prev) =>
+      prev || user.username!.toLowerCase().replace(/[^a-z0-9-]/g, "")
+    );
+  }, [user?.username]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -107,8 +115,9 @@ export default function BookingLinksPage() {
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="marcus"
-            className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+            placeholder={slugPlaceholder}
+            aria-label="Booking link slug"
+            className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
           />
           <Button type="submit" disabled={creating}>
             {creating ? "Creating…" : "Create"}

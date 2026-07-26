@@ -32,38 +32,54 @@ export function AppHeader({
   const { user } = useAuth();
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
 
-  const { greeting, dateLabel } = useMemo(() => {
+  const { greeting, shortGreeting, dateLabel, shortDateLabel } = useMemo(() => {
     const now = new Date();
     const name = user?.firstName || "there";
     return {
       greeting: `${greetingForHour(now.getHours())}, ${name}`,
+      shortGreeting: `Hi, ${name}`,
       dateLabel: now.toLocaleDateString(undefined, {
         weekday: "long",
         month: "long",
         day: "numeric",
         year: "numeric",
       }),
+      shortDateLabel: now.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }),
     };
   }, [user?.firstName]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--background-primary)_88%,transparent)] backdrop-blur-md">
-      <div className="flex items-center gap-3 px-4 py-3 md:px-6 md:py-4">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 py-3 sm:px-4 md:px-6 md:py-4">
         <button
           type="button"
-          className="md:hidden rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+          className="md:hidden shrink-0 rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
           aria-label="Open menu"
           onClick={() => setMobileOpen(true)}
         >
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="min-w-0 flex-1 md:max-w-xs lg:max-w-sm">
+        <div className="min-w-0 flex-1 basis-0 md:max-w-xs lg:max-w-sm">
           <h1 className="truncate text-base font-semibold text-[var(--text-primary)] md:text-lg">
-            {title ?? `${greeting}!`}
+            {title ?? (
+              <>
+                <span className="sm:hidden">{shortGreeting}!</span>
+                <span className="hidden sm:inline">{greeting}!</span>
+              </>
+            )}
           </h1>
           <p className="truncate text-xs text-[var(--text-tertiary)] md:text-sm">
-            {subtitle ?? dateLabel}
+            {subtitle ?? (
+              <>
+                <span className="sm:hidden">{shortDateLabel}</span>
+                <span className="hidden sm:inline">{dateLabel}</span>
+              </>
+            )}
           </p>
         </div>
 

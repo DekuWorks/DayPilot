@@ -55,7 +55,134 @@ export class BillingService {
       status: sub.status ?? 'active',
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       stripeCustomerId: sub.stripeCustomerId ?? null,
+      configured: Boolean(this.stripe),
     };
+  }
+
+  /** Public catalog of Stripe prices that are configured in env. */
+  listPlans() {
+    const plans: Array<{
+      tier: SubscriptionTier;
+      priceId: string;
+      label: string;
+      interval: 'month';
+    }> = [];
+    const personal = this.config.get<string>('STRIPE_PRICE_PERSONAL');
+    const business = this.config.get<string>('STRIPE_PRICE_BUSINESS');
+    const enterprise = this.config.get<string>('STRIPE_PRICE_ENTERPRISE');
+    if (personal) {
+      plans.push({
+        tier: 'Personal',
+        priceId: personal,
+        label: 'Personal',
+        interval: 'month',
+      });
+    }
+    if (business) {
+      plans.push({
+        tier: 'Business',
+        priceId: business,
+        label: 'Business',
+        interval: 'month',
+      });
+    }
+    if (enterprise) {
+      plans.push({
+        tier: 'Enterprise',
+        priceId: enterprise,
+        label: 'Enterprise',
+        interval: 'month',
+      });
+    }
+    return {
+      configured: Boolean(this.stripe),
+      plans,
+    };
+  }
+
+  /**
+   * Confirm an App Store / Play Store purchase and map product → tier.
+   * Full App Store Server API verification can be enabled later via
+   * APPLE_IAP_ISSUER_ID / APPLE_IAP_KEY_ID / APPLE_IAP_PRIVATE_KEY.
+   * When APPLE_IAP_SKIP_VERIFY=1 (local/StoreKit testing), we trust the client.
+   */
+  async confirmApplePurchase(
+    userId: string,
+    input: { productId: string; transactionId: string },
+  ) {
+    const tier = this.appleProductIdToTier(input.productId);
+    if (!tier) {
+      throw new BadRequestException(
+        `Unknown App Store product: ${input.productId}`,
+      );
+    }
+    const skip =
+      this.config.get<string>('APPLE_IAP_SKIP_VERIFY') === '1' ||
+      this.config.get<string>('NODE_ENV') !== 'production';
+    if (!skip) {
+      // Production path: require a verified transaction id at minimum.
+      // Hook App Store Server API here when keys are configured.
+      if (!input.transactionId?.trim()) {
+        throw new BadRequestException('Missing transactionId');
+      }
+      const hasAppleKeys =
+        Boolean(this.config.get<string>('APPLE_IAP_ISSUER_ID')) &&
+        Boolean(this.config.get<string>('APPLE_IAP_KEY_ID'));
+      if (!hasAppleKeys) {
+        throw new BadRequestException(
+          'Apple IAP verification is not configured. Set APPLE_IAP_* or APPLE_IAP_SKIP_VERIFY=1 for StoreKit testing.',
+        );
+      }
+    }
+
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const data = {
+      tier,
+      status: 'active' as SubscriptionStatus,
+      // Store Apple transaction id in stripeSubscriptionId slot until a dedicated column exists
+      stripeSubscriptionId: `apple:${input.transactionId}`,
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    };
+    if (existing) {
+      await this.prisma.subscription.update({
+        where: { id: existing.id },
+        data,
+      });
+    } else {
+      await this.prisma.subscription.create({
+        data: { userId, ...data },
+      });
+    }
+    await this.audit.log({
+      action: 'billing.apple_purchase_confirmed',
+      entityType: 'subscription',
+      userId,
+      metadata: {
+        productId: input.productId,
+        transactionId: input.transactionId,
+        tier,
+      },
+    });
+    return this.getSubscription(userId);
+  }
+
+  private appleProductIdToTier(productId: string): SubscriptionTier | null {
+    const personal =
+      this.config.get<string>('APPLE_PRODUCT_PERSONAL') ??
+      'co.daypilot.personal.monthly';
+    const business =
+      this.config.get<string>('APPLE_PRODUCT_BUSINESS') ??
+      'co.daypilot.business.monthly';
+    const enterprise =
+      this.config.get<string>('APPLE_PRODUCT_ENTERPRISE') ??
+      'co.daypilot.enterprise.monthly';
+    if (productId === personal) return 'Personal';
+    if (productId === business) return 'Business';
+    if (productId === enterprise) return 'Enterprise';
+    return null;
   }
 
   private async getOrCreateStripeCustomerInternal(
@@ -197,6 +324,7 @@ export class BillingService {
         }
         break;
       }
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
         const userId = await this.userIdFromStripeCustomer(

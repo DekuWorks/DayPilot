@@ -11,7 +11,7 @@ Overview of what’s **implemented and working** vs what **you must configure** 
 | Area | Status | Notes |
 |------|--------|--------|
 | **Auth** | ✅ | Signup, login, logout, refresh token, JWT, `GET /auth/me`. |
-| **Billing** | ✅ | Stripe: get subscription, create checkout session, billing portal, webhook (checkout/subscription events). |
+| **Billing** | ✅ | Stripe: get subscription, list plans, checkout session, billing portal, webhook (checkout/subscription created/updated/deleted). App Store: `POST /billing/apple/confirm` maps IAP product IDs → tiers (StoreKit testing via `APPLE_IAP_SKIP_VERIFY`). |
 | **Events** | ✅ | CRUD events (create, list, update, delete), JWT-protected. |
 | **AI** | ✅ | `POST /ai/suggest-schedule` (OpenAI or Anthropic or OpenAI-compatible). |
 | **Calendar connections** | ✅ | Google OAuth: connect, disconnect, list calendars, discover. Outlook/Microsoft wired in code. |
@@ -77,7 +77,8 @@ So: **auth, billing, events, AI, calendar connections, real-time, health, metric
 
 **Webhook:**
 
-- In Stripe Dashboard: add endpoint `https://<your-api>/billing/webhook`, events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
+- In Stripe Dashboard: add endpoint `https://<your-api>/billing/webhook`, events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+- App Store (Flutter): create products `co.daypilot.personal.monthly` (etc.), see SETUP_WALKTHROUGH Part 2b; optional `APPLE_PRODUCT_*` / `APPLE_IAP_*` env.
 - Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 - **Important:** Your API must send the **raw body** to the webhook (already done in `main.ts` with `rawBody`).
 

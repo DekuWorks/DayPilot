@@ -11,6 +11,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { ConfirmApplePurchaseDto } from './dto/confirm-apple-purchase.dto';
 
 interface RequestWithRawBody extends Request {
   rawBody?: Buffer;
@@ -19,6 +20,12 @@ interface RequestWithRawBody extends Request {
 @Controller('billing')
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
+
+  /** Catalog of configured Stripe plans (auth optional but kept consistent). */
+  @Get('plans')
+  listPlans() {
+    return this.billingService.listPlans();
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('subscription')
@@ -44,6 +51,15 @@ export class BillingController {
   @Post('portal-session')
   async createPortalSession(@Req() req: { user: { id: string } }) {
     return this.billingService.createPortalSession(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('apple/confirm')
+  async confirmApplePurchase(
+    @Req() req: { user: { id: string } },
+    @Body() dto: ConfirmApplePurchaseDto,
+  ) {
+    return this.billingService.confirmApplePurchase(req.user.id, dto);
   }
 
   @SkipThrottle()
