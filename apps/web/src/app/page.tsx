@@ -1,55 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/Button";
-import { BrandLogo } from "@/components/BrandLogo";
+import { MarketingNav } from "@/components/MarketingNav";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
-      <nav className="section-padding py-4 md:py-6 flex justify-between items-center sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-        <BrandLogo />
-        <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/features"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Features
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/login"
-            className="text-[var(--text-secondary)] hover:text-[var(--brand-500)] font-medium transition-colors text-sm md:text-base"
-          >
-            Sign In
-          </Link>
-          <Link href="/signup" className="inline-block">
-            <Button size="lg">Get Started Free</Button>
-          </Link>
-        </div>
-        <button
-          className="md:hidden p-2 text-[var(--text-primary)]"
-          aria-label="Menu"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-      </nav>
+      <MarketingNav ctaLabel="Get Started Free" />
 
       <section className="container-width section-padding pt-16 md:pt-24 lg:pt-28 pb-10 md:pb-14 text-center">
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
@@ -70,7 +27,7 @@ export default function HomePage() {
                 Get Started Free
               </Button>
             </Link>
-            <Link href="/features" className="w-full sm:w-auto inline-block">
+            <Link href="/dashboard" className="w-full sm:w-auto inline-block">
               <Button
                 variant="outline"
                 size="lg"

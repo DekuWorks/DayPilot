@@ -109,7 +109,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           ).map((t) => ({
             id: `task-${t.id}`,
             label: t.title,
-            href: "/tasks",
+            href: `/tasks/${t.id}`,
             group: "Tasks",
             hint: t.status,
           })),

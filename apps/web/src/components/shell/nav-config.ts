@@ -12,6 +12,7 @@ import {
   Settings,
   Plug,
   CreditCard,
+  Link2,
 } from "lucide-react";
 
 export type NavItem = {
@@ -35,6 +36,7 @@ export const primaryNav: NavItem[] = [
 ];
 
 export const secondaryNav: NavItem[] = [
+  { href: "/booking-links", label: "Booking links", icon: Link2 },
   { href: "/integrations", label: "Integrations", icon: Plug },
   { href: "/billing", label: "Billing", icon: CreditCard },
 ];

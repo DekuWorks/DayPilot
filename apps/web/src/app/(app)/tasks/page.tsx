@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
@@ -358,8 +359,9 @@ export default function TasksPage() {
                   >
                     {task.status === "completed" ? "✓" : ""}
                   </button>
-                  <span
-                    className={`min-w-0 flex-1 text-sm ${
+                  <Link
+                    href={`/tasks/${task.id}`}
+                    className={`min-w-0 flex-1 text-sm hover:underline ${
                       task.status === "completed"
                         ? "line-through text-[var(--text-tertiary)]"
                         : "text-[var(--text-primary)]"
@@ -367,11 +369,11 @@ export default function TasksPage() {
                   >
                     {task.title}
                     {proj && (
-                      <span className="ml-2 text-[10px] text-[var(--text-tertiary)]">
+                      <span className="ml-2 text-[10px] text-[var(--text-tertiary)] no-underline">
                         {proj}
                       </span>
                     )}
-                  </span>
+                  </Link>
                   {kids.length > 0 && (
                     <span className="text-[10px] text-[var(--text-tertiary)]">
                       {kids.filter((s) => s.status === "completed").length}/

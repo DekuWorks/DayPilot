@@ -51,6 +51,10 @@ jobs:
             cp CNAME apps/web/out/CNAME
           fi
           touch apps/web/out/.nojekyll
+          # Ensure SPA-style deep-link fallback for /book/* and /tasks/* is present
+          if [ ! -f apps/web/out/404.html ] && [ -f apps/web/public/404.html ]; then
+            cp apps/web/public/404.html apps/web/out/404.html
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

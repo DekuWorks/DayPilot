@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { AuthLoading } from "@/components/AuthLoading";
 import { useAuth } from "@/providers/AuthProvider";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -15,16 +16,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[var(--text-secondary)]">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
+  if (isLoading || !isAuthenticated) {
+    return <AuthLoading />;
   }
 
   return <>{children}</>;

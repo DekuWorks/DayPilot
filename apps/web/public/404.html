@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DayPilot</title>
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/$/, "") || "/";
+        var book = path.match(/^\/book\/([^/]+)$/);
+        if (book && book[1] !== "_") {
+          location.replace(
+            "/book?slug=" + encodeURIComponent(book[1]) + location.hash
+          );
+          return;
+        }
+        var task = path.match(/^\/tasks\/([^/]+)$/);
+        if (task && task[1] !== "_") {
+          location.replace(
+            "/tasks/_?id=" + encodeURIComponent(task[1]) + location.hash
+          );
+          return;
+        }
+        location.replace("/" + location.search + location.hash);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
