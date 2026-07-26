@@ -117,8 +117,8 @@ function MiniCalendar({ selected }: { selected: Date }) {
         </Link>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-[var(--text-tertiary)]">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-          <div key={d} className="py-1">
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <div key={i} className="py-1">
             {d}
           </div>
         ))}

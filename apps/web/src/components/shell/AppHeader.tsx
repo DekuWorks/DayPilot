@@ -13,6 +13,8 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { NotificationsMenu } from "./NotificationsMenu";
 
 function greetingForHour(hour: number) {
+  // Late night / early morning should not say "Good morning"
+  if (hour < 5) return "Good evening";
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
