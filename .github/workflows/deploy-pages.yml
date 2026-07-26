@@ -1,5 +1,7 @@
 # Build Next.js static export and deploy with GitHub Actions.
-# Repo Settings → Pages: set Source to "GitHub Actions" (not "Deploy from a branch").
+# Repo Settings → Pages: Source MUST be "GitHub Actions".
+# Do NOT use "Deploy from a branch" /docs — that publishes markdown docs without
+# index.html and races this workflow, causing intermittent GitHub Pages 404s.
 name: Deploy to GitHub Pages
 
 on:
@@ -47,6 +49,11 @@ jobs:
 
       - name: Setup Pages output
         run: |
+          if [ ! -f apps/web/out/index.html ]; then
+            echo "::error::Static export missing apps/web/out/index.html — refusing to deploy (would 404 on GitHub Pages)."
+            ls -la apps/web/out || true
+            exit 1
+          fi
           if [ -f CNAME ]; then
             cp CNAME apps/web/out/CNAME
           fi
@@ -55,6 +62,8 @@ jobs:
           if [ ! -f apps/web/out/404.html ] && [ -f apps/web/public/404.html ]; then
             cp apps/web/public/404.html apps/web/out/404.html
           fi
+          echo "Pages artifact ready:"
+          ls -la apps/web/out/index.html apps/web/out/CNAME apps/web/out/.nojekyll apps/web/out/404.html 2>/dev/null || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
