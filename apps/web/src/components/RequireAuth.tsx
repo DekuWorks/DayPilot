@@ -17,7 +17,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
-    return <AuthLoading />;
+    // Lightweight shell placeholder — avoids a blank minute-long hang feel.
+    return <AuthLoading label="Checking session…" />;
   }
 
   if (!isAuthenticated) {

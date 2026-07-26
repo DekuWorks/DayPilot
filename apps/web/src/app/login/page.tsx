@@ -22,20 +22,20 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
+    // Warm the dashboard chunk while the user is on the sign-in screen.
+    router.prefetch("/dashboard");
+  }, [router]);
+
+  useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Only block the form during the initial session check. After a successful
-  // sign-in, keep showing the button loading state until navigation completes
-  // (isAuthenticated alone used to replace the whole form with AuthLoading,
-  // which looked like a hang if redirect was slow).
-  if (isLoading) {
-    return <AuthLoading />;
-  }
-
-  if (isAuthenticated) {
+  // Never replace the form with a full-page spinner during the initial session
+  // check — static export otherwise ships AuthLoading HTML and feels hung.
+  // Only swap to redirect UI once we know the user is already signed in.
+  if (!isLoading && isAuthenticated) {
     return <AuthLoading label="Redirecting…" />;
   }
 
@@ -50,6 +50,7 @@ export default function LoginPage() {
         setMagicSent(true);
         setLoading(false);
       } else {
+        router.prefetch("/dashboard");
         await login(email, password);
         router.replace("/dashboard");
         // Stay in loading until navigation unmounts this page.

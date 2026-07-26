@@ -21,7 +21,8 @@ export function BrandLogo({
       className={`flex items-center gap-2.5 font-bold text-[var(--text-primary)] hover:opacity-90 transition-opacity ${className}`}
     >
       <Image
-        src="/brand/daypilot-logo-mark.png"
+        // SVG mark is ~0.7KB vs 138KB PNG — critical for nav on every page.
+        src="/brand/daypilot-logo-mark.svg"
         alt="DayPilot"
         width={size}
         height={size}

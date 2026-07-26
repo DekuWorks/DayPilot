@@ -9,6 +9,10 @@ const NEST_KEYS = {
   user: "user",
 } as const;
 
+/** Keep Nest bridge snappy — never block UI on a cold/unreachable API. */
+export const NEST_EXCHANGE_TIMEOUT_MS = 2_500;
+export const PROFILE_FETCH_TIMEOUT_MS = 3_000;
+
 export type ProfileRow = {
   email?: string | null;
   name?: string | null;
@@ -57,15 +61,43 @@ export function mapSupabaseUser(
   };
 }
 
-export async function fetchProfile(userId: string) {
+export async function fetchProfile(
+  userId: string,
+  signal?: AbortSignal
+): Promise<ProfileRow | null> {
   const supabase = createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("profiles")
     .select(
       "email, name, display_name, first_name, last_name, username, avatar_url"
     )
-    .eq("id", userId)
-    .maybeSingle();
+    .eq("id", userId);
+
+  if (signal && typeof query.abortSignal === "function") {
+    query = query.abortSignal(signal);
+  }
+
+  const resultPromise = query.maybeSingle();
+
+  if (!signal) {
+    const { data } = await resultPromise;
+    return data as ProfileRow | null;
+  }
+
+  const { data } = await Promise.race([
+    resultPromise,
+    new Promise<never>((_, reject) => {
+      if (signal.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      signal.addEventListener(
+        "abort",
+        () => reject(new DOMException("Aborted", "AbortError")),
+        { once: true }
+      );
+    }),
+  ]);
   return data as ProfileRow | null;
 }
 
@@ -73,11 +105,19 @@ export async function fetchProfile(userId: string) {
 export async function exchangeNestSession(supabaseAccessToken: string) {
   const apiUrl = getApiUrl();
   if (!apiUrl || typeof window === "undefined") return null;
+
+  const controller = new AbortController();
+  const timer = window.setTimeout(
+    () => controller.abort(),
+    NEST_EXCHANGE_TIMEOUT_MS
+  );
+
   try {
     const res = await fetch(`${apiUrl}/auth/supabase-exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accessToken: supabaseAccessToken }),
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {
@@ -90,7 +130,10 @@ export async function exchangeNestSession(supabaseAccessToken: string) {
     localStorage.setItem(NEST_KEYS.user, JSON.stringify(data.user));
     return data;
   } catch {
+    // Unreachable/cold Nest (or localhost IPv6 hang) must never stall auth UI.
     return null;
+  } finally {
+    window.clearTimeout(timer);
   }
 }
 

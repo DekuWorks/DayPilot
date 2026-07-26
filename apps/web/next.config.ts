@@ -15,14 +15,27 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Tree-shake icon/barrel imports so marketing + login don't pull full sets.
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
   turbopack: {
     root: path.join(__dirname, "..", ".."),
   },
 };
 
+const sentryEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN || process.env.NEXT_PUBLIC_SENTRY_DSN
+);
+
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG ?? "",
   project: process.env.SENTRY_PROJECT ?? "",
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: !process.env.CI,
+  silent: true,
+  // Avoid source-map upload work when Sentry isn't configured.
+  widenClientFileUpload: false,
+  sourcemaps: {
+    disable: !sentryEnabled,
+  },
 });

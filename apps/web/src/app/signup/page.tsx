@@ -23,16 +23,17 @@ export default function SignupPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
+    router.prefetch("/dashboard");
+  }, [router]);
+
+  useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
-    return <AuthLoading />;
-  }
-
-  if (isAuthenticated) {
+  // Keep the form visible during the initial session check (static export).
+  if (!isLoading && isAuthenticated) {
     return <AuthLoading label="Redirecting…" />;
   }
 

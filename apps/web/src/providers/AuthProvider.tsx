@@ -13,6 +13,7 @@ import type { Session } from "@supabase/supabase-js";
 import type { User } from "@/lib/auth-api";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
+  PROFILE_FETCH_TIMEOUT_MS,
   clearNestSession,
   exchangeNestSession,
   fetchProfile,
@@ -61,16 +62,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-async function sessionToUser(session: Session): Promise<User> {
-  let profile = null;
-  try {
-    profile = await withTimeout(fetchProfile(session.user.id), 8_000, "Profile fetch");
-  } catch {
-    // Profile is best-effort; auth should still succeed.
-  }
-  return mapSupabaseUser(session.user, profile);
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -78,6 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
   const mountedRef = useRef(true);
+  const enrichGenRef = useRef(0);
+  const appliedAccessTokenRef = useRef<string | null>(null);
 
   const supabase = useMemo(() => {
     if (!isSupabaseConfigured()) return null;
@@ -88,45 +81,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const applySession = useCallback(async (session: Session | null) => {
-    try {
-      if (!session?.user) {
-        clearNestSession();
-        if (mountedRef.current) {
-          setState({ user: null, isLoading: false, isAuthenticated: false });
-        }
-        return;
-      }
+  /** Best-effort profile + Nest JWT — never blocks interactive auth UI. */
+  const enrichSession = useCallback(async (session: Session) => {
+    const gen = ++enrichGenRef.current;
+    const accessToken = session.access_token;
 
-      const user = await sessionToUser(session);
-      // Nest exchange is best-effort; Supabase session is source of truth.
-      try {
-        await withTimeout(
-          exchangeNestSession(session.access_token),
-          8_000,
-          "Session exchange"
-        );
-      } catch {
-        // Ignore — Nest JWT bridge is optional for Supabase-authenticated pages.
-      }
-      if (mountedRef.current) {
-        setState({ user, isLoading: false, isAuthenticated: true });
-      }
-    } catch {
-      if (!mountedRef.current) return;
-      // Prefer a minimal authenticated user over infinite Loading.
-      if (session?.user) {
-        setState({
-          user: mapSupabaseUser(session.user, null),
-          isLoading: false,
-          isAuthenticated: true,
-        });
-        return;
-      }
-      clearNestSession();
-      setState({ user: null, isLoading: false, isAuthenticated: false });
+    const profileController = new AbortController();
+    const profileTimer = window.setTimeout(
+      () => profileController.abort(),
+      PROFILE_FETCH_TIMEOUT_MS
+    );
+
+    const profilePromise = fetchProfile(
+      session.user.id,
+      profileController.signal
+    )
+      .catch(() => null)
+      .finally(() => window.clearTimeout(profileTimer));
+
+    // Nest exchange + profile in parallel; both optional.
+    const [profile] = await Promise.all([
+      profilePromise,
+      exchangeNestSession(accessToken),
+    ]);
+
+    if (!mountedRef.current || gen !== enrichGenRef.current) return;
+    if (appliedAccessTokenRef.current !== accessToken) return;
+
+    if (profile) {
+      setState((prev) => {
+        if (!prev.isAuthenticated || prev.user?.id !== session.user.id) {
+          return prev;
+        }
+        return {
+          ...prev,
+          user: mapSupabaseUser(session.user, profile),
+        };
+      });
     }
   }, []);
+
+  /**
+   * Apply session immediately from JWT/user metadata so login + RequireAuth
+   * unlock without waiting on Nest or profiles.
+   */
+  const applySession = useCallback(
+    async (session: Session | null, opts?: { enrich?: boolean }) => {
+      const enrich = opts?.enrich !== false;
+      try {
+        if (!session?.user) {
+          enrichGenRef.current += 1;
+          appliedAccessTokenRef.current = null;
+          clearNestSession();
+          if (mountedRef.current) {
+            setState({ user: null, isLoading: false, isAuthenticated: false });
+          }
+          return;
+        }
+
+        appliedAccessTokenRef.current = session.access_token;
+        const quickUser = mapSupabaseUser(session.user, null);
+        if (mountedRef.current) {
+          setState({
+            user: quickUser,
+            isLoading: false,
+            isAuthenticated: true,
+          });
+        }
+
+        if (enrich) {
+          void enrichSession(session);
+        }
+      } catch {
+        if (!mountedRef.current) return;
+        if (session?.user) {
+          appliedAccessTokenRef.current = session.access_token;
+          setState({
+            user: mapSupabaseUser(session.user, null),
+            isLoading: false,
+            isAuthenticated: true,
+          });
+          return;
+        }
+        clearNestSession();
+        setState({ user: null, isLoading: false, isAuthenticated: false });
+      }
+    },
+    [enrichSession]
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -138,24 +180,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    let settled = false;
+    const settle = (session: Session | null) => {
+      if (settled) {
+        // Later auth events still apply, but don't re-enter loading.
+        void applySession(session);
+        return;
+      }
+      settled = true;
+      void applySession(session);
+    };
+
     // Supabase holds an auth lock while notifying listeners. Awaiting other
     // Supabase/network work inside onAuthStateChange deadlocks sign-in
     // (signInWithPassword never resolves). Defer async work off that stack.
-    let gotAuthEvent = false;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      gotAuthEvent = true;
-      setTimeout(() => {
-        void applySession(session);
-      }, 0);
+      setTimeout(() => settle(session), 0);
     });
 
+    // Eager getSession so marketing/login unlock without waiting solely on
+    // INITIAL_SESSION delivery (can lag behind first paint on static export).
+    void withTimeout(supabase.auth.getSession(), 4_000, "getSession")
+      .then(({ data }) => {
+        settle(data.session);
+      })
+      .catch(() => {
+        settle(null);
+      });
+
     const safetyTimer = window.setTimeout(() => {
-      if (!gotAuthEvent) {
+      if (!settled) {
+        settled = true;
         setState({ user: null, isLoading: false, isAuthenticated: false });
       }
-    }, 10_000);
+    }, 4_000);
 
     return () => {
       mountedRef.current = false;
@@ -173,8 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error) throw new Error(error.message);
       if (!data.user || !data.session) throw new Error("Login failed");
-      // Apply immediately so callers can navigate after await without racing
-      // the deferred onAuthStateChange handler.
+      // Immediate UI unlock; Nest/profile enrich in background.
       await applySession(data.session);
     },
     [supabase, applySession]
@@ -238,7 +297,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Best-effort profile update (trigger may have already inserted)
+      // Keep username uniqueness check before unlock; do not wait on Nest.
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -274,6 +333,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const logout = useCallback(async () => {
+    enrichGenRef.current += 1;
+    appliedAccessTokenRef.current = null;
     if (supabase) await supabase.auth.signOut();
     clearNestSession();
     setState({ user: null, isLoading: false, isAuthenticated: false });

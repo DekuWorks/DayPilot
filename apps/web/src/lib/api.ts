@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// Prefer 127.0.0.1 — macOS "localhost" can stall ~60s on IPv6 when API is down.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
 
 export function getApiUrl() {
   return API_URL;

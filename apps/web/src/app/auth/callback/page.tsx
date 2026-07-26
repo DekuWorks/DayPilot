@@ -16,13 +16,13 @@ export default function AuthCallbackPage() {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
 
+        let accessToken: string | null = null;
+
         if (code) {
           const { data, error: exchangeError } =
             await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
-          if (data.session) {
-            await exchangeNestSession(data.session.access_token);
-          }
+          accessToken = data.session?.access_token ?? null;
         } else {
           const {
             data: { session },
@@ -30,7 +30,13 @@ export default function AuthCallbackPage() {
           } = await supabase.auth.getSession();
           if (sessionError) throw sessionError;
           if (!session) throw new Error("No session returned from provider");
-          await exchangeNestSession(session.access_token);
+          accessToken = session.access_token;
+        }
+
+        // Nest JWT bridge is optional — never block redirect on cold API /
+        // localhost IPv6 hangs (can take ~60s without AbortSignal).
+        if (accessToken) {
+          void exchangeNestSession(accessToken);
         }
 
         router.replace("/dashboard");

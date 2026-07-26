@@ -49,6 +49,7 @@ export default function HomePage() {
             height={750}
             className="h-auto w-full"
             priority
+            sizes="(max-width: 1024px) 100vw, 1024px"
             unoptimized
           />
         </div>
