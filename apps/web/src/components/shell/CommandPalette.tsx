@@ -42,12 +42,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [active, setActive] = useState(0);
   const [openEpoch, setOpenEpoch] = useState(0);
   const [dynamicItems, setDynamicItems] = useState<PaletteItem[]>([]);
+  const [peopleItems, setPeopleItems] = useState<PaletteItem[]>([]);
 
   useEffect(() => {
     if (!open) return;
     void Promise.resolve().then(() => {
       setQuery("");
       setActive(0);
+      setPeopleItems([]);
       setOpenEpoch((n) => n + 1);
     });
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
@@ -144,18 +146,75 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !isSupabaseConfigured()) return;
+    const q = query.trim();
+    if (q.length < 1) {
+      setPeopleItems([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase.rpc("search_daypilot_users", {
+            search_query: q,
+            result_limit: 8,
+          });
+          if (cancelled || error) {
+            if (!cancelled && error) setPeopleItems([]);
+            return;
+          }
+          const rows =
+            (data as {
+              id: string;
+              username: string | null;
+              display_name: string | null;
+              first_name: string | null;
+              last_name: string | null;
+            }[]) ?? [];
+          setPeopleItems(
+            rows.map((u) => {
+              const name =
+                u.display_name ||
+                [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+                (u.username ? `@${u.username}` : "DayPilot user");
+              return {
+                id: `user-${u.id}`,
+                label: name,
+                href: "/friends",
+                group: "People",
+                hint: u.username ? `@${u.username}` : undefined,
+              };
+            })
+          );
+        } catch {
+          if (!cancelled) setPeopleItems([]);
+        }
+      })();
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, query]);
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const all = [...navActions, ...dynamicItems];
     if (!q) return navActions;
-    return all.filter(
+    const filtered = all.filter(
       (a) =>
         a.label.toLowerCase().includes(q) ||
         a.group.toLowerCase().includes(q) ||
         a.hint?.toLowerCase().includes(q) ||
         a.href.toLowerCase().includes(q)
     );
-  }, [query, dynamicItems]);
+    return [...peopleItems, ...filtered];
+  }, [query, dynamicItems, peopleItems]);
 
   function go(href: string) {
     onClose();
@@ -202,7 +261,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 go(results[active].href);
               }
             }}
-            placeholder="Search pages, events, tasks…"
+            placeholder="Search pages, people, events…"
             className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
           />
           <kbd className="rounded border border-[var(--border-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--text-tertiary)]">

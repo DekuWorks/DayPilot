@@ -9,6 +9,7 @@ import {
   BarChart3,
   Sparkles,
   Contact,
+  UserRound,
   Settings,
   Plug,
   CreditCard,
@@ -32,6 +33,7 @@ export const primaryNav: NavItem[] = [
   { href: "/insights", label: "Insights", icon: BarChart3 },
   { href: "/pilot-brief", label: "Pilot Brief", icon: Sparkles, badge: "AI" },
   { href: "/contacts", label: "Contacts", icon: Contact },
+  { href: "/friends", label: "Friends", icon: UserRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

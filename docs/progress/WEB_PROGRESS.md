@@ -1,6 +1,6 @@
 # Web Progress
 
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-26
 
 | Feature | Status | Owner | Started | Completed | Related files | Tests | Notes | Blockers | Next action |
 |---------|--------|-------|---------|-----------|---------------|-------|-------|----------|-------------|
@@ -17,5 +17,7 @@
 | Command palette ⌘K | [x] | agent | 2026-07-21 | 2026-07-21 | `CommandPalette.tsx` | — | Nav + events/tasks/notes/contacts | — | Deep-link selected item |
 | Insights charts | [x] | agent | 2026-07-21 | 2026-07-21 | `(app)/insights` + focus | — | Weekly stats + focus timer | — | Deeper analytics |
 | Contacts | [x] | agent | 2026-07-21 | 2026-07-21 | contacts table + page | — | CRUD + search | — | Link to meetings |
+| Friends / social | [x] | agent | 2026-07-26 | 2026-07-26 | `friends` page + `friends-supabase` + migration | — | Search users, requests, friends, pin ≤5 favorites | Apply migration | Flutter parity later |
 | Notifications | [x] | agent | 2026-07-21 | 2026-07-21 | `NotificationsMenu` + realtime | — | Meeting/task reminders + live channel | — | Device push |
+| Calendar OAuth sync | [~] | — | — | — | Integrations | — | **Paused** — Nest Google/Outlook sync on hold | Creds | Resume later |
 | Brand asset wiring | [x] | agent | 2026-07-21 | 2026-07-21 | official D mark + `BrandLogo` | — | Transparent PNG across nav/auth/shell | — | OG image polish |
