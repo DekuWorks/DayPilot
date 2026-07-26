@@ -28,8 +28,12 @@ export default function SignupPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || isAuthenticated) {
+  if (isLoading) {
     return <AuthLoading />;
+  }
+
+  if (isAuthenticated) {
+    return <AuthLoading label="Redirecting…" />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,7 +57,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await signup(email, password, trimmedFirst, trimmedLast, handle);
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
       setError(
@@ -61,7 +65,6 @@ export default function SignupPage() {
           ? "An account with this email already exists. Sign in instead."
           : msg,
       );
-    } finally {
       setLoading(false);
     }
   }

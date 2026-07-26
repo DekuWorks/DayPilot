@@ -6,8 +6,10 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
 import type { User } from "@/lib/auth-api";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
@@ -41,12 +43,41 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out`));
+    }, ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
+async function sessionToUser(session: Session): Promise<User> {
+  let profile = null;
+  try {
+    profile = await withTimeout(fetchProfile(session.user.id), 8_000, "Profile fetch");
+  } catch {
+    // Profile is best-effort; auth should still succeed.
+  }
+  return mapSupabaseUser(session.user, profile);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     isLoading: true,
     isAuthenticated: false,
   });
+  const mountedRef = useRef(true);
 
   const supabase = useMemo(() => {
     if (!isSupabaseConfigured()) return null;
@@ -57,50 +88,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const hydrateFromSession = useCallback(async () => {
-    if (!supabase) {
-      setState({ user: null, isLoading: false, isAuthenticated: false });
-      return;
-    }
+  const applySession = useCallback(async (session: Session | null) => {
+    try {
+      if (!session?.user) {
+        clearNestSession();
+        if (mountedRef.current) {
+          setState({ user: null, isLoading: false, isAuthenticated: false });
+        }
+        return;
+      }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.user) {
+      const user = await sessionToUser(session);
+      // Nest exchange is best-effort; Supabase session is source of truth.
+      try {
+        await withTimeout(
+          exchangeNestSession(session.access_token),
+          8_000,
+          "Session exchange"
+        );
+      } catch {
+        // Ignore — Nest JWT bridge is optional for Supabase-authenticated pages.
+      }
+      if (mountedRef.current) {
+        setState({ user, isLoading: false, isAuthenticated: true });
+      }
+    } catch {
+      if (!mountedRef.current) return;
+      // Prefer a minimal authenticated user over infinite Loading.
+      if (session?.user) {
+        setState({
+          user: mapSupabaseUser(session.user, null),
+          isLoading: false,
+          isAuthenticated: true,
+        });
+        return;
+      }
       clearNestSession();
       setState({ user: null, isLoading: false, isAuthenticated: false });
-      return;
     }
-
-    const profile = await fetchProfile(session.user.id);
-    const user = mapSupabaseUser(session.user, profile);
-    await exchangeNestSession(session.access_token);
-    setState({ user, isLoading: false, isAuthenticated: true });
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(() => hydrateFromSession());
-    if (!supabase) return;
+    mountedRef.current = true;
 
+    if (!supabase) {
+      setState({ user: null, isLoading: false, isAuthenticated: false });
+      return () => {
+        mountedRef.current = false;
+      };
+    }
+
+    // Supabase holds an auth lock while notifying listeners. Awaiting other
+    // Supabase/network work inside onAuthStateChange deadlocks sign-in
+    // (signInWithPassword never resolves). Defer async work off that stack.
+    let gotAuthEvent = false;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      void (async () => {
-        if (!session?.user) {
-          clearNestSession();
-          setState({ user: null, isLoading: false, isAuthenticated: false });
-          return;
-        }
-        const profile = await fetchProfile(session.user.id);
-        const user = mapSupabaseUser(session.user, profile);
-        await exchangeNestSession(session.access_token);
-        setState({ user, isLoading: false, isAuthenticated: true });
-      })();
+      gotAuthEvent = true;
+      setTimeout(() => {
+        void applySession(session);
+      }, 0);
     });
 
-    return () => subscription.unsubscribe();
-  }, [supabase, hydrateFromSession]);
+    const safetyTimer = window.setTimeout(() => {
+      if (!gotAuthEvent) {
+        setState({ user: null, isLoading: false, isAuthenticated: false });
+      }
+    }, 10_000);
+
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
+  }, [supabase, applySession]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -111,12 +173,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error) throw new Error(error.message);
       if (!data.user || !data.session) throw new Error("Login failed");
-      const profile = await fetchProfile(data.user.id);
-      const user = mapSupabaseUser(data.user, profile);
-      await exchangeNestSession(data.session.access_token);
-      setState({ user, isLoading: false, isAuthenticated: true });
+      // Apply immediately so callers can navigate after await without racing
+      // the deferred onAuthStateChange handler.
+      await applySession(data.session);
     },
-    [supabase]
+    [supabase, applySession]
   );
 
   const loginWithMagicLink = useCallback(
@@ -192,12 +253,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("That username is already taken");
       }
 
-      const profile = await fetchProfile(data.user.id);
-      const user = mapSupabaseUser(data.user, profile);
-      await exchangeNestSession(data.session.access_token);
-      setState({ user, isLoading: false, isAuthenticated: true });
+      await applySession(data.session);
     },
-    [supabase]
+    [supabase, applySession]
   );
 
   const loginWithGoogle = useCallback(async () => {
@@ -225,11 +283,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) throw new Error("Supabase is not configured");
     const { data, error } = await supabase.auth.refreshSession();
     if (error || !data.session?.user) throw new Error("Refresh failed");
-    const profile = await fetchProfile(data.session.user.id);
-    const user = mapSupabaseUser(data.session.user, profile);
-    await exchangeNestSession(data.session.access_token);
-    setState({ user, isLoading: false, isAuthenticated: true });
-  }, [supabase]);
+    await applySession(data.session);
+  }, [supabase, applySession]);
 
   const value: AuthContextValue = {
     ...state,

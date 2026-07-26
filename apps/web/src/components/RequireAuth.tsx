@@ -16,8 +16,13 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return <AuthLoading />;
+  }
+
+  if (!isAuthenticated) {
+    // Brief pause while replace('/login') runs — never a permanent spinner.
+    return <AuthLoading label="Redirecting to sign in…" />;
   }
 
   return <>{children}</>;

@@ -27,8 +27,16 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || isAuthenticated) {
+  // Only block the form during the initial session check. After a successful
+  // sign-in, keep showing the button loading state until navigation completes
+  // (isAuthenticated alone used to replace the whole form with AuthLoading,
+  // which looked like a hang if redirect was slow).
+  if (isLoading) {
     return <AuthLoading />;
+  }
+
+  if (isAuthenticated) {
+    return <AuthLoading label="Redirecting…" />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -40,9 +48,11 @@ export default function LoginPage() {
       if (mode === "magic") {
         await loginWithMagicLink(email);
         setMagicSent(true);
+        setLoading(false);
       } else {
         await login(email, password);
-        router.push("/dashboard");
+        router.replace("/dashboard");
+        // Stay in loading until navigation unmounts this page.
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
@@ -53,7 +63,6 @@ export default function LoginPage() {
       } else {
         setError(msg);
       }
-    } finally {
       setLoading(false);
     }
   }
