@@ -14,6 +14,7 @@ import '../../features/events/event_create_screen.dart';
 import '../../features/integrations/integrations_screen.dart';
 import '../../features/insights/daily_brief_screen.dart';
 import '../../features/insights/insights_screen.dart';
+import '../../features/onboarding/welcome_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../providers/bootstrap_providers.dart';
 
@@ -23,7 +24,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ref.watch(supabaseAuthListenableProvider);
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/dashboard',
+    initialLocation: '/welcome',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
@@ -33,7 +34,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final session = Supabase.instance.client.auth.currentSession;
       final isPublic = _isPublicRoute(loc);
       if (session == null && !isPublic) {
-        return '/login';
+        return '/welcome';
       }
       if (session != null && _isAuthOnlyRoute(loc)) {
         return '/dashboard';
@@ -41,6 +42,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -107,9 +112,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
 bool _isPublicRoute(String location) {
   if (location.startsWith('/book/')) return true;
-  return const {'/login', '/signup', '/forgot-password'}.contains(location);
+  return const {
+    '/welcome',
+    '/login',
+    '/signup',
+    '/forgot-password',
+  }.contains(location);
 }
 
 bool _isAuthOnlyRoute(String location) {
-  return const {'/login', '/signup', '/forgot-password'}.contains(location);
+  return const {
+    '/welcome',
+    '/login',
+    '/signup',
+    '/forgot-password',
+  }.contains(location);
 }

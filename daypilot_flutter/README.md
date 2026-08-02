@@ -1,13 +1,13 @@
 # DayPilot Flutter (Milestone 1)
 
-Mobile client for DayPilot. **Option C:** Supabase auth + Nest API for events — see **`../docs/OPTION_C_SETUP.md`** (full walkthrough) and **`../docs/SUPABASE_API_ALIGNMENT.md`** (architecture).
+Mobile client for DayPilot. **iOS is the current target.** **Option C:** Supabase auth + Nest API for events — see **`../docs/OPTION_C_SETUP.md`** (full walkthrough) and **`../docs/SUPABASE_API_ALIGNMENT.md`** (architecture).
 
 After sign-in, the app opens a **single dashboard** (`/dashboard`) with the **cream + teal** DayPilot theme (aligned with the Next.js marketing site) and the calendar as the main surface. **Insights** is available from the header icon (not a separate tab bar). Old **`/calendar`** URLs redirect to **`/dashboard`**.
 
 ## Prerequisites
 
 - Flutter stable (SDK `^3.11` per `pubspec.yaml`)
-- Xcode (iOS **15.0+** deployment target — required by Firebase 12.x), Android Studio / SDK (Android)
+- Xcode (iOS **15.0+** deployment target — required by Firebase 12.x)
 - A Supabase project with tables the app expects (`events`, `calendars`, etc.—align with your Supabase schema)
 
 ## Configuration
@@ -22,12 +22,12 @@ Secrets are **not** committed. Recommended **local workflow**:
    # Edit dart-define.json: SUPABASE_URL, SUPABASE_ANON_KEY (anon or publishable), DAYPILOT_API_URL
    ```
 
-   `dart-define.json` is **gitignored**. Use **`http://localhost:3001`** for iOS Simulator / Chrome; **`http://10.0.2.2:3001`** for Android emulator; your LAN IP for a physical device.
+   `dart-define.json` is **gitignored**. Use **`http://localhost:3001`** for iOS Simulator; use your LAN IP for a physical device.
 
 2. **Run** from the repo root:
 
    ```bash
-   pnpm flutter:run          # default device
+   pnpm flutter:run          # selected iOS simulator/device
    pnpm flutter:run:web      # Chrome
    ```
 
@@ -83,7 +83,7 @@ Prefer **`--dart-define-from-file`** so secrets stay in local `dart-define.json`
 flutter pub get
 flutter analyze
 flutter test
-flutter build apk   # or ios, appbundle
+flutter build ios --simulator
 ```
 
 ## What’s next
