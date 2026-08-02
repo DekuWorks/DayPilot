@@ -83,7 +83,7 @@ Prefer **`--dart-define-from-file`** so secrets stay in local `dart-define.json`
 flutter pub get
 flutter analyze
 flutter test
-flutter build ios --simulator
+flutter run -d "<iOS Simulator name>"
 ```
 
 ## What’s next
