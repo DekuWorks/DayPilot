@@ -7,45 +7,41 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
+RUN apk add --no-cache openssl libc6-compat
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-# Copy workspace config, API app, and Prisma
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/api ./apps/api/
 COPY prisma ./prisma/
 
-# Install deps (API + Prisma at root)
 RUN pnpm install --frozen-lockfile
 
-# Generate Prisma client and build API
 RUN pnpm exec prisma generate --schema=prisma/schema.prisma
 RUN pnpm run build --filter @daypilot/api
 
 # --- Run stage ---
+# Fresh npm install of production deps (avoids broken pnpm symlink trees in Alpine)
 FROM node:20-alpine AS runner
+
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Copy built API and runtime deps
 COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/prisma ./prisma/
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/apps/api/src/generated ./src/generated
-
-# Prisma client lives in apps/api/src/generated; runtime needs it
-RUN ls -la src/generated 2>/dev/null || true
-
-# Start script: run migrations, then start API
-COPY apps/api/scripts/start.sh /app/start.sh
+COPY --from=builder /app/apps/api/scripts/start.sh ./start.sh
 RUN chmod +x /app/start.sh
+
+# Install only production dependencies into a flat node_modules
+RUN npm install --omit=dev --no-package-lock \
+  && npx prisma generate --schema=prisma/schema.prisma
 
 EXPOSE 3001
 

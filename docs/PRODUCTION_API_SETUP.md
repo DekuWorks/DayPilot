@@ -4,16 +4,26 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 ---
 
-## Current production status (2026-07-26)
+## Current production status (2026-08-05)
 
 | Check | Result |
 |-------|--------|
-| `https://api.daypilot.co` DNS | **Missing** — no A/AAAA/CNAME at GoDaddy (`ns01/ns02.domaincontrol.com`) |
-| Fly app `daypilot-api` | Exists but **suspended** (`trial has ended`) |
-| Fly app `daypilot-db` | Exists but **suspended** |
-| Fly public IPv4 (when live) | `66.241.124.30` |
-| GH Actions `deploy-api.yml` | Builds + pushes `ghcr.io/<owner>/daypilot-api:latest` only (does not start a host by itself) |
-| GitHub Actions var `NEXT_PUBLIC_API_URL` | **Not set** — Pages build defaults to `https://api.daypilot.co` |
+| Active API host | **Railway** — `https://api-production-6c2c.up.railway.app` (project `daypilot-api`) |
+| `https://api.daypilot.co` DNS | **Pending at GoDaddy** — Railway custom domain registered. Add records below; until then use the Railway URL. |
+
+### GoDaddy DNS for `api.daypilot.co` (Marcus must click)
+
+At [GoDaddy DNS](https://dcc.godaddy.com/) for `daypilot.co` (`ns01/ns02.domaincontrol.com`):
+
+| Type | Name | Value |
+|------|------|-------|
+| CNAME | `api` | `66xfwrf9.up.railway.app` |
+| TXT | `_railway-verify.api` | `railway-verify=481b069546054133d88169eda43e0efae0b6d02e781f0565418cbce2443c1bfe` |
+
+Then verify: `curl -sS https://api.daypilot.co/health` → `{"status":"ok",...}`.
+| Fly app `daypilot-api` | Suspended / unused (`FLY_API_TOKEN` not set in GitHub; trial previously ended) |
+| GH Actions `deploy-api.yml` | Builds + pushes `ghcr.io/<owner>/daypilot-api:latest`; Fly deploy skipped without `FLY_API_TOKEN` |
+| GitHub Actions var `NEXT_PUBLIC_API_URL` | Set to Railway URL until `api.daypilot.co` resolves |
 
 ### Unblock checklist (Fly — preferred if you keep this host)
 

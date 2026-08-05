@@ -1,0 +1,11 @@
+# Railway config for the Nest API (project: daypilot-api).
+# Root Dockerfile path so monorepo context works.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
