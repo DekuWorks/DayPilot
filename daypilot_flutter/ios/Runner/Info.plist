@@ -4,6 +4,9 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<!-- Standard HTTPS / OS crypto only — answers TestFlight export compliance -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
