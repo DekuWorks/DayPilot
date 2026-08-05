@@ -96,6 +96,7 @@ model CalendarConnection {
   expiresAt     DateTime?        @map("expires_at")
   calendarId    String?          @map("calendar_id")   // provider's primary calendar id
   syncedAt      DateTime?        @map("synced_at")
+  validatedAt   DateTime?        @map("validated_at") // last successful token check
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 

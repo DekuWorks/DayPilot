@@ -1,7 +1,8 @@
-# Google sign-in (Supabase Auth)
+# Google sign-in (Supabase Auth / SSO)
 
-DayPilot web login/signup already call `signInWithOAuth({ provider: "google" })`.
-Google stays disabled until you add OAuth credentials in **Supabase Auth**.
+DayPilot web + Flutter call `signInWithOAuth({ provider: "google" })`.
+If you see `Unsupported provider: provider is not enabled`, Google is still off
+in Supabase Auth.
 
 ## 1. Create a Google OAuth client
 
@@ -23,27 +24,49 @@ Google stays disabled until you add OAuth credentials in **Supabase Auth**.
      - `https://wmkytyrcxbzjqiykbauw.supabase.co/auth/v1/callback`
 5. Copy **Client ID** and **Client secret**.
 
-## 2. Enable in Supabase
+## 2. Enable in Supabase (pick one)
+
+### Option A — script (recommended)
+
+```bash
+./scripts/configure-google-auth.sh \
+  --client-id 'YOUR_ID.apps.googleusercontent.com' \
+  --client-secret 'YOUR_SECRET'
+```
+
+This sets env vars and runs `supabase config push` with Google enabled.
+Add `--also-calendar` to write the same values into repo-root `.env` for Nest calendar sync (separate redirect URI still required for calendar — see calendar doc).
+
+### Option B — Dashboard
 
 1. Open [Supabase → Authentication → Providers → Google](https://supabase.com/dashboard/project/wmkytyrcxbzjqiykbauw/auth/providers).
 2. Enable Google.
 3. Paste Client ID + Client secret.
 4. Save.
 
-Confirm **Authentication → URL Configuration**:
+### URL configuration (already pushed for DayPilot)
 
 | Setting | Value |
 |---------|-------|
 | Site URL | `https://www.daypilot.co` |
-| Redirect URLs | `https://www.daypilot.co/**`, `https://daypilot.co/**`, `http://localhost:3000/**` |
+| Redirect URLs | `https://www.daypilot.co/**`, `https://daypilot.co/**`, `http://localhost:3000/**`, `com.daypilot.daypilot://login-callback/` |
 
-App callback path: `/auth/callback` (already implemented).
+- Web callback: `/auth/callback`
+- Mobile deep link: `com.daypilot.daypilot://login-callback/` (iOS URL scheme + Android intent-filter)
 
 ## 3. Verify
+
+**Web**
 
 1. Open `https://www.daypilot.co/login`.
 2. Click **Continue with Google**.
 3. Complete consent → land on `/dashboard`.
+
+**iOS simulator / device**
+
+1. Open DayPilot → **Continue with Google**.
+2. Complete consent in Safari.
+3. App should reopen via the deep link and land on Home.
 
 ## Calendar sync vs Sign-in
 

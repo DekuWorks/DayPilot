@@ -1,24 +1,62 @@
 # DayPilot Supabase project (remote: wmkytyrcxbzjqiykbauw)
 # Apply migrations: supabase link && supabase db push
+# Push Auth/API settings: supabase config push --project-ref wmkytyrcxbzjqiykbauw --yes
 
 project_id = "wmkytyrcxbzjqiykbauw"
 
 [db]
 major_version = 17
 
-# Production Auth URL config is managed remotely (Supabase Dashboard / Management API).
-# Keep local defaults aligned for documentation and local `supabase start`.
 [auth]
-site_url = "http://localhost:3000"
+enabled = true
+# Production site URL (restore after accidental localhost push)
+site_url = "https://www.daypilot.co"
 additional_redirect_urls = [
+  "https://www.daypilot.co/**",
+  "https://daypilot.co/**",
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
   "http://localhost:3000/auth/callback",
   "http://127.0.0.1:3000/auth/callback",
   "https://www.daypilot.co/auth/callback",
   "https://daypilot.co/auth/callback",
+  # Flutter iOS / Android OAuth deep link (PKCE)
+  "com.daypilot.daypilot://login-callback/",
+  "com.daypilot.daypilot://login-callback",
 ]
 enable_signup = true
 
 [auth.email]
 enable_signup = true
-# Production currently requires email confirmation (mailer_autoconfirm = false).
+# Production currently requires email confirmation
 enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = false
+max_frequency = "1m0s"
+otp_length = 8
+otp_expiry = 3600
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+
+# Google social login (SSO for web + mobile).
+# Set SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID / SECRET in the environment
+# before `supabase config push`, or run scripts/configure-google-auth.sh
+# (Dashboard: Authentication → Providers → Google).
+# Keep enabled=false until secrets are present, then:
+#   export SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=...
+#   export SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
+#   # flip enabled to true below and run: ./scripts/configure-google-auth.sh
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false

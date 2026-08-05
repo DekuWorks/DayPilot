@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/daypilot_env.dart';
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/services/realtime_service.dart';
 import 'day_view.dart';
 import 'month_view.dart';
@@ -59,24 +60,27 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Material(
-          color: scheme.surface.withValues(alpha: 0.92),
+          color: DayPilotColors.backgroundPrimary,
           child: TabBar(
             controller: _tabs,
             labelStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
+            unselectedLabelStyle:
+                Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
             tabs: const [
-              Tab(text: 'Month'),
-              Tab(text: 'Week'),
               Tab(text: 'Day'),
+              Tab(text: 'Week'),
+              Tab(text: 'Month'),
             ],
           ),
         ),
-        if (_tabs.index == 0)
+        if (_tabs.index == 2)
           _MonthNav(
             month: _visibleMonth,
             onChanged: (m) => setState(() => _visibleMonth = m),
@@ -114,6 +118,8 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
           child: TabBarView(
             controller: _tabs,
             children: [
+              DayCalendarView(focusDay: _focusDay),
+              WeekCalendarView(focusDay: _focusDay),
               MonthCalendarView(
                 visibleMonth: _visibleMonth,
                 onDayTap: (d) {
@@ -121,11 +127,9 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
                     _focusDay = DateTime(d.year, d.month, d.day);
                     _visibleMonth = DateTime(d.year, d.month, 1);
                   });
-                  _tabs.animateTo(2);
+                  _tabs.animateTo(0);
                 },
               ),
-              WeekCalendarView(focusDay: _focusDay),
-              DayCalendarView(focusDay: _focusDay),
             ],
           ),
         ),

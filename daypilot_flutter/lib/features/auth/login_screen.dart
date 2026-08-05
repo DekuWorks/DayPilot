@@ -82,7 +82,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Center(
                   child: BrandLockup(markSize: 88, fontSize: 30),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 10),
+                Text(
+                  'Plan. Pilot. Perform.',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: DayPilotColors.brand500,
+                        fontWeight: FontWeight.w700,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                const _FeatureRow(
+                  icon: Icons.calendar_month_outlined,
+                  label: 'Connected Calendars',
+                ),
+                const _FeatureRow(
+                  icon: Icons.auto_awesome_outlined,
+                  label: 'AI Scheduling',
+                ),
+                const _FeatureRow(
+                  icon: Icons.check_circle_outline,
+                  label: 'Tasks & Reminders',
+                ),
+                const _FeatureRow(
+                  icon: Icons.insights_outlined,
+                  label: 'Insights & Analytics',
+                ),
+                const SizedBox(height: 24),
                 Text(
                   'Sign in',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -247,6 +273,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: DayPilotColors.brand500),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: DayPilotColors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

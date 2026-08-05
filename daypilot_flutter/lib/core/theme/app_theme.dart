@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// DayPilot brand tokens — dark UI + electric green (aligned with web tokens.css).
+/// DayPilot brand tokens — pure black + neon green (mockup UI/UX).
 abstract final class DayPilotColors {
-  static const Color brand400 = Color(0xFF8CFF3F);
-  static const Color brand500 = Color(0xFF42E85F);
+  static const Color brand400 = Color(0xFF6CFF4A);
+  static const Color brand500 = Color(0xFF39FF14);
   static const Color brand600 = Color(0xFF16B947);
 
-  static const Color backgroundPrimary = Color(0xFF0A0B0D);
-  static const Color backgroundSecondary = Color(0xFF101215);
-  static const Color surfacePrimary = Color(0xFF14161A);
-  static const Color surfaceSecondary = Color(0xFF1A1D23);
-  static const Color borderSubtle = Color(0xFF2A2F38);
-  static const Color borderStrong = Color(0xFF3D4450);
+  static const Color backgroundPrimary = Color(0xFF000000);
+  static const Color backgroundSecondary = Color(0xFF0A0A0A);
+  static const Color surfacePrimary = Color(0xFF1A1A1A);
+  static const Color surfaceSecondary = Color(0xFF222222);
+  static const Color borderSubtle = Color(0xFF2A2A2A);
+  static const Color borderStrong = Color(0xFF3D3D3D);
 
-  static const Color textPrimary = Color(0xFFF4F5F7);
+  static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFF9AA3B2);
   static const Color textTertiary = Color(0xFF6B7380);
-  static const Color textInverse = Color(0xFF0A0B0D);
+  static const Color textInverse = Color(0xFF000000);
 
   static const Color meetings = Color(0xFF3B82F6);
   static const Color projects = Color(0xFFA855F7);
   static const Color focus = Color(0xFF22D3EE);
   static const Color warning = Color(0xFFF5A524);
-  static const Color error = Color(0xFFF04438);
+  static const Color error = Color(0xFFFF4B4B);
+  static const Color nowLine = Color(0xFFFF4B4B);
 
   /// Primary brand gradient (logo / CTAs)
   static const LinearGradient brandGradient = LinearGradient(
@@ -32,7 +33,7 @@ abstract final class DayPilotColors {
     end: Alignment.bottomCenter,
   );
 
-  // Legacy aliases (remove after full screen rebrand)
+  // Legacy aliases
   static const Color ink = textPrimary;
   static const Color teal = brand500;
   static const Color gold = brand400;
@@ -43,7 +44,7 @@ abstract final class DayPilotColors {
 }
 
 abstract final class AppTheme {
-  /// Primary DayPilot experience (dark + electric green).
+  /// Primary DayPilot experience (black + neon green).
   static ThemeData dark() {
     final scheme = ColorScheme.dark(
       primary: DayPilotColors.brand500,
@@ -76,7 +77,7 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        backgroundColor: DayPilotColors.backgroundPrimary.withValues(alpha: 0.92),
+        backgroundColor: DayPilotColors.backgroundPrimary,
         foregroundColor: DayPilotColors.textPrimary,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: GoogleFonts.inter(
@@ -89,7 +90,7 @@ abstract final class AppTheme {
         elevation: 0,
         color: DayPilotColors.surfacePrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: DayPilotColors.borderSubtle),
         ),
       ),
@@ -110,17 +111,18 @@ abstract final class AppTheme {
         ),
         labelStyle: const TextStyle(color: DayPilotColors.textSecondary),
         floatingLabelStyle: const TextStyle(color: DayPilotColors.brand500),
+        hintStyle: const TextStyle(color: DayPilotColors.textTertiary),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           foregroundColor: DayPilotColors.textInverse,
           backgroundColor: DayPilotColors.brand500,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          minimumSize: const Size(44, 44),
+          minimumSize: const Size(44, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -128,9 +130,9 @@ abstract final class AppTheme {
           foregroundColor: DayPilotColors.brand500,
           side: const BorderSide(color: DayPilotColors.brand500, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          minimumSize: const Size(44, 44),
+          minimumSize: const Size(44, 48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
@@ -139,26 +141,30 @@ abstract final class AppTheme {
         labelColor: DayPilotColors.brand500,
         unselectedLabelColor: DayPilotColors.textSecondary,
         indicatorColor: DayPilotColors.brand500,
+        dividerColor: Colors.transparent,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: DayPilotColors.surfacePrimary,
-        indicatorColor: DayPilotColors.brand500.withValues(alpha: 0.2),
+        backgroundColor: DayPilotColors.backgroundPrimary,
+        elevation: 0,
+        height: 68,
+        indicatorColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected
                 ? DayPilotColors.brand500
-                : DayPilotColors.textSecondary,
+                : DayPilotColors.textTertiary,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
+            size: 24,
             color: selected
                 ? DayPilotColors.brand500
-                : DayPilotColors.textSecondary,
+                : DayPilotColors.textTertiary,
           );
         }),
       ),
@@ -167,6 +173,10 @@ abstract final class AppTheme {
         backgroundColor: DayPilotColors.surfaceSecondary,
         contentTextStyle: const TextStyle(color: DayPilotColors.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: DayPilotColors.borderSubtle,
+        thickness: 1,
       ),
     );
   }
@@ -211,7 +221,7 @@ abstract final class AppTheme {
           backgroundColor: DayPilotColors.brand600,
           minimumSize: const Size(44, 44),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),

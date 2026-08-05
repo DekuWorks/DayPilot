@@ -19,6 +19,7 @@ import {
   Plug,
   CreditCard,
   Link2,
+  RefreshCw,
 } from "lucide-react";
 
 export type NavItem = {
@@ -39,6 +40,7 @@ export const primaryNav: NavItem[] = [
   { href: "/pilot-brief", label: "Pilot Brief", icon: Sparkles, badge: "AI" },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/friends", label: "Friends", icon: UserRound },
+  { href: "/sync", label: "Sync", icon: RefreshCw },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

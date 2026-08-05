@@ -88,9 +88,16 @@ export default function IntegrationsPage() {
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Connected calendars</h1>
-      <p className="text-[var(--text-secondary)] mb-6">
+      <p className="text-[var(--text-secondary)] mb-2">
         Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.
         Edits and deletes in DayPilot sync back to Google and Outlook.
+      </p>
+      <p className="text-sm text-[var(--text-secondary)] mb-6">
+        For live status and token validation, open{" "}
+        <Link href="/sync" className="text-[var(--brand-500)] font-medium hover:underline">
+          Sync
+        </Link>
+        .
       </p>
       <div className="mb-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4 text-sm text-[var(--text-secondary)] space-y-2">
         <p className="font-medium text-[var(--text-primary)]">Setup checklist</p>
@@ -154,6 +161,11 @@ export default function IntegrationsPage() {
                 {c.syncedAt && (
                   <span className="text-xs text-[var(--text-secondary)]">
                     Synced {new Date(c.syncedAt).toLocaleString()}
+                  </span>
+                )}
+                {c.status && (
+                  <span className="text-xs text-[var(--text-secondary)] capitalize">
+                    · {c.status.replace("_", " ")}
                   </span>
                 )}
                 <Button

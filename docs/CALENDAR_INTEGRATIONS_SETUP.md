@@ -73,9 +73,9 @@ Also add those URIs in Google Cloud / Azure app settings.
 
 ### Connect in DayPilot
 
-1. Sign in on web (`/integrations`) or mobile (link icon → Connected calendars).
+1. Sign in on web (`/sync` or `/integrations`) or mobile (Profile → **Sync** / Connected calendars).
 2. Click **Connect** on Google Calendar.
-3. Approve OAuth; you are redirected back with events syncing automatically.
+3. Approve OAuth; you are redirected to **Sync** with events syncing automatically. Use **Validate** to confirm the token is still good.
 
 ---
 
@@ -121,7 +121,7 @@ Live updates: after sync/disconnect, connected clients receive `calendar:synced`
 | “Google Calendar is not configured” | Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and restart API |
 | OAuth redirect mismatch | Redirect URI in Google/Azure must match `API_URL` callback exactly |
 | Outlook edit fails with 403 | Disconnect Outlook, reconnect (needs `Calendars.ReadWrite`) |
-| Events don’t appear after connect | Check API logs; run **Sync now** on Integrations |
+| Events don’t appear after connect | Check API logs; run **Sync now** on Sync (`/sync`) |
 | Mobile connect completes in browser but app empty | Return to app (connections refresh on resume) or tap **Sync now** |
 
 ## 6. Apple / iCloud

@@ -72,12 +72,29 @@ class AuthRepository {
   }
 
   /// Google OAuth — opens browser; returns via deep link.
-  Future<bool> signInWithGoogle() {
-    return _client.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: 'com.daypilot.daypilot://login-callback/',
-      authScreenLaunchMode: LaunchMode.externalApplication,
-    );
+  ///
+  /// Requires Google enabled in Supabase Auth (see docs/GOOGLE_AUTH_SETUP.md).
+  Future<bool> signInWithGoogle() async {
+    try {
+      return await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.daypilot.daypilot://login-callback/',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('provider is not enabled') ||
+          msg.contains('unsupported provider')) {
+        throw AuthException(
+          'Google sign-in is not enabled yet. '
+          'Add a Google OAuth client in Supabase Auth → Providers → Google '
+          '(see docs/GOOGLE_AUTH_SETUP.md), then try again.',
+          statusCode: e.statusCode,
+          code: e.code,
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<void> signOut() async {

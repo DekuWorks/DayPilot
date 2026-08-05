@@ -285,6 +285,15 @@ class _ConnectionTile extends StatelessWidget {
                 color: DayPilotColors.bodyMuted,
               ),
             ),
+            Text(
+              connection.status.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: connection.status == ConnectionValidationStatus.valid
+                    ? DayPilotColors.brand500
+                    : DayPilotColors.bodyMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             if (connection.syncedAt != null)
               Text(
                 'Synced ${MaterialLocalizations.of(context).formatShortDate(connection.syncedAt!.toLocal())}',

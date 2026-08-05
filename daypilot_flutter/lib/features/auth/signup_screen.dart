@@ -50,6 +50,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Future<void> _googleSignIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,6 +111,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Sign up'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _googleSignIn,
+              icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
+              label: const Text('Continue with Google'),
             ),
             TextButton(
               onPressed: () => context.go('/login'),

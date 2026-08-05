@@ -36,7 +36,7 @@ export class CalendarConnectionsController {
     const frontend =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     if (!code || !state) {
-      res.redirect(`${frontend}/integrations?error=missing_params`);
+      res.redirect(`${frontend}/sync?error=missing_params`);
       return;
     }
     try {
@@ -47,7 +47,7 @@ export class CalendarConnectionsController {
       );
       res.redirect(redirectUrl);
     } catch {
-      res.redirect(`${frontend}/integrations?error=google_callback`);
+      res.redirect(`${frontend}/sync?error=google_callback`);
     }
   }
 
@@ -60,7 +60,7 @@ export class CalendarConnectionsController {
     const frontend =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
     if (!code || !state) {
-      res.redirect(`${frontend}/integrations?error=missing_params`);
+      res.redirect(`${frontend}/sync?error=missing_params`);
       return;
     }
     try {
@@ -71,7 +71,7 @@ export class CalendarConnectionsController {
       );
       res.redirect(redirectUrl);
     } catch {
-      res.redirect(`${frontend}/integrations?error=outlook_callback`);
+      res.redirect(`${frontend}/sync?error=outlook_callback`);
     }
   }
 
@@ -101,5 +101,14 @@ export class CalendarConnectionsController {
   @Get(':id/sync')
   async sync(@Req() req: { user: { id: string } }, @Param('id') id: string) {
     return this.calendarConnections.syncConnectionById(req.user.id, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/validate')
+  async validate(
+    @Req() req: { user: { id: string } },
+    @Param('id') id: string,
+  ) {
+    return this.calendarConnections.validateConnection(req.user.id, id);
   }
 }

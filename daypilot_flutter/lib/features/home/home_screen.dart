@@ -7,9 +7,9 @@ import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/gradient_brand_title.dart';
 import '../../domain/models/event_record.dart';
 import '../calendar/calendar_error_view.dart';
+import '../tasks/tasks_screen.dart';
 
 final _homeEventsProvider =
     FutureProvider.autoDispose<List<EventRecord>>((ref) {
@@ -34,7 +34,22 @@ final _homeProfileProvider =
       .maybeSingle();
 });
 
-/// Home tab — greeting, week strip, today's schedule, new event CTA.
+final _homeUpcomingTasksProvider =
+    FutureProvider.autoDispose<List<TaskRow>>((ref) async {
+  final tasks = await ref.watch(tasksListProvider.future);
+  final now = DateTime.now();
+  final dayStart = DateTime(now.year, now.month, now.day);
+  return tasks
+      .where((t) => !t.isDone && t.status != 'cancelled')
+      .where((t) {
+        if (t.dueAt == null) return true;
+        return !t.dueAt!.isBefore(dayStart);
+      })
+      .take(3)
+      .toList();
+});
+
+/// Home tab — greeting, week strip, today's schedule, new event CTA (mockup).
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -45,25 +60,41 @@ class HomeScreen extends ConsumerWidget {
     return 'Good evening';
   }
 
+  Color _accentFor(int index) {
+    const accents = [
+      DayPilotColors.brand500,
+      DayPilotColors.meetings,
+      DayPilotColors.projects,
+      DayPilotColors.warning,
+      DayPilotColors.focus,
+    ];
+    return accents[index % accents.length];
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(_homeProfileProvider);
     final events = ref.watch(_homeEventsProvider);
+    final upcoming = ref.watch(_homeUpcomingTasksProvider);
+    final user = ref.watch(supabaseClientProvider).auth.currentUser;
     final firstName = profile.maybeWhen(
       data: (p) {
         final f = (p?['first_name'] as String?)?.trim();
         if (f != null && f.isNotEmpty) return f;
         final d = (p?['display_name'] as String?)?.trim();
         if (d != null && d.isNotEmpty) return d.split(' ').first;
-        final email = p?['email'] as String? ??
-            ref.read(supabaseClientProvider).auth.currentUser?.email;
+        final email = p?['email'] as String? ?? user?.email;
         return email?.split('@').first ?? 'there';
       },
       orElse: () => 'there',
     );
+    final initials = firstName.isNotEmpty
+        ? firstName.substring(0, 1).toUpperCase()
+        : 'D';
 
     final today = DateTime.now();
-    final weekStart = today.subtract(Duration(days: today.weekday % 7));
+    // Mon-start week strip like the mockup
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
     return Scaffold(
       backgroundColor: DayPilotColors.backgroundPrimary,
@@ -74,24 +105,37 @@ class HomeScreen extends ConsumerWidget {
             ref.read(calendarDataVersionProvider.notifier).bump();
             ref.invalidate(_homeEventsProvider);
             ref.invalidate(_homeProfileProvider);
+            ref.invalidate(_homeUpcomingTasksProvider);
+            ref.invalidate(tasksListProvider);
           },
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               Row(
                 children: [
-                  Image.asset(
-                    'assets/branding/logo_mark.png',
-                    width: 36,
-                    height: 36,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(child: GradientBrandTitle(fontSize: 22)),
-                  IconButton(
-                    tooltip: 'Search',
-                    onPressed: () => context.push('/search'),
-                    icon: const Icon(Icons.search_rounded),
-                    color: DayPilotColors.textSecondary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_greeting()}, $firstName 👋',
+                          style:
+                              Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: DayPilotColors.textPrimary,
+                                    letterSpacing: -0.3,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat('EEEE, MMMM d').format(today),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: DayPilotColors.textSecondary,
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Notifications',
@@ -99,36 +143,32 @@ class HomeScreen extends ConsumerWidget {
                     icon: const Icon(Icons.notifications_outlined),
                     color: DayPilotColors.textSecondary,
                   ),
-                  IconButton(
-                    tooltip: 'Pilot Brief',
-                    onPressed: () => context.push('/insights/brief'),
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    color: DayPilotColors.brand500,
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => context.go('/profile'),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                          DayPilotColors.brand500.withValues(alpha: 0.2),
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          color: DayPilotColors.brand500,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Text(
-                '${_greeting()}, $firstName',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: DayPilotColors.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat('EEEE, MMMM d').format(today),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: DayPilotColors.textSecondary,
-                    ),
-              ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
               SizedBox(
-                height: 72,
+                height: 78,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: 7,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
                   itemBuilder: (context, i) {
                     final day = weekStart.add(Duration(days: i));
                     final isToday = day.year == today.year &&
@@ -136,42 +176,47 @@ class HomeScreen extends ConsumerWidget {
                         day.day == today.day;
                     return InkWell(
                       onTap: () => context.go('/calendar'),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        width: 52,
-                        decoration: BoxDecoration(
-                          color: isToday
-                              ? DayPilotColors.brand500
-                              : DayPilotColors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isToday
-                                ? DayPilotColors.brand500
-                                : DayPilotColors.borderSubtle,
-                          ),
-                        ),
+                      borderRadius: BorderRadius.circular(40),
+                      child: SizedBox(
+                        width: 44,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               DateFormat('E').format(day).substring(0, 1),
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: isToday
-                                    ? DayPilotColors.textInverse
+                                    ? DayPilotColors.brand500
                                     : DayPilotColors.textTertiary,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${day.day}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: isToday
-                                    ? DayPilotColors.textInverse
-                                    : DayPilotColors.textPrimary,
+                                    ? DayPilotColors.brand500
+                                    : Colors.transparent,
+                                border: isToday
+                                    ? null
+                                    : Border.all(
+                                        color: DayPilotColors.borderSubtle,
+                                      ),
+                              ),
+                              child: Text(
+                                '${day.day}',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: isToday
+                                      ? DayPilotColors.textInverse
+                                      : DayPilotColors.textPrimary,
+                                ),
                               ),
                             ),
                           ],
@@ -193,7 +238,10 @@ class HomeScreen extends ConsumerWidget {
                   const Spacer(),
                   TextButton(
                     onPressed: () => context.go('/calendar'),
-                    child: const Text('See all'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: DayPilotColors.brand500,
+                    ),
+                    child: const Text('View all'),
                   ),
                 ],
               ),
@@ -213,7 +261,7 @@ class HomeScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: DayPilotColors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: DayPilotColors.borderSubtle),
                       ),
                       child: Text(
@@ -226,53 +274,79 @@ class HomeScreen extends ConsumerWidget {
                   }
                   return Column(
                     children: [
-                      for (final e in list) ...[
-                        _EventCard(event: e),
+                      for (var i = 0; i < list.length; i++) ...[
+                        _EventCard(
+                          event: list[i],
+                          accent: _accentFor(i),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/events/new'),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('+ New Event'),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Text(
+                    'Upcoming',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.go('/tasks'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: DayPilotColors.brand500,
+                    ),
+                    child: const Text('View all'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              upcoming.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (tasks) {
+                  if (tasks.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: DayPilotColors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: DayPilotColors.borderSubtle),
+                      ),
+                      child: const Text(
+                        'No upcoming tasks.',
+                        style: TextStyle(color: DayPilotColors.textSecondary),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: [
+                      for (final t in tasks) ...[
+                        _UpcomingTaskCard(task: t),
                         const SizedBox(height: 8),
                       ],
                     ],
                   );
                 },
               ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: () => context.push('/events/new'),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('New Event'),
-              ),
               const SizedBox(height: 16),
-              Text(
-                'Workspace',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.sticky_note_2_outlined, size: 18),
-                    label: const Text('Notes'),
-                    onPressed: () => context.push('/notes'),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.folder_outlined, size: 18),
-                    label: const Text('Projects'),
-                    onPressed: () => context.push('/projects'),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.videocam_outlined, size: 18),
-                    label: const Text('Meetings'),
-                    onPressed: () => context.push('/meetings'),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.contacts_outlined, size: 18),
-                    label: const Text('Contacts'),
-                    onPressed: () => context.push('/contacts'),
-                  ),
-                ],
+              OutlinedButton.icon(
+                onPressed: () => context.push('/insights/brief'),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                label: const Text('Open Pilot Brief'),
               ),
             ],
           ),
@@ -283,9 +357,22 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event});
+  const _EventCard({required this.event, required this.accent});
 
   final EventRecord event;
+  final Color accent;
+
+  IconData _sourceIcon() {
+    final loc = (event.location ?? '').toLowerCase();
+    final title = event.title.toLowerCase();
+    if (loc.contains('zoom') || title.contains('zoom')) {
+      return Icons.videocam_rounded;
+    }
+    if (loc.contains('meet') || title.contains('meet')) {
+      return Icons.video_call_rounded;
+    }
+    return Icons.event_rounded;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -293,30 +380,39 @@ class _EventCard extends StatelessWidget {
     final end = DateFormat.jm().format(event.endsAt);
     return InkWell(
       onTap: () => context.push('/events/${event.id}'),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           color: DayPilotColors.surfacePrimary,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: DayPilotColors.borderSubtle),
         ),
         child: Row(
           children: [
             Container(
               width: 4,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: DayPilotColors.brand500,
+              height: 76,
+              decoration: BoxDecoration(
+                color: accent,
                 borderRadius:
-                    BorderRadius.horizontal(left: Radius.circular(12)),
+                    const BorderRadius.horizontal(left: Radius.circular(14)),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      '$time – $end',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       event.title,
                       maxLines: 1,
@@ -324,14 +420,7 @@ class _EventCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: DayPilotColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$time – $end',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: DayPilotColors.textSecondary,
+                        fontSize: 16,
                       ),
                     ),
                     if ((event.location ?? '').isNotEmpty) ...[
@@ -350,11 +439,86 @@ class _EventCard extends StatelessWidget {
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
+            Padding(
+              padding: const EdgeInsets.only(right: 14),
               child: Icon(
-                Icons.chevron_right_rounded,
+                _sourceIcon(),
+                size: 20,
                 color: DayPilotColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UpcomingTaskCard extends StatelessWidget {
+  const _UpcomingTaskCard({required this.task});
+
+  final TaskRow task;
+
+  String _dueLabel() {
+    if (task.dueAt == null) return 'Anytime';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(task.dueAt!.year, task.dueAt!.month, task.dueAt!.day);
+    final diff = due.difference(today).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    return DateFormat.MMMd().format(task.dueAt!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = _dueLabel() == 'Today';
+    return InkWell(
+      onTap: () => context.push('/tasks/${task.id}'),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: DayPilotColors.surfacePrimary,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: DayPilotColors.borderSubtle),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.circle_outlined,
+              size: 22,
+              color: DayPilotColors.textTertiary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                task.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: DayPilotColors.textPrimary,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isToday
+                    ? DayPilotColors.brand500.withValues(alpha: 0.15)
+                    : DayPilotColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _dueLabel(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isToday
+                      ? DayPilotColors.brand500
+                      : DayPilotColors.textSecondary,
+                ),
               ),
             ),
           ],

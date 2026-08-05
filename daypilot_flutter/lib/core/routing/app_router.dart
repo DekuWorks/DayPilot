@@ -38,6 +38,7 @@ import '../../features/projects/projects_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/sync/sync_screen.dart';
 import '../../features/tasks/task_detail_screen.dart';
 import '../../features/tasks/tasks_screen.dart';
 import '../providers/bootstrap_providers.dart';
@@ -198,6 +199,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/integrations',
         builder: (context, state) => const IntegrationsScreen(),
+      ),
+      GoRoute(
+        path: '/sync',
+        builder: (context, state) => const SyncScreen(),
       ),
       GoRoute(
         path: '/insights/brief',

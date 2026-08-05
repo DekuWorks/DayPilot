@@ -190,40 +190,38 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8 max-w-2xl space-y-3">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-          Connected accounts
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Google sign-in and Google Calendar sync need OAuth credentials from
-          Google Cloud. Sign-in is configured in Supabase Auth; calendar sync
-          uses the Nest API.
+      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8 max-w-2xl space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            Sync
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Calendar connection status, last sync, and token validation for
+            Google, Outlook, and Apple.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="/sync"
+            className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium bg-[var(--brand-500)] text-[var(--text-inverse)] hover:opacity-90"
+          >
+            Open Sync
+          </a>
+          <a
+            href="/integrations"
+            className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]"
+          >
+            Integrations setup
+          </a>
+        </div>
+        <p className="text-xs text-[var(--text-tertiary)]">
+          Sign-in with Google is separate (Supabase Auth). Calendar sync uses the
+          Nest API — see{" "}
+          <code className="bg-[var(--surface-secondary)] px-1 rounded">
+            docs/CALENDAR_INTEGRATIONS_SETUP.md
+          </code>
+          .
         </p>
-        <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
-          <li>
-            <span className="font-medium text-[var(--text-primary)]">
-              Sign in with Google
-            </span>
-            {" — "}
-            enable the Google provider in Supabase Auth (see{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">
-              docs/GOOGLE_AUTH_SETUP.md
-            </code>
-            ).
-          </li>
-          <li>
-            <span className="font-medium text-[var(--text-primary)]">
-              Google Calendar
-            </span>
-            {" — "}
-            set <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">GOOGLE_CLIENT_ID</code> /{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">SECRET</code> on the API, then connect from{" "}
-            <a href="/integrations" className="text-[var(--brand-500)] hover:underline">
-              Integrations
-            </a>
-            .
-          </li>
-        </ul>
       </div>
     </div>
   );

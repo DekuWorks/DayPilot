@@ -13,7 +13,7 @@ class AppShell extends StatelessWidget {
     (icon: Icons.home_outlined, selected: Icons.home_rounded, label: 'Home'),
     (
       icon: Icons.calendar_today_outlined,
-      selected: Icons.calendar_today_rounded,
+      selected: Icons.calendar_month_rounded,
       label: 'Calendar'
     ),
     (
@@ -22,8 +22,8 @@ class AppShell extends StatelessWidget {
       label: 'Tasks'
     ),
     (
-      icon: Icons.insights_outlined,
-      selected: Icons.insights_rounded,
+      icon: Icons.bar_chart_outlined,
+      selected: Icons.bar_chart_rounded,
       label: 'Insights'
     ),
     (
@@ -38,22 +38,30 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: DayPilotColors.backgroundPrimary,
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        destinations: [
-          for (final d in _destinations)
-            NavigationDestination(
-              icon: Icon(d.icon),
-              selectedIcon: Icon(d.selected),
-              label: d.label,
-            ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: DayPilotColors.backgroundPrimary,
+          border: Border(
+            top: BorderSide(color: DayPilotColors.borderSubtle, width: 1),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: (index) {
+            navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            );
+          },
+          destinations: [
+            for (final d in _destinations)
+              NavigationDestination(
+                icon: Icon(d.icon),
+                selectedIcon: Icon(d.selected),
+                label: d.label,
+              ),
+          ],
+        ),
       ),
     );
   }

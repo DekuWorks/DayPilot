@@ -31,16 +31,52 @@ export class CalendarConnectionsService {
         providerType: true,
         email: true,
         syncedAt: true,
+        validatedAt: true,
+        expiresAt: true,
+        refreshToken: true,
+        accessToken: true,
         createdAt: true,
       },
     });
-    return connections.map((c) => ({
+    return connections.map((c) => this.toConnectionDto(c));
+  }
+
+  /** Public shape for Sync / Integrations UIs (never exposes tokens). */
+  private toConnectionDto(c: {
+    id: string;
+    providerType: CalendarProvider;
+    email: string;
+    syncedAt: Date | null;
+    validatedAt: Date | null;
+    expiresAt: Date | null;
+    refreshToken: string | null;
+    accessToken: string;
+    createdAt: Date;
+  }) {
+    const status = this.computeValidationStatus(c);
+    return {
       id: c.id,
       provider: c.providerType,
       email: c.email,
       syncedAt: c.syncedAt?.toISOString() ?? null,
+      validatedAt: c.validatedAt?.toISOString() ?? null,
+      expiresAt: c.expiresAt?.toISOString() ?? null,
       connectedAt: c.createdAt.toISOString(),
-    }));
+      status,
+      connected: true,
+    };
+  }
+
+  private computeValidationStatus(c: {
+    accessToken: string;
+    refreshToken: string | null;
+    expiresAt: Date | null;
+  }): 'valid' | 'expired' | 'needs_reconnect' | 'unknown' {
+    if (!c.accessToken) return 'needs_reconnect';
+    if (c.expiresAt == null) return 'unknown';
+    if (c.expiresAt.getTime() > Date.now()) return 'valid';
+    if (c.refreshToken) return 'expired';
+    return 'needs_reconnect';
   }
 
   getConnectUrl(
@@ -77,7 +113,7 @@ export class CalendarConnectionsService {
 
     if (provider === 'apple') {
       // Apple: CalDAV or Sign in with Apple + CalDAV. Placeholder – link to docs or same-origin setup.
-      const redirectUri = `${frontendUrl}/integrations?connected=apple&setup=1`;
+      const redirectUri = `${frontendUrl}/sync?connected=apple&setup=1`;
       return { redirectUrl: redirectUri };
     }
 
@@ -135,16 +171,18 @@ export class CalendarConnectionsService {
           accessToken: tokens.access_token!,
           refreshToken: tokens.refresh_token ?? null,
           expiresAt,
+          validatedAt: new Date(),
         },
         update: {
           email,
           accessToken: tokens.access_token!,
           refreshToken: tokens.refresh_token ?? undefined,
           expiresAt,
+          validatedAt: new Date(),
         },
       });
       await this.syncConnection(userId, 'google');
-      return { redirectUrl: `${frontendUrl}/integrations?connected=google` };
+      return { redirectUrl: `${frontendUrl}/sync?connected=google` };
     }
 
     if (provider === 'outlook') {
@@ -191,19 +229,21 @@ export class CalendarConnectionsService {
           accessToken,
           refreshToken: refreshToken ?? null,
           expiresAt,
+          validatedAt: new Date(),
         },
         update: {
           email,
           accessToken,
           refreshToken: refreshToken ?? undefined,
           expiresAt,
+          validatedAt: new Date(),
         },
       });
       await this.syncConnection(userId, 'outlook');
-      return { redirectUrl: `${frontendUrl}/integrations?connected=outlook` };
+      return { redirectUrl: `${frontendUrl}/sync?connected=outlook` };
     }
 
-    return { redirectUrl: `${frontendUrl}/integrations` };
+    return { redirectUrl: `${frontendUrl}/sync` };
   }
 
   async disconnect(userId: string, connectionId: string) {
@@ -249,12 +289,109 @@ export class CalendarConnectionsService {
     }
     // apple: CalDAV sync can be added later
 
+    const syncedAt = new Date();
     await this.prisma.calendarConnection.update({
       where: { id: conn.id },
-      data: { syncedAt: new Date() },
+      data: { syncedAt, validatedAt: syncedAt },
     });
     this.eventEmitter.emit('calendar.synced', { userId });
     return { ok: true };
+  }
+
+  /**
+   * Live token check for Sync UI — refreshes if needed and pings the provider.
+   */
+  async validateConnection(userId: string, connectionId: string) {
+    const conn = await this.prisma.calendarConnection.findFirst({
+      where: { id: connectionId, userId },
+    });
+    if (!conn) throw new NotFoundException('Connection not found');
+
+    const now = new Date();
+    try {
+      if (conn.providerType === 'google') {
+        await this.pingGoogle(conn);
+      } else if (conn.providerType === 'outlook') {
+        await this.pingOutlook(conn);
+      } else {
+        // Apple / placeholder — no live validate yet
+        await this.prisma.calendarConnection.update({
+          where: { id: conn.id },
+          data: { validatedAt: now },
+        });
+        return {
+          ok: true,
+          valid: true,
+          status: 'unknown' as const,
+          validatedAt: now.toISOString(),
+          message: 'Apple Calendar validation is not available yet',
+        };
+      }
+
+      await this.prisma.calendarConnection.update({
+        where: { id: conn.id },
+        data: { validatedAt: now },
+      });
+
+      const fresh = await this.prisma.calendarConnection.findUniqueOrThrow({
+        where: { id: conn.id },
+      });
+      return {
+        ok: true,
+        valid: true,
+        status: this.computeValidationStatus(fresh),
+        validatedAt: now.toISOString(),
+        expiresAt: fresh.expiresAt?.toISOString() ?? null,
+      };
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Token validation failed';
+      return {
+        ok: false,
+        valid: false,
+        status: 'needs_reconnect' as const,
+        validatedAt: null,
+        error: message,
+      };
+    }
+  }
+
+  private async pingGoogle(conn: {
+    id: string;
+    accessToken: string;
+    refreshToken: string | null;
+    expiresAt: Date | null;
+  }) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Google Calendar is not configured');
+    }
+    const accessToken = await this.ensureGoogleAccessToken(conn);
+    const oauth2 = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      this.googleRedirectUri(),
+    );
+    oauth2.setCredentials({
+      access_token: accessToken,
+      refresh_token: conn.refreshToken ?? undefined,
+    });
+    const oauth2Client = google.oauth2({ version: 'v2', auth: oauth2 });
+    await oauth2Client.userinfo.get();
+  }
+
+  private async pingOutlook(conn: {
+    id: string;
+    accessToken: string;
+    refreshToken: string | null;
+    expiresAt: Date | null;
+  }) {
+    const accessToken = await this.ensureOutlookAccessToken(conn);
+    const client = Client.init({
+      authProvider: () => Promise.resolve(accessToken),
+    });
+    await client.api('/me').get();
   }
 
   private googleRedirectUri(): string {
