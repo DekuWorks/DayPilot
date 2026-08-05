@@ -8,6 +8,7 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
+import '../../data/services/device_calendar_import_service.dart';
 import '../integrations/integrations_screen.dart';
 
 const _providers = <({
@@ -32,7 +33,7 @@ const _providers = <({
     id: 'apple',
     name: 'Apple / iCloud Calendar',
     description:
-        'CalDAV with Apple ID + app-specific password. Sign in with Apple cannot grant calendar access.',
+        'Continue with Apple, then a one-time app-specific password — or Import from iPhone below (no password).',
     calendarReady: true,
   ),
 ];
@@ -71,7 +72,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
 
   Future<void> _connect(String provider) async {
     if (provider == 'apple') {
-      await _connectAppleCalDav();
+      await _continueWithApple();
       return;
     }
     setState(() {
@@ -102,27 +103,35 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     }
   }
 
-  Future<void> _linkAppleSso() async {
-    setState(() {
-      _error = null;
-      _actionId = 'apple-sso';
-    });
-    try {
-      await ref.read(authRepositoryProvider).signInWithApple();
-      if (mounted) {
+  /// Step 1: Sign in with Apple (if needed). Step 2: app-specific password.
+  Future<void> _continueWithApple() async {
+    final auth = ref.read(authRepositoryProvider);
+    if (!auth.hasAppleIdentity) {
+      setState(() {
+        _error = null;
+        _actionId = 'apple';
+      });
+      try {
+        await auth.signInWithApple();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Complete Sign in with Apple, then return here to connect iCloud Calendar with an app-specific password.',
+              'Apple linked. Next: enter your app-specific password '
+              '(or use Import from iPhone below).',
             ),
           ),
         );
+      } catch (e) {
+        if (mounted) setState(() => _error = e.toString());
+        if (mounted) setState(() => _actionId = null);
+        return;
+      } finally {
+        if (mounted) setState(() => _actionId = null);
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _actionId = null);
     }
+    if (!mounted) return;
+    await _connectAppleCalDav();
   }
 
   Future<void> _connectAppleCalDav() async {
@@ -133,17 +142,17 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Connect iCloud Calendar'),
+        title: const Text('Step 2 — App-specific password'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Create an app-specific password at appleid.apple.com '
-                '(Sign-In and Security → App-Specific Passwords). '
-                '2FA required. Gmail Apple IDs work. Spaces are stripped. '
-                'This is not Sign in with Apple.',
+                'Not your Apple ID login password. Create one at '
+                'appleid.apple.com → Sign-In and Security → '
+                'App-Specific Passwords (2FA required). Spaces are stripped.\n\n'
+                'Prefer no password? Cancel and tap Import from iPhone.',
                 style: TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 12),
@@ -214,6 +223,56 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
           const SnackBar(
             content: Text(
               'iCloud Calendar connected. Events will appear on Calendar.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _actionId = null);
+    }
+  }
+
+  Future<void> _importFromDevice() async {
+    if (!DeviceCalendarImportService.isSupported) {
+      setState(
+        () => _error =
+            'Device calendar import is only available on iPhone / Android.',
+      );
+      return;
+    }
+    setState(() {
+      _error = null;
+      _actionId = 'device-import';
+    });
+    try {
+      final service = DeviceCalendarImportService();
+      final events = await service.loadEvents();
+      if (events.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No events found in the next ~60 days on this device.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      final result =
+          await ref.read(calendarConnectionsRepositoryProvider).importDeviceEvents(
+                events: events.map((e) => e.toJson()).toList(),
+              );
+      ref.invalidate(calendarConnectionsProvider);
+      ref.read(calendarDataVersionProvider.notifier).bump();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Imported ${result.imported} events from this device. '
+              'Open Calendar to see them.',
             ),
           ),
         );
@@ -346,12 +405,14 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
               ),
             ),
             const SizedBox(height: 16),
-            _AppleAuthCard(
-              linked: ref.read(authRepositoryProvider).hasAppleIdentity,
-              busy: _actionId != null,
-              linking: _actionId == 'apple-sso',
-              onLinkApple: _linkAppleSso,
-            ),
+            if (DeviceCalendarImportService.isSupported) ...[
+              _DeviceImportCard(
+                busy: _actionId != null,
+                importing: _actionId == 'device-import',
+                onImport: _importFromDevice,
+              ),
+              const SizedBox(height: 12),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -445,23 +506,20 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 }
 
-class _AppleAuthCard extends StatelessWidget {
-  const _AppleAuthCard({
-    required this.linked,
+class _DeviceImportCard extends StatelessWidget {
+  const _DeviceImportCard({
     required this.busy,
-    required this.linking,
-    required this.onLinkApple,
+    required this.importing,
+    required this.onImport,
   });
 
-  final bool linked;
   final bool busy;
-  final bool linking;
-  final VoidCallback onLinkApple;
+  final bool importing;
+  final VoidCallback onImport;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: DayPilotColors.surfacePrimary,
@@ -472,7 +530,7 @@ class _AppleAuthCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Apple Sign-In (account)',
+            'Import from iPhone',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,
@@ -481,50 +539,18 @@ class _AppleAuthCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Account SSO. Linking can prefill your Apple ID for CalDAV — '
-            'an app-specific password is still required for iCloud Calendar.',
+            'Uses EventKit — reads calendars already on this phone '
+            '(including iCloud). No app-specific password. '
+            'Allow Calendars when prompted.',
             style: TextStyle(
               color: DayPilotColors.textSecondary,
               fontSize: 13,
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Sign in with Apple',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: DayPilotColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (linked)
-                const Text(
-                  'Linked',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: DayPilotColors.brand500,
-                  ),
-                )
-              else
-                OutlinedButton(
-                  onPressed: busy ? null : onLinkApple,
-                  child: Text(linking ? 'Opening…' : 'Sign in with Apple'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            linked
-                ? 'Linked to this DayPilot account.'
-                : 'Not linked — tap Sign in with Apple, then Connect iCloud below.',
-            style: const TextStyle(
-              color: DayPilotColors.textSecondary,
-              fontSize: 13,
-            ),
+          FilledButton(
+            onPressed: busy ? null : onImport,
+            child: Text(importing ? 'Importing…' : 'Import from iPhone'),
           ),
         ],
       ),
@@ -666,10 +692,10 @@ class _SyncProviderCard extends StatelessWidget {
               onPressed: busy ? null : onConnect,
               child: Text(
                 connecting
-                    ? (name.contains('iCloud') ? 'Connecting…' : 'Opening…')
+                    ? (name.contains('iCloud') ? 'Continuing…' : 'Opening…')
                     : calendarReady
                         ? (name.contains('iCloud')
-                            ? 'Connect iCloud'
+                            ? 'Continue with Apple'
                             : 'Connect')
                         : 'Calendar connect (coming soon)',
               ),

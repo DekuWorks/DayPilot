@@ -84,5 +84,12 @@
 				</array>
 			</dict>
 		</array>
+		<!-- EventKit — Import from iPhone calendars (incl. iCloud on device) -->
+		<key>NSCalendarsUsageDescription</key>
+		<string>DayPilot imports events from your device calendars into your unified schedule.</string>
+		<key>NSCalendarsFullAccessUsageDescription</key>
+		<string>DayPilot imports events from your device calendars into your unified schedule.</string>
+		<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+		<string>DayPilot may write calendar events you create in the app.</string>
 	</dict>
 </plist>

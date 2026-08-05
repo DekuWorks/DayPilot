@@ -20,8 +20,12 @@ import {
   normalizeAppSpecificPassword,
   verifyIcloudCalDav,
 } from './icloud-caldav';
+import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
+/** Marker token for iOS EventKit imports (no CalDAV credentials). */
+const DEVICE_EVENTKIT_TOKEN = 'device-eventkit';
+const DEVICE_EVENT_PREFIX = 'device:';
 
 @Injectable()
 export class CalendarConnectionsService {
@@ -215,6 +219,107 @@ export class CalendarConnectionsService {
     );
   }
 
+  /**
+   * Import events read on-device via EventKit (iOS).
+   * No Apple app-specific password — used as the phone-side path.
+   */
+  async importDeviceEvents(userId: string, dto: ImportDeviceEventsDto) {
+    const now = new Date();
+    const label =
+      (dto.deviceLabel?.trim() || 'iPhone Calendar').slice(0, 320) ||
+      'iPhone Calendar';
+
+    const existing = await this.prisma.calendarConnection.findUnique({
+      where: { userId_providerType: { userId, providerType: 'apple' } },
+    });
+    const keepCalDav =
+      !!existing?.accessToken &&
+      existing.accessToken !== DEVICE_EVENTKIT_TOKEN;
+
+    if (!keepCalDav) {
+      await this.prisma.calendarConnection.upsert({
+        where: {
+          userId_providerType: { userId, providerType: 'apple' },
+        },
+        create: {
+          userId,
+          providerType: 'apple',
+          email: label,
+          accessToken: DEVICE_EVENTKIT_TOKEN,
+          refreshToken: null,
+          expiresAt: null,
+          calendarId: 'device',
+          validatedAt: now,
+          syncedAt: now,
+        },
+        update: {
+          email: label,
+          accessToken: DEVICE_EVENTKIT_TOKEN,
+          refreshToken: null,
+          expiresAt: null,
+          calendarId: 'device',
+          validatedAt: now,
+          syncedAt: now,
+        },
+      });
+    } else {
+      await this.prisma.calendarConnection.update({
+        where: { id: existing!.id },
+        data: { syncedAt: now, validatedAt: now },
+      });
+    }
+
+    let imported = 0;
+    for (const item of dto.events) {
+      const start = new Date(item.startsAt);
+      const end = new Date(item.endsAt);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        continue;
+      }
+      if (end.getTime() < start.getTime()) {
+        continue;
+      }
+      // Include userId — @@unique([source, externalId]) is global across users.
+      const externalId =
+        `${DEVICE_EVENT_PREFIX}${userId}:${item.externalId}`.slice(0, 512);
+      await this.prisma.event.upsert({
+        where: {
+          source_externalId: { source: 'apple', externalId },
+        },
+        create: {
+          userId,
+          source: 'apple',
+          externalId,
+          title: item.title.slice(0, 500),
+          start,
+          end,
+          description: item.description?.slice(0, 5000) ?? null,
+          location: item.location?.slice(0, 1000) ?? null,
+        },
+        update: {
+          title: item.title.slice(0, 500),
+          start,
+          end,
+          description: item.description?.slice(0, 5000) ?? null,
+          location: item.location?.slice(0, 1000) ?? null,
+        },
+      });
+      imported += 1;
+    }
+
+    this.logger.log(
+      `EventKit import user=${userId} events=${imported} keepCalDav=${keepCalDav}`,
+    );
+    this.eventEmitter.emit('calendar.synced', { userId });
+    return {
+      ok: true,
+      imported,
+      connection: await this.list(userId).then((list) =>
+        list.find((c) => c.provider === 'apple'),
+      ),
+    };
+  }
+
   async handleCallback(
     provider: CalendarProvider,
     code: string,
@@ -382,6 +487,19 @@ export class CalendarConnectionsService {
     } else if (provider === 'outlook') {
       await this.syncOutlookCalendar(userId, conn, rangeStart, rangeEnd);
     } else if (provider === 'apple') {
+      if (conn.accessToken === DEVICE_EVENTKIT_TOKEN) {
+        // Device calendars refresh from the iOS app via EventKit import.
+        await this.prisma.calendarConnection.update({
+          where: { id: conn.id },
+          data: { syncedAt: now, validatedAt: now },
+        });
+        this.eventEmitter.emit('calendar.synced', { userId });
+        return {
+          ok: true,
+          message:
+            'iPhone calendars refresh from the DayPilot iOS app (EventKit). Open Sync → Import from iPhone.',
+        };
+      }
       await this.syncAppleCalendar(userId, conn, rangeStart, rangeEnd);
     }
 
@@ -488,6 +606,9 @@ export class CalendarConnectionsService {
   }) {
     if (!conn.accessToken || !conn.email) {
       throw new BadRequestException('iCloud credentials missing — reconnect');
+    }
+    if (conn.accessToken === DEVICE_EVENTKIT_TOKEN) {
+      return;
     }
     await verifyIcloudCalDav(conn.email, conn.accessToken);
   }

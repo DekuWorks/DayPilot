@@ -184,6 +184,37 @@ class CalendarConnectionsRepository {
     return CalendarConnection.fromJson(Map<String, dynamic>.from(data));
   }
 
+  /// iOS/Android EventKit import — no app-specific password.
+  Future<({int imported, CalendarConnection? connection})> importDeviceEvents({
+    required List<Map<String, dynamic>> events,
+    String deviceLabel = 'iPhone Calendar',
+  }) async {
+    await _ensureSession();
+    final res = await _session.post(
+      '/calendar-connections/apple/device-import',
+      body: {
+        'deviceLabel': deviceLabel,
+        'events': events,
+      },
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(_errorMessage(res, 'Failed to import device calendars'));
+    }
+    final data = jsonDecode(res.body);
+    if (data is! Map) {
+      return (imported: 0, connection: null);
+    }
+    final map = Map<String, dynamic>.from(data);
+    final imported = (map['imported'] as num?)?.toInt() ?? 0;
+    final connRaw = map['connection'];
+    CalendarConnection? connection;
+    if (connRaw is Map) {
+      connection =
+          CalendarConnection.fromJson(Map<String, dynamic>.from(connRaw));
+    }
+    return (imported: imported, connection: connection);
+  }
+
   Future<void> disconnect(String connectionId) async {
     await _ensureSession();
     final res = await _session.delete('/calendar-connections/$connectionId');
