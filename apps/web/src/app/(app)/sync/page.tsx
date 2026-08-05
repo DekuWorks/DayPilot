@@ -39,7 +39,7 @@ const PROVIDERS: {
     id: "apple",
     name: "Apple / iCloud Calendar",
     description:
-      "CalDAV with Apple ID + app-specific password. Sign in with Apple cannot grant calendar access (Apple limitation).",
+      "Continue with Apple → enter a one-time app-specific password. Apple has no calendar OAuth like Google. On iPhone you can also import via device calendars (no password).",
     calendarReady: true,
   },
 ];
@@ -104,6 +104,7 @@ export default function SyncPage() {
 
   const connected = searchParams.get("connected");
   const setup = searchParams.get("setup");
+  const appleConnect = searchParams.get("apple_connect");
   const err = searchParams.get("error");
 
   const reload = useCallback(async () => {
@@ -166,15 +167,30 @@ export default function SyncPage() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (connected === "apple" && setup === "1") {
+    // After Sign in with Apple returns, continue the calendar connect wizard.
+    if (
+      appleConnect === "1" ||
+      (connected === "apple" && setup === "1")
+    ) {
       setShowAppleForm(true);
     }
-  }, [connected, setup]);
+  }, [connected, setup, appleConnect]);
 
   async function handleConnect(provider: CalendarProvider) {
     setError("");
     setSuccess("");
     if (provider === "apple") {
+      // Same entry point as Google: start with Apple SSO, then CalDAV password.
+      if (!appleAuthLinked) {
+        setActionLoading("apple");
+        try {
+          await loginWithApple({ next: "/sync?apple_connect=1" });
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Apple sign-in failed");
+          setActionLoading(null);
+        }
+        return;
+      }
       setShowAppleForm(true);
       return;
     }
@@ -210,17 +226,6 @@ export default function SyncPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "iCloud connect failed");
     } finally {
-      setActionLoading(null);
-    }
-  }
-
-  async function handleLinkAppleSso() {
-    setError("");
-    setActionLoading("apple-sso");
-    try {
-      await loginWithApple({ next: "/sync?connected=apple&setup=1" });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Apple sign-in failed");
       setActionLoading(null);
     }
   }
@@ -318,45 +323,6 @@ export default function SyncPage() {
         </div>
       )}
 
-      <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-4 mb-8">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-          Apple Sign-In (account)
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Account SSO via Supabase Auth. Linking Apple can prefill your Apple ID
-          email for iCloud Calendar — it still cannot sync calendars without an
-          app-specific password.
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4">
-          <div>
-            <p className="font-medium text-[var(--text-primary)]">
-              Sign in with Apple
-            </p>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {appleAuthLinked
-                ? "Linked to this DayPilot account."
-                : "Not linked — link now, then continue with CalDAV below."}
-            </p>
-          </div>
-          {appleAuthLinked ? (
-            <span className="text-sm font-semibold shrink-0 text-[var(--brand-500)]">
-              Linked
-            </span>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void handleLinkAppleSso()}
-              disabled={!!actionLoading}
-            >
-              {actionLoading === "apple-sso"
-                ? "Redirecting…"
-                : "Sign in with Apple"}
-            </Button>
-          )}
-        </div>
-      </div>
-
       <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-6 mb-8">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
@@ -385,21 +351,27 @@ export default function SyncPage() {
             className="rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4 space-y-3"
           >
             <p className="font-medium text-[var(--text-primary)]">
-              Connect iCloud Calendar
+              Step 2 — App-specific password
             </p>
             <p className="text-sm text-[var(--text-secondary)]">
-              1. Enable 2FA on your Apple ID. 2. Create an{" "}
+              {appleAuthLinked
+                ? "Apple account linked. Finish with a calendar password (not your Apple ID login password)."
+                : "Finish with a calendar password (not your Apple ID login password)."}{" "}
+              Create one at{" "}
               <a
                 href="https://appleid.apple.com/account/manage"
                 target="_blank"
                 rel="noreferrer"
                 className="text-[var(--brand-500)] hover:underline"
               >
-                app-specific password
+                appleid.apple.com
               </a>{" "}
-              at appleid.apple.com (Sign-In and Security). 3. Paste it below.
-              Gmail-based Apple IDs (e.g. you@gmail.com) work. Spaces in the
-              password are stripped automatically.
+              → Sign-In and Security → App-Specific Passwords (2FA required).
+              Spaces are stripped automatically.
+            </p>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              On iPhone: open the DayPilot app → Sync → Import from iPhone
+              instead (uses device calendars, no password).
             </p>
             <label className="block text-sm text-[var(--text-secondary)]">
               Apple ID email
@@ -560,9 +532,13 @@ export default function SyncPage() {
                       disabled={!!actionLoading}
                     >
                       {actionLoading === p.id
-                        ? "Redirecting…"
+                        ? p.id === "apple"
+                          ? "Continuing…"
+                          : "Redirecting…"
                         : p.id === "apple"
-                          ? "Connect iCloud"
+                          ? appleAuthLinked
+                            ? "Continue — add password"
+                            : "Continue with Apple"
                           : "Connect"}
                     </Button>
                   )}

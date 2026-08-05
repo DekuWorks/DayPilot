@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { CalendarConnectionsService } from './calendar-connections.service';
 import { ConnectAppleDto } from './dto/connect-apple.dto';
+import { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CalendarProvider } from '../generated/prisma';
 
@@ -90,6 +91,16 @@ export class CalendarConnectionsController {
       dto.appleId,
       dto.appSpecificPassword,
     );
+  }
+
+  /** iOS EventKit — device calendar events (no app-specific password). */
+  @UseGuards(JwtAuthGuard)
+  @Post('apple/device-import')
+  async importDeviceEvents(
+    @Req() req: { user: { id: string } },
+    @Body() dto: ImportDeviceEventsDto,
+  ) {
+    return this.calendarConnections.importDeviceEvents(req.user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
