@@ -18,9 +18,11 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signup, loginWithGoogle, isAuthenticated, isLoading } = useAuth();
+  const { signup, loginWithGoogle, loginWithApple, isAuthenticated, isLoading } =
+    useAuth();
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
@@ -178,26 +180,48 @@ export default function SignupPage() {
           <span className="text-xs text-[var(--text-tertiary)]">or</span>
           <div className="h-px flex-1 bg-[var(--border-subtle)]" />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={googleLoading}
-          onClick={async () => {
-            setError("");
-            setGoogleLoading(true);
-            try {
-              await loginWithGoogle();
-            } catch (err) {
-              setError(
-                err instanceof Error ? err.message : "Google sign-in failed"
-              );
-              setGoogleLoading(false);
-            }
-          }}
-        >
-          {googleLoading ? "Redirecting…" : "Continue with Google"}
-        </Button>
+        <div className="space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={googleLoading || appleLoading}
+            onClick={async () => {
+              setError("");
+              setGoogleLoading(true);
+              try {
+                await loginWithGoogle();
+              } catch (err) {
+                setError(
+                  err instanceof Error ? err.message : "Google sign-in failed"
+                );
+                setGoogleLoading(false);
+              }
+            }}
+          >
+            {googleLoading ? "Redirecting…" : "Continue with Google"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={googleLoading || appleLoading}
+            onClick={async () => {
+              setError("");
+              setAppleLoading(true);
+              try {
+                await loginWithApple();
+              } catch (err) {
+                setError(
+                  err instanceof Error ? err.message : "Apple sign-in failed"
+                );
+                setAppleLoading(false);
+              }
+            }}
+          >
+            {appleLoading ? "Redirecting…" : "Continue with Apple"}
+          </Button>
+        </div>
         <p className="mt-6 text-[var(--text-secondary)] text-sm">
           Already have an account?{" "}
           <Link href="/login" className="text-[var(--brand-500)] font-medium hover:underline">Sign in</Link>

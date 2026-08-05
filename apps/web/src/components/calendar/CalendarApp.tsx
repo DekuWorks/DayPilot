@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
-import * as eventsApi from "@/lib/events-supabase";
-import type { CalendarEvent } from "@/lib/events-supabase";
+import * as eventsApi from "@/lib/events";
+import type { CalendarEvent } from "@/lib/events";
+import { useEventsSocket } from "@/hooks/useEventsSocket";
 import {
   MONTHS,
   addDays,
@@ -71,6 +72,8 @@ export function CalendarApp() {
   useEffect(() => {
     void Promise.resolve().then(() => refetch());
   }, [refetch]);
+
+  useEventsSocket(refetch);
 
   const title = useMemo(() => {
     if (mode === "day") {

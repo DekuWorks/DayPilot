@@ -1,6 +1,7 @@
 "use client";
 
-import type { CalendarEvent } from "@/lib/events-supabase";
+import type { CalendarEvent } from "@/lib/events";
+import { sourceAccent } from "@/lib/events";
 import {
   WEEKDAYS,
   dateKey,
@@ -135,16 +136,23 @@ export function MonthCalendarView({
                       </button>
                     </div>
                     <div className="space-y-1">
-                      {cell.events.slice(0, 3).map((ev) => (
+                      {cell.events.slice(0, 3).map((ev) => {
+                        const accent = sourceAccent(ev.source);
+                        return (
                         <button
                           key={ev.id}
                           type="button"
                           onClick={() => onSelectEvent(ev)}
-                          className="w-full text-left px-2 py-1 rounded-lg bg-[color-mix(in_srgb,var(--brand-500)_15%,transparent)] hover:bg-[color-mix(in_srgb,var(--brand-500)_25%,transparent)] text-xs font-medium text-[var(--text-primary)] truncate border-l-2 border-[var(--brand-500)]"
+                          className="w-full text-left px-2 py-1 rounded-lg text-xs font-medium text-[var(--text-primary)] truncate border-l-2"
+                          style={{
+                            borderLeftColor: accent.border,
+                            background: accent.bg,
+                          }}
                         >
                           {formatTime(ev.start)} {ev.title}
                         </button>
-                      ))}
+                        );
+                      })}
                       {cell.events.length > 3 && (
                         <span className="text-xs text-[var(--text-secondary)] pl-2">
                           +{cell.events.length - 3} more

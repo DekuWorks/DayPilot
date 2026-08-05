@@ -196,8 +196,7 @@ export default function SettingsPage() {
             Sync
           </h2>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Calendar connection status, last sync, and token validation for
-            Google, Outlook, and Apple.
+            Connect Google, Outlook, or iCloud and keep events in sync.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -207,21 +206,7 @@ export default function SettingsPage() {
           >
             Open Sync
           </a>
-          <a
-            href="/integrations"
-            className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]"
-          >
-            Integrations setup
-          </a>
         </div>
-        <p className="text-xs text-[var(--text-tertiary)]">
-          Sign-in with Google is separate (Supabase Auth). Calendar sync uses the
-          Nest API — see{" "}
-          <code className="bg-[var(--surface-secondary)] px-1 rounded">
-            docs/CALENDAR_INTEGRATIONS_SETUP.md
-          </code>
-          .
-        </p>
       </div>
     </div>
   );

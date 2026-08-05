@@ -1,6 +1,7 @@
 "use client";
 
-import type { CalendarEvent } from "@/lib/events-supabase";
+import type { CalendarEvent } from "@/lib/events";
+import { sourceAccent } from "@/lib/events";
 import {
   DAY_END_HOUR,
   DAY_START_HOUR,
@@ -120,6 +121,7 @@ export function WeekCalendarView({
                     ))}
                     {dayEvents.map((ev) => {
                       const { top, height } = eventLayout(ev);
+                      const accent = sourceAccent(ev.source);
                       return (
                         <button
                           key={ev.id}
@@ -128,8 +130,13 @@ export function WeekCalendarView({
                             e.stopPropagation();
                             onSelectEvent(ev);
                           }}
-                          className="absolute left-0.5 right-0.5 z-10 rounded-md border-l-2 border-[var(--brand-500)] bg-[color-mix(in_srgb,var(--brand-500)_18%,transparent)] hover:bg-[color-mix(in_srgb,var(--brand-500)_28%,transparent)] px-1 py-0.5 text-left overflow-hidden"
-                          style={{ top, height }}
+                          className="absolute left-0.5 right-0.5 z-10 rounded-md border-l-2 px-1 py-0.5 text-left overflow-hidden"
+                          style={{
+                            top,
+                            height,
+                            borderLeftColor: accent.border,
+                            background: accent.bg,
+                          }}
                           title={`${ev.title} (${formatTime(ev.start)})`}
                         >
                           <div className="text-[10px] font-semibold text-[var(--text-primary)] truncate leading-tight">

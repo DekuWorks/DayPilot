@@ -225,8 +225,8 @@ class ProfileScreen extends ConsumerWidget {
             NavTile(
               icon: Icons.link_rounded,
               title: 'Connected calendars',
-              subtitle: 'Integrations setup',
-              onTap: () => context.push('/integrations'),
+              subtitle: 'Google, Outlook, iCloud',
+              onTap: () => context.push('/sync'),
             ),
             const SizedBox(height: 8),
             NavTile(
@@ -259,8 +259,8 @@ class _SyncStatusCard extends ConsumerWidget {
     if (!DayPilotEnv.hasDaypilotApi) {
       return NavTile(
         icon: Icons.cloud_off_outlined,
-        title: 'API not configured',
-        subtitle: 'Set DAYPILOT_API_URL to enable sync',
+        title: 'Sync unavailable',
+        subtitle: 'Calendar sync is temporarily unavailable',
         onTap: () => context.push('/sync'),
       );
     }

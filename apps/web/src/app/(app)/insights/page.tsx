@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
-import * as eventsApi from "@/lib/events-supabase";
+import * as eventsApi from "@/lib/events";
 import * as focusApi from "@/lib/focus-supabase";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 

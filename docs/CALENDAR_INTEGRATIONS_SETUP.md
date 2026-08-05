@@ -5,7 +5,7 @@ Connect Google Calendar and Outlook/Microsoft 365 to DayPilot. Events sync **int
 ## Prerequisites
 
 - Nest API running locally on **port 3001**
-- Web app on **port 3002** (or 3000 — set `FRONTEND_URL` to match)
+- Web app on **port 3000** (set `FRONTEND_URL` to match exactly — wrong port breaks OAuth return)
 - PostgreSQL with Prisma migrations applied
 
 ## 1. Configure `.env` (repo root)
@@ -14,10 +14,10 @@ Copy from `.env.example` if needed, then set:
 
 ```env
 API_URL=http://localhost:3001
-FRONTEND_URL=http://localhost:3002
+FRONTEND_URL=http://localhost:3000
 
 # Comma-separated origins for CORS (include web + Flutter dev if needed)
-CORS_ORIGIN="http://localhost:3000,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3002"
+CORS_ORIGIN="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002,http://127.0.0.1:3002"
 
 GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
@@ -126,4 +126,20 @@ Live updates: after sync/disconnect, connected clients receive `calendar:synced`
 
 ## 6. Apple / iCloud
 
-Not yet supported. The Integrations UI shows a placeholder; CalDAV integration is planned.
+Two different features — do not confuse them:
+
+| Layer | Status | Doc |
+|-------|--------|-----|
+| **Sign in with Apple** (account SSO) | Client UI shipped; enable in Supabase | [APPLE_AUTH_SETUP.md](./APPLE_AUTH_SETUP.md) |
+| **iCloud Calendar sync** (events) | CalDAV import via app-specific password | this section |
+
+### Calendar sync (CalDAV)
+
+1. User generates an [Apple app-specific password](https://support.apple.com/en-us/102654) (Apple ID with 2FA).
+2. On **Sync** (web `/sync` or Flutter Sync), choose **Connect iCloud** and enter Apple ID + app-specific password.
+3. Nest stores credentials on `calendar_connections` (`provider=apple`), discovers `https://caldav.icloud.com`, and imports VEVENTs into Prisma `events` with `source=apple` (−7…+60 days).
+4. **Validate** / **Sync now** re-check auth and re-import. Disconnect deletes Apple-sourced events.
+
+**Limits (current):** one-way import (DayPilot ← iCloud). Push edits back to iCloud is not implemented. Sign in with Apple **does not** unlock iCloud Calendar access.
+
+**Unified calendar:** Nest `GET /events` returns all sources for the user (`native` / `google` / `outlook` / `apple`). Web Calendar/Home and Flutter (with `DAYPILOT_API_URL`) read that union so Google + iCloud + Outlook appear together.

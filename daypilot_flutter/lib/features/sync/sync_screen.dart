@@ -10,21 +10,30 @@ import '../../core/widgets/feature_scaffold.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
 import '../integrations/integrations_screen.dart';
 
-const _providers = <({String id, String name, String description})>[
+const _providers = <({
+  String id,
+  String name,
+  String description,
+  bool calendarReady
+})>[
   (
     id: 'google',
     name: 'Google Calendar',
     description: 'Events sync two-way with your Google account.',
+    calendarReady: true,
   ),
   (
     id: 'outlook',
     name: 'Outlook / Microsoft 365',
     description: 'Events sync two-way with Outlook or Microsoft 365.',
+    calendarReady: true,
   ),
   (
     id: 'apple',
-    name: 'Apple / iCloud',
-    description: 'Apple Calendar connection (setup coming soon).',
+    name: 'Apple / iCloud Calendar',
+    description:
+        'Connect with Apple ID + app-specific password (CalDAV). Separate from Sign in with Apple.',
+    calendarReady: true,
   ),
 ];
 
@@ -61,6 +70,10 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 
   Future<void> _connect(String provider) async {
+    if (provider == 'apple') {
+      await _connectAppleCalDav();
+      return;
+    }
     setState(() {
       _error = null;
       _actionId = provider;
@@ -80,6 +93,92 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
               'Complete sign-in in your browser, then return here.',
             ),
           ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _actionId = null);
+    }
+  }
+
+  Future<void> _connectAppleCalDav() async {
+    final appleIdCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connect iCloud Calendar'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Use an app-specific password from appleid.apple.com '
+                '(2FA required). This is not Sign in with Apple.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: appleIdCtrl,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.username],
+                decoration: const InputDecoration(
+                  labelText: 'Apple ID email',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: true,
+                autofillHints: const [AutofillHints.password],
+                decoration: const InputDecoration(
+                  labelText: 'App-specific password',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Connect & sync'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      appleIdCtrl.dispose();
+      passwordCtrl.dispose();
+      return;
+    }
+    final appleId = appleIdCtrl.text.trim();
+    final password = passwordCtrl.text;
+    appleIdCtrl.dispose();
+    passwordCtrl.dispose();
+    if (appleId.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Apple ID and app-specific password required.');
+      return;
+    }
+    setState(() {
+      _error = null;
+      _actionId = 'apple';
+    });
+    try {
+      await ref.read(calendarConnectionsRepositoryProvider).connectAppleCalDav(
+            appleId: appleId,
+            appSpecificPassword: password,
+          );
+      ref.invalidate(calendarConnectionsProvider);
+      ref.read(calendarDataVersionProvider.notifier).bump();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('iCloud Calendar connected.')),
         );
       }
     } catch (e) {
@@ -178,8 +277,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              'Calendar sync requires the DayPilot API. '
-              'Set DAYPILOT_API_URL in dart-define.json.',
+              'Calendar sync is temporarily unavailable. '
+              'Try again later, or contact support if this continues.',
               textAlign: TextAlign.center,
               style: TextStyle(color: DayPilotColors.textSecondary),
             ),
@@ -208,6 +307,10 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                 color: DayPilotColors.textSecondary,
                 height: 1.4,
               ),
+            ),
+            const SizedBox(height: 16),
+            _AppleAuthCard(
+              linked: ref.read(authRepositoryProvider).hasAppleIdentity,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -262,6 +365,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                       name: p.name,
                       description: p.description,
                       connection: conn,
+                      calendarReady: p.calendarReady,
                       busy: _actionId != null,
                       validating: connId != null &&
                           _actionId == 'validate-$connId',
@@ -281,7 +385,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                           ? null
                           : () => _disconnect(connId),
                       onReconnect: conn != null &&
-                              (conn.status ==
+                              (p.id == 'apple' ||
+                                  conn.status ==
                                       ConnectionValidationStatus
                                           .needsReconnect ||
                                   conn.status ==
@@ -300,11 +405,86 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 }
 
+class _AppleAuthCard extends StatelessWidget {
+  const _AppleAuthCard({required this.linked});
+
+  final bool linked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DayPilotColors.surfacePrimary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DayPilotColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Apple Sign-In (account)',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: DayPilotColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Account SSO via Supabase Auth. This is not iCloud Calendar access.',
+            style: TextStyle(
+              color: DayPilotColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Sign in with Apple',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: DayPilotColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                linked ? 'Linked' : 'Not linked',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: linked
+                      ? DayPilotColors.brand500
+                      : DayPilotColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            linked
+                ? 'Linked to this DayPilot account.'
+                : 'Not linked — use Continue with Apple on Login or Signup.',
+            style: const TextStyle(
+              color: DayPilotColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SyncProviderCard extends StatelessWidget {
   const _SyncProviderCard({
     required this.name,
     required this.description,
     required this.connection,
+    required this.calendarReady,
     required this.busy,
     required this.validating,
     required this.syncing,
@@ -322,6 +502,7 @@ class _SyncProviderCard extends StatelessWidget {
   final String name;
   final String description;
   final CalendarConnection? connection;
+  final bool calendarReady;
   final bool busy;
   final bool validating;
   final bool syncing;
@@ -430,7 +611,15 @@ class _SyncProviderCard extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: busy ? null : onConnect,
-              child: Text(connecting ? 'Opening…' : 'Connect'),
+              child: Text(
+                connecting
+                    ? (name.contains('iCloud') ? 'Connecting…' : 'Opening…')
+                    : calendarReady
+                        ? (name.contains('iCloud')
+                            ? 'Connect iCloud'
+                            : 'Connect')
+                        : 'Calendar connect (coming soon)',
+              ),
             ),
           ],
         ],

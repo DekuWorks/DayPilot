@@ -114,7 +114,18 @@ class CalendarConnectionsRepository {
 
   final NestApiSession _session;
 
+  Future<void> _ensureSession() async {
+    if (_session.hasSession) return;
+    await _session.exchangeFromSupabaseSession();
+    if (!_session.hasSession) {
+      throw Exception(
+        'Calendar sync session missing. Sign in again, then open Sync.',
+      );
+    }
+  }
+
   Future<List<CalendarConnection>> listConnections() async {
+    await _ensureSession();
     final res = await _session.get('/calendar-connections');
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(_errorMessage(res, 'Failed to load connections'));
@@ -130,11 +141,15 @@ class CalendarConnectionsRepository {
   }
 
   Future<String> getConnectUrl(CalendarProvider provider) async {
+    await _ensureSession();
     final res = await _session.get('/calendar-connections/$provider/connect');
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(_errorMessage(res, 'Failed to get connect URL'));
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
+    if (data['needsCredentials'] == true) {
+      throw Exception('ICLOUD_NEEDS_CREDENTIALS');
+    }
     final url = data['redirectUrl'] as String?;
     if (url == null || url.isEmpty) {
       throw Exception('Connect URL missing from server response');
@@ -142,7 +157,29 @@ class CalendarConnectionsRepository {
     return url;
   }
 
+  /// iCloud CalDAV: Apple ID + app-specific password.
+  Future<CalendarConnection?> connectAppleCalDav({
+    required String appleId,
+    required String appSpecificPassword,
+  }) async {
+    await _ensureSession();
+    final res = await _session.post(
+      '/calendar-connections/apple/connect',
+      body: {
+        'appleId': appleId,
+        'appSpecificPassword': appSpecificPassword,
+      },
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(_errorMessage(res, 'Failed to connect iCloud Calendar'));
+    }
+    final data = jsonDecode(res.body);
+    if (data is! Map) return null;
+    return CalendarConnection.fromJson(Map<String, dynamic>.from(data));
+  }
+
   Future<void> disconnect(String connectionId) async {
+    await _ensureSession();
     final res = await _session.delete('/calendar-connections/$connectionId');
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(_errorMessage(res, 'Failed to disconnect'));
@@ -150,6 +187,7 @@ class CalendarConnectionsRepository {
   }
 
   Future<void> sync(String connectionId) async {
+    await _ensureSession();
     final res = await _session.get('/calendar-connections/$connectionId/sync');
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(_errorMessage(res, 'Failed to sync'));
@@ -157,6 +195,7 @@ class CalendarConnectionsRepository {
   }
 
   Future<ValidateConnectionResult> validate(String connectionId) async {
+    await _ensureSession();
     final res =
         await _session.get('/calendar-connections/$connectionId/validate');
     if (res.statusCode < 200 || res.statusCode >= 300) {

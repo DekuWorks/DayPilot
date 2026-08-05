@@ -17,6 +17,8 @@ Color _chipColorForSource(String source) {
       return Colors.blue.withValues(alpha: 0.22);
     case 'outlook':
       return Colors.indigo.withValues(alpha: 0.22);
+    case 'apple':
+      return Colors.grey.withValues(alpha: 0.28);
     default:
       return DayPilotColors.teal.withValues(alpha: 0.2);
   }

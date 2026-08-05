@@ -40,6 +40,6 @@ abstract final class DefaultFirebaseOptions {
         storageBucket: DayPilotEnv.firebaseStorageBucket.isEmpty
             ? '${DayPilotEnv.firebaseProjectId}.appspot.com'
             : DayPilotEnv.firebaseStorageBucket,
-        iosBundleId: 'com.daypilot.daypilot',
+        iosBundleId: 'com.dekuworks.daypilot',
       );
 }

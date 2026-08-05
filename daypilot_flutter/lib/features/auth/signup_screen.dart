@@ -64,6 +64,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Future<void> _appleSignIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithApple();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Apple sign-in failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,6 +131,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               onPressed: _busy ? null : _googleSignIn,
               icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
               label: const Text('Continue with Google'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _appleSignIn,
+              icon: const Icon(Icons.apple, size: 24),
+              label: const Text('Continue with Apple'),
             ),
             TextButton(
               onPressed: () => context.go('/login'),

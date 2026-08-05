@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { primaryNav, secondaryNav } from "./nav-config";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import * as eventsApi from "@/lib/events-supabase";
+import * as eventsApi from "@/lib/events";
 
 type CommandPaletteProps = {
   open: boolean;

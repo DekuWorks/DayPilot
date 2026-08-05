@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
-import * as eventsApi from "@/lib/events-supabase";
-import type { CalendarEvent } from "@/lib/events-supabase";
+import * as eventsApi from "@/lib/events";
+import type { CalendarEvent } from "@/lib/events";
 import { dateKey } from "@/components/calendar/calendar-utils";
 
 function formatWhen(iso: string) {

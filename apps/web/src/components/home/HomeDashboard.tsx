@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { Button } from "@/components/Button";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import * as eventsApi from "@/lib/events-supabase";
+import * as eventsApi from "@/lib/events";
 import { generatePilotBrief, getTodayBrief } from "@/lib/pilot-brief-api";
 
 type HomeEvent = {
@@ -609,17 +609,17 @@ export function HomeDashboard() {
           <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                Integrations
+                Sync
               </h3>
               <Link
-                href="/integrations"
+                href="/sync"
                 className="text-xs font-medium text-[var(--brand-500)] hover:underline"
               >
-                Manage
+                Open Sync
               </Link>
             </div>
             <p className="text-xs text-[var(--text-secondary)]">
-              Connect Google Calendar, Outlook, Zoom, and more from Integrations.
+              Connect Google, Outlook, or iCloud to keep your calendars in sync.
             </p>
           </div>
         </section>

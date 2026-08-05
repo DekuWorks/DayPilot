@@ -50,6 +50,7 @@ type AuthContextValue = AuthState & {
     username?: string
   ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -344,6 +345,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, [supabase]);
 
+  const loginWithApple = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase is not configured");
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: {
+        redirectTo: origin
+          ? `${origin}/auth/callback`
+          : "https://www.daypilot.co/auth/callback",
+      },
+    });
+    if (error) throw new Error(error.message);
+  }, [supabase]);
+
   const logout = useCallback(async () => {
     enrichGenRef.current += 1;
     appliedAccessTokenRef.current = null;
@@ -365,6 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithMagicLink,
     signup,
     loginWithGoogle,
+    loginWithApple,
     logout,
     refresh,
   };

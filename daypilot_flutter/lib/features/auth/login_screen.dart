@@ -259,6 +259,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
                   label: const Text('Continue with Google'),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          setState(() => _busy = true);
+                          try {
+                            await ref
+                                .read(authRepositoryProvider)
+                                .signInWithApple();
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Apple sign-in failed: $e'),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _busy = false);
+                          }
+                        },
+                  icon: const Icon(Icons.apple, size: 24),
+                  label: const Text('Continue with Apple'),
+                ),
                 if (!_magicMode)
                   TextButton(
                     onPressed:

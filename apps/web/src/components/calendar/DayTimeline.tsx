@@ -1,6 +1,7 @@
 "use client";
 
-import type { CalendarEvent } from "@/lib/events-supabase";
+import type { CalendarEvent } from "@/lib/events";
+import { sourceAccent } from "@/lib/events";
 import {
   DAY_END_HOUR,
   DAY_START_HOUR,
@@ -80,6 +81,7 @@ export function DayTimeline({
               ))}
               {dayEvents.map((ev) => {
                 const { top, height } = eventLayout(ev);
+                const accent = sourceAccent(ev.source);
                 return (
                   <button
                     key={ev.id}
@@ -88,8 +90,13 @@ export function DayTimeline({
                       e.stopPropagation();
                       onSelectEvent(ev);
                     }}
-                    className="absolute left-2 right-2 z-10 rounded-lg border-l-2 border-[var(--brand-500)] bg-[color-mix(in_srgb,var(--brand-500)_18%,transparent)] hover:bg-[color-mix(in_srgb,var(--brand-500)_28%,transparent)] px-2 py-1 text-left overflow-hidden"
-                    style={{ top, height }}
+                    className="absolute left-2 right-2 z-10 rounded-lg border-l-2 px-2 py-1 text-left overflow-hidden"
+                    style={{
+                      top,
+                      height,
+                      borderLeftColor: accent.border,
+                      background: accent.bg,
+                    }}
                   >
                     <div className="text-xs font-semibold text-[var(--text-primary)] truncate">
                       {ev.title}

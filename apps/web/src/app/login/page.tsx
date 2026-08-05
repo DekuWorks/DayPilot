@@ -16,10 +16,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<"password" | "magic">("password");
   const [magicSent, setMagicSent] = useState(false);
-  const { login, loginWithMagicLink, loginWithGoogle, isAuthenticated, isLoading } =
-    useAuth();
+  const {
+    login,
+    loginWithMagicLink,
+    loginWithGoogle,
+    loginWithApple,
+    isAuthenticated,
+    isLoading,
+  } = useAuth();
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     // Prefetch the post-login route while the form is visible.
@@ -177,26 +184,48 @@ export default function LoginPage() {
           <span className="text-xs text-[var(--text-tertiary)]">or</span>
           <div className="h-px flex-1 bg-[var(--border-subtle)]" />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={googleLoading}
-          onClick={async () => {
-            setError("");
-            setGoogleLoading(true);
-            try {
-              await loginWithGoogle();
-            } catch (err) {
-              setError(
-                err instanceof Error ? err.message : "Google sign-in failed"
-              );
-              setGoogleLoading(false);
-            }
-          }}
-        >
-          {googleLoading ? "Redirecting…" : "Continue with Google"}
-        </Button>
+        <div className="space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={googleLoading || appleLoading}
+            onClick={async () => {
+              setError("");
+              setGoogleLoading(true);
+              try {
+                await loginWithGoogle();
+              } catch (err) {
+                setError(
+                  err instanceof Error ? err.message : "Google sign-in failed"
+                );
+                setGoogleLoading(false);
+              }
+            }}
+          >
+            {googleLoading ? "Redirecting…" : "Continue with Google"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={googleLoading || appleLoading}
+            onClick={async () => {
+              setError("");
+              setAppleLoading(true);
+              try {
+                await loginWithApple();
+              } catch (err) {
+                setError(
+                  err instanceof Error ? err.message : "Apple sign-in failed"
+                );
+                setAppleLoading(false);
+              }
+            }}
+          >
+            {appleLoading ? "Redirecting…" : "Continue with Apple"}
+          </Button>
+        </div>
         <p className="mt-4 text-sm">
           <Link
             href="/forgot-password"

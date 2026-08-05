@@ -44,8 +44,12 @@ def add_strip_xattr_phase(target)
 
   phase = target.new_shell_script_build_phase(name)
   phase.shell_script = <<~SCRIPT
-    if [ -n "${BUILT_PRODUCTS_DIR}" ]; then
-      find "${BUILT_PRODUCTS_DIR}" -type f -exec xattr -c {} \\; 2>/dev/null || true
+    # Desktop/iCloud xattrs break codesign ("resource fork ... not allowed").
+    if [ -n "${CODESIGNING_FOLDER_PATH}" ] && [ -e "${CODESIGNING_FOLDER_PATH}" ]; then
+      xattr -cr "${CODESIGNING_FOLDER_PATH}" 2>/dev/null || true
+    fi
+    if [ -n "${BUILT_PRODUCTS_DIR}" ] && [ -d "${BUILT_PRODUCTS_DIR}" ]; then
+      xattr -cr "${BUILT_PRODUCTS_DIR}" 2>/dev/null || true
     fi
   SCRIPT
 end

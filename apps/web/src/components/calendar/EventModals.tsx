@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/Button";
-import type { CalendarEvent } from "@/lib/events-supabase";
+import type { CalendarEvent } from "@/lib/events";
 import { dateKey, formatTime } from "./calendar-utils";
 
 export function CreateEventModal({
@@ -148,6 +148,11 @@ export function EventDetailModal({
         <p className="text-[var(--text-secondary)] text-sm mb-2">
           {new Date(event.start).toLocaleString()} – {formatTime(event.end)}
         </p>
+        {event.source && event.source !== "native" && (
+          <p className="text-xs text-[var(--text-tertiary)] mb-2 capitalize">
+            Source: {event.source}
+          </p>
+        )}
         {event.description && (
           <p className="text-[var(--text-secondary)] text-sm mb-4">
             {event.description}

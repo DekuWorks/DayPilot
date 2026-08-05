@@ -76,3 +76,5 @@ Add `--also-calendar` to write the same values into repo-root `.env` for Nest ca
 | **Google Calendar sync** | Nest API `.env` `GOOGLE_CLIENT_ID` / `SECRET` | [CALENDAR_INTEGRATIONS_SETUP.md](./CALENDAR_INTEGRATIONS_SETUP.md) |
 
 You can reuse the same Google Cloud project, but use **separate OAuth clients** (or at least separate redirect URIs) for Auth vs Calendar API.
+
+For Apple Sign-In (SSO), see [APPLE_AUTH_SETUP.md](./APPLE_AUTH_SETUP.md).

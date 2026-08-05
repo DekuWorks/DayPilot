@@ -10,7 +10,12 @@ import type { CalendarConnection } from "@/lib/calendar-connections-api";
 const PROVIDERS: { id: CalendarConnection["provider"]; name: string; description: string }[] = [
   { id: "google", name: "Google Calendar", description: "Sync events from your Google account." },
   { id: "outlook", name: "Outlook / Microsoft 365", description: "Sync events from Outlook or Microsoft 365." },
-  { id: "apple", name: "Apple / iCloud", description: "Connect your Apple or iCloud calendar (setup coming soon)." },
+  {
+    id: "apple",
+    name: "Apple / iCloud Calendar",
+    description:
+      "Connect with Apple ID + app-specific password (CalDAV). Sign in with Apple SSO is separate (Login).",
+  },
 ];
 
 export default function IntegrationsPage() {
@@ -47,11 +52,15 @@ export default function IntegrationsPage() {
 
   async function handleConnect(provider: CalendarConnection["provider"]) {
     setError("");
+    if (provider === "apple") {
+      window.location.href = "/sync?connected=apple&setup=1";
+      return;
+    }
     setActionLoading(provider);
     try {
-      const { redirectUrl } = await calendarConnectionsApi.getConnectUrl(provider);
-      if (redirectUrl) window.location.href = redirectUrl;
-      else setError("Could not get connect URL.");
+      const result = await calendarConnectionsApi.getConnectUrl(provider);
+      if (result.redirectUrl) window.location.href = result.redirectUrl;
+      else setError(result.error || "Could not get connect URL.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connect failed");
     } finally {
@@ -99,36 +108,14 @@ export default function IntegrationsPage() {
         </Link>
         .
       </p>
-      <div className="mb-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4 text-sm text-[var(--text-secondary)] space-y-2">
-        <p className="font-medium text-[var(--text-primary)]">Setup checklist</p>
-        <ol className="list-decimal pl-5 space-y-1">
-          <li>
-            Add Google / Microsoft OAuth clients (see{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">
-              docs/CALENDAR_INTEGRATIONS_SETUP.md
-            </code>
-            ).
-          </li>
-          <li>
-            Set <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">GOOGLE_CLIENT_ID</code> and{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">GOOGLE_CLIENT_SECRET</code> in the API{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">.env</code>, then restart Nest.
-          </li>
-          <li>
-            For <strong className="text-[var(--text-primary)]">login</strong> with Google (not calendar), follow{" "}
-            <code className="text-xs bg-[var(--surface-secondary)] px-1 rounded">
-              docs/GOOGLE_AUTH_SETUP.md
-            </code>
-            .
-          </li>
-        </ol>
-      </div>
 
       {connected && !err && (
         <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800">
           {connected === "google" && "Google Calendar connected. Events are syncing to your calendar."}
           {connected === "outlook" && "Outlook connected. Events are syncing to your calendar."}
-          {connected === "apple" && setup === "1" && "Apple / iCloud setup is coming soon."}
+          {connected === "apple" &&
+            setup === "1" &&
+            "Open Sync to enter your Apple ID and app-specific password for iCloud Calendar."}
         </div>
       )}
       {err && (

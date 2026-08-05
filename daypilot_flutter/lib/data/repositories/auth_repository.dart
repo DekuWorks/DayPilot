@@ -86,15 +86,44 @@ class AuthRepository {
       if (msg.contains('provider is not enabled') ||
           msg.contains('unsupported provider')) {
         throw AuthException(
-          'Google sign-in is not enabled yet. '
-          'Add a Google OAuth client in Supabase Auth → Providers → Google '
-          '(see docs/GOOGLE_AUTH_SETUP.md), then try again.',
+          'Google sign-in is unavailable right now. Try email sign-in, or try again later.',
           statusCode: e.statusCode,
           code: e.code,
         );
       }
       rethrow;
     }
+  }
+
+  /// Apple OAuth — opens browser / ASWebAuthenticationSession; returns via deep link.
+  ///
+  /// Requires Apple enabled in Supabase Auth (see docs/APPLE_AUTH_SETUP.md).
+  Future<bool> signInWithApple() async {
+    try {
+      return await _client.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'com.daypilot.daypilot://login-callback/',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('provider is not enabled') ||
+          msg.contains('unsupported provider')) {
+        throw AuthException(
+          'Apple sign-in is unavailable right now. Try email sign-in, or try again later.',
+          statusCode: e.statusCode,
+          code: e.code,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// True when the current Supabase user has an Apple identity linked.
+  bool get hasAppleIdentity {
+    final user = _client.auth.currentUser;
+    if (user == null) return false;
+    return user.identities?.any((i) => i.provider == 'apple') ?? false;
   }
 
   Future<void> signOut() async {

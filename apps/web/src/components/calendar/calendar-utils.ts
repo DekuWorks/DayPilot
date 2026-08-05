@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/lib/events-supabase";
+import type { CalendarEvent } from "@/lib/events";
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const MONTHS = [

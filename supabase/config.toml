@@ -60,3 +60,16 @@ enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = false
+
+# Apple Sign in with Apple (SSO for web + mobile OAuth).
+# Set SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID / SECRET before `supabase config push`,
+# or run scripts/configure-apple-auth.sh (Dashboard: Authentication → Providers → Apple).
+# Client ID should list Services ID first, then iOS bundle ID:
+#   com.daypilot.daypilot.web,com.daypilot.daypilot
+# Secret is a JWT minted from Team ID + Key ID + .p8 (expires ~6 months).
+# Keep enabled=false until secrets are present.
+[auth.external.apple]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+skip_nonce_check = false

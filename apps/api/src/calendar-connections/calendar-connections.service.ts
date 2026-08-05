@@ -10,6 +10,10 @@ import { google } from 'googleapis';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CalendarProvider } from '../generated/prisma';
+import {
+  fetchIcloudEvents,
+  verifyIcloudCalDav,
+} from './icloud-caldav';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 
@@ -53,7 +57,10 @@ export class CalendarConnectionsService {
     accessToken: string;
     createdAt: Date;
   }) {
-    const status = this.computeValidationStatus(c);
+    const status = this.computeValidationStatus({
+      ...c,
+      providerType: c.providerType,
+    });
     return {
       id: c.id,
       provider: c.providerType,
@@ -68,11 +75,14 @@ export class CalendarConnectionsService {
   }
 
   private computeValidationStatus(c: {
+    providerType?: CalendarProvider;
     accessToken: string;
     refreshToken: string | null;
     expiresAt: Date | null;
   }): 'valid' | 'expired' | 'needs_reconnect' | 'unknown' {
     if (!c.accessToken) return 'needs_reconnect';
+    // iCloud CalDAV uses a non-expiring app-specific password
+    if (c.providerType === 'apple') return 'valid';
     if (c.expiresAt == null) return 'unknown';
     if (c.expiresAt.getTime() > Date.now()) return 'valid';
     if (c.refreshToken) return 'expired';
@@ -82,13 +92,11 @@ export class CalendarConnectionsService {
   getConnectUrl(
     userId: string,
     provider: CalendarProvider,
-  ): { redirectUrl: string } {
+  ): { redirectUrl: string | null; needsCredentials?: boolean } {
     const state = this.jwtService.sign(
       { sub: userId, provider, purpose: 'calendar-connect' },
       { expiresIn: '10m' },
     );
-    const frontendUrl =
-      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
 
     if (provider === 'google') {
       const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
@@ -112,12 +120,67 @@ export class CalendarConnectionsService {
     }
 
     if (provider === 'apple') {
-      // Apple: CalDAV or Sign in with Apple + CalDAV. Placeholder – link to docs or same-origin setup.
-      const redirectUri = `${frontendUrl}/sync?connected=apple&setup=1`;
-      return { redirectUrl: redirectUri };
+      // iCloud Calendar = CalDAV + app-specific password (POST /apple/connect).
+      // Sign in with Apple (Supabase Auth SSO) is separate — see docs/APPLE_AUTH_SETUP.md.
+      return { redirectUrl: null, needsCredentials: true };
     }
 
     throw new BadRequestException('Unknown provider');
+  }
+
+  /**
+   * Connect iCloud Calendar via CalDAV (Apple ID + app-specific password).
+   * Stores password in accessToken; calendar home URL in calendarId.
+   */
+  async connectAppleCalDav(
+    userId: string,
+    appleId: string,
+    appSpecificPassword: string,
+  ) {
+    const email = appleId.trim().toLowerCase();
+    const password = appSpecificPassword.replace(/\s+/g, '');
+    if (!email || !password) {
+      throw new BadRequestException('Apple ID and app-specific password required');
+    }
+
+    let calendarUrl: string;
+    try {
+      ({ calendarUrl } = await verifyIcloudCalDav(email, password));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'iCloud CalDAV connect failed';
+      throw new BadRequestException(message);
+    }
+
+    const now = new Date();
+    await this.prisma.calendarConnection.upsert({
+      where: {
+        userId_providerType: { userId, providerType: 'apple' },
+      },
+      create: {
+        userId,
+        providerType: 'apple',
+        email,
+        accessToken: password,
+        refreshToken: null,
+        expiresAt: null,
+        calendarId: calendarUrl,
+        validatedAt: now,
+      },
+      update: {
+        email,
+        accessToken: password,
+        refreshToken: null,
+        expiresAt: null,
+        calendarId: calendarUrl,
+        validatedAt: now,
+      },
+    });
+
+    await this.syncConnection(userId, 'apple');
+    return this.list(userId).then((list) =>
+      list.find((c) => c.provider === 'apple'),
+    );
   }
 
   async handleCallback(
@@ -286,8 +349,9 @@ export class CalendarConnectionsService {
       await this.syncGoogleCalendar(userId, conn, rangeStart, rangeEnd);
     } else if (provider === 'outlook') {
       await this.syncOutlookCalendar(userId, conn, rangeStart, rangeEnd);
+    } else if (provider === 'apple') {
+      await this.syncAppleCalendar(userId, conn, rangeStart, rangeEnd);
     }
-    // apple: CalDAV sync can be added later
 
     const syncedAt = new Date();
     await this.prisma.calendarConnection.update({
@@ -313,19 +377,10 @@ export class CalendarConnectionsService {
         await this.pingGoogle(conn);
       } else if (conn.providerType === 'outlook') {
         await this.pingOutlook(conn);
+      } else if (conn.providerType === 'apple') {
+        await this.pingApple(conn);
       } else {
-        // Apple / placeholder — no live validate yet
-        await this.prisma.calendarConnection.update({
-          where: { id: conn.id },
-          data: { validatedAt: now },
-        });
-        return {
-          ok: true,
-          valid: true,
-          status: 'unknown' as const,
-          validatedAt: now.toISOString(),
-          message: 'Apple Calendar validation is not available yet',
-        };
+        throw new BadRequestException('Unknown provider');
       }
 
       await this.prisma.calendarConnection.update({
@@ -392,6 +447,76 @@ export class CalendarConnectionsService {
       authProvider: () => Promise.resolve(accessToken),
     });
     await client.api('/me').get();
+  }
+
+  private async pingApple(conn: {
+    email: string;
+    accessToken: string;
+    calendarId: string | null;
+  }) {
+    if (!conn.accessToken || !conn.email) {
+      throw new BadRequestException('iCloud credentials missing — reconnect');
+    }
+    await verifyIcloudCalDav(conn.email, conn.accessToken);
+  }
+
+  private async syncAppleCalendar(
+    userId: string,
+    conn: {
+      id: string;
+      email: string;
+      accessToken: string;
+      calendarId: string | null;
+    },
+    rangeStart: Date,
+    rangeEnd: Date,
+  ) {
+    if (!conn.accessToken || !conn.email) {
+      throw new BadRequestException('iCloud credentials missing — reconnect');
+    }
+    let calendarUrl = conn.calendarId;
+    if (!calendarUrl) {
+      const discovered = await verifyIcloudCalDav(
+        conn.email,
+        conn.accessToken,
+      );
+      calendarUrl = discovered.calendarUrl;
+      await this.prisma.calendarConnection.update({
+        where: { id: conn.id },
+        data: { calendarId: calendarUrl },
+      });
+    }
+    const items = await fetchIcloudEvents(
+      conn.email,
+      conn.accessToken,
+      calendarUrl,
+      rangeStart,
+      rangeEnd,
+    );
+    for (const item of items) {
+      await this.prisma.event.upsert({
+        where: {
+          source_externalId: { source: 'apple', externalId: item.uid },
+        },
+        create: {
+          userId,
+          source: 'apple',
+          externalId: item.uid,
+          title: item.title,
+          start: item.start,
+          end: item.end,
+          description: item.description ?? null,
+          location: item.location ?? null,
+        },
+        update: {
+          title: item.title,
+          start: item.start,
+          end: item.end,
+          description: item.description ?? null,
+          location: item.location ?? null,
+        },
+      });
+    }
   }
 
   private googleRedirectUri(): string {

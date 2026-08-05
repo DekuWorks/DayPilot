@@ -1,4 +1,5 @@
 import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
+import { ensureNestSession } from "./supabase/auth";
 
 export type CalendarProvider = "google" | "outlook" | "apple";
 
@@ -30,79 +31,133 @@ export type ValidateConnectionResult = {
   message?: string;
 };
 
-export async function listConnections(): Promise<CalendarConnection[]> {
-  const res = await fetch(`${getApiUrl()}/calendar-connections`, {
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to load connections"));
+export type ConnectUrlResult = {
+  redirectUrl: string | null;
+  needsCredentials?: boolean;
+  error?: string;
+};
+
+async function withNestAuth<T>(fn: () => Promise<T>): Promise<T> {
+  const ready = await ensureNestSession();
+  if (!ready.ok) {
+    throw new Error(ready.error);
   }
-  const data = (await res.json()) as CalendarConnection[];
-  return data.map((c) => ({
-    ...c,
-    validatedAt: c.validatedAt ?? null,
-    expiresAt: c.expiresAt ?? null,
-    status: c.status ?? "unknown",
-    connected: c.connected ?? true,
-  }));
+  return fn();
+}
+
+export async function listConnections(): Promise<CalendarConnection[]> {
+  return withNestAuth(async () => {
+    const res = await fetch(`${getApiUrl()}/calendar-connections`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to load connections"));
+    }
+    const data = (await res.json()) as CalendarConnection[];
+    return data.map((c) => ({
+      ...c,
+      validatedAt: c.validatedAt ?? null,
+      expiresAt: c.expiresAt ?? null,
+      status: c.status ?? "unknown",
+      connected: c.connected ?? true,
+    }));
+  });
 }
 
 export async function getConnectUrl(
   provider: CalendarProvider
-): Promise<{ redirectUrl: string }> {
-  const res = await fetch(
-    `${getApiUrl()}/calendar-connections/${provider}/connect`,
-    {
-      headers: getAuthHeaders(),
+): Promise<ConnectUrlResult> {
+  return withNestAuth(async () => {
+    const res = await fetch(
+      `${getApiUrl()}/calendar-connections/${provider}/connect`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to get connect URL"));
     }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to get connect URL"));
-  }
-  return res.json();
+    return res.json();
+  });
+}
+
+/** iCloud CalDAV: Apple ID + app-specific password. */
+export async function connectAppleCalDav(input: {
+  appleId: string;
+  appSpecificPassword: string;
+}): Promise<CalendarConnection | null> {
+  return withNestAuth(async () => {
+    const res = await fetch(
+      `${getApiUrl()}/calendar-connections/apple/connect`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          appleId: input.appleId,
+          appSpecificPassword: input.appSpecificPassword,
+        }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(
+        getApiErrorMessage(err, "Failed to connect iCloud Calendar")
+      );
+    }
+    return res.json();
+  });
 }
 
 export async function disconnectConnection(
   id: string
 ): Promise<{ ok: boolean }> {
-  const res = await fetch(`${getApiUrl()}/calendar-connections/${id}`, {
-    method: "DELETE",
-    headers: getAuthHeaders(),
+  return withNestAuth(async () => {
+    const res = await fetch(`${getApiUrl()}/calendar-connections/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to disconnect"));
+    }
+    return res.json();
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to disconnect"));
-  }
-  return res.json();
 }
 
 export async function syncConnection(id: string): Promise<{ ok: boolean }> {
-  const res = await fetch(`${getApiUrl()}/calendar-connections/${id}/sync`, {
-    headers: getAuthHeaders(),
+  return withNestAuth(async () => {
+    const res = await fetch(`${getApiUrl()}/calendar-connections/${id}/sync`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to sync"));
+    }
+    return res.json();
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to sync"));
-  }
-  return res.json();
 }
 
 export async function validateConnection(
   id: string
 ): Promise<ValidateConnectionResult> {
-  const res = await fetch(
-    `${getApiUrl()}/calendar-connections/${id}/validate`,
-    {
-      headers: getAuthHeaders(),
+  return withNestAuth(async () => {
+    const res = await fetch(
+      `${getApiUrl()}/calendar-connections/${id}/validate`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to validate connection"));
     }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to validate connection"));
-  }
-  return res.json();
+    return res.json();
+  });
 }
 
 export function statusLabel(status: ConnectionValidationStatus): string {

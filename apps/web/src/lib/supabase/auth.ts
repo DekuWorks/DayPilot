@@ -102,15 +102,16 @@ export async function fetchProfile(
 }
 
 /** Bridge: exchange Supabase access token for Nest JWT so legacy API keeps working. */
-export async function exchangeNestSession(supabaseAccessToken: string) {
+export async function exchangeNestSession(
+  supabaseAccessToken: string,
+  opts?: { timeoutMs?: number }
+) {
   const apiUrl = getApiUrl();
   if (!apiUrl || typeof window === "undefined") return null;
 
+  const timeoutMs = opts?.timeoutMs ?? NEST_EXCHANGE_TIMEOUT_MS;
   const controller = new AbortController();
-  const timer = window.setTimeout(
-    () => controller.abort(),
-    NEST_EXCHANGE_TIMEOUT_MS
-  );
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${apiUrl}/auth/supabase-exchange`, {
@@ -134,6 +135,53 @@ export async function exchangeNestSession(supabaseAccessToken: string) {
     return null;
   } finally {
     window.clearTimeout(timer);
+  }
+}
+
+export function hasNestAccessToken(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(localStorage.getItem(NEST_KEYS.accessToken));
+}
+
+/**
+ * Ensure Nest JWT exists before Sync / calendar-connections calls.
+ * Re-exchanges from the current Supabase session when missing (race after login).
+ * Uses a longer timeout than background enrich so Sync can recover from a cold API.
+ */
+export async function ensureNestSession(opts?: {
+  timeoutMs?: number;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "Not in browser" };
+  }
+  if (hasNestAccessToken()) return { ok: true };
+
+  try {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const supabaseToken = data.session?.access_token;
+    if (!supabaseToken) {
+      return {
+        ok: false,
+        error: "Sign in again — no session for calendar sync API.",
+      };
+    }
+    const exchanged = await exchangeNestSession(supabaseToken, {
+      timeoutMs: opts?.timeoutMs ?? 8_000,
+    });
+    if (!exchanged) {
+      return {
+        ok: false,
+        error:
+          "Calendar sync API is unreachable or rejected the session. Is Nest running on the API URL?",
+      };
+    }
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Failed to prepare sync session",
+    };
   }
 }
 

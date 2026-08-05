@@ -21,8 +21,9 @@ import { AuditModule } from './audit/audit.module';
 
 /** `pnpm dev --filter @daypilot/api` runs with cwd `apps/api`; monorepo secrets live in repo-root `.env`. */
 const apiEnvFiles = [
-  join(process.cwd(), '..', '.env'),
-  join(process.cwd(), '.env'),
+  join(process.cwd(), '..', '..', '.env'), // repo root
+  join(process.cwd(), '..', '.env'), // apps/.env (optional)
+  join(process.cwd(), '.env'), // apps/api/.env overrides
 ].filter((p) => existsSync(p));
 
 @Module({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/daypilot_env.dart';
@@ -22,8 +23,9 @@ const _providers = <({String id, String name, String description})>[
   ),
   (
     id: 'apple',
-    name: 'Apple / iCloud',
-    description: 'Connect your Apple or iCloud calendar (setup coming soon).',
+    name: 'Apple / iCloud Calendar',
+    description:
+        'Connect with Apple ID + app-specific password (CalDAV). SSO is on Login.',
   ),
 ];
 
@@ -64,6 +66,10 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
   }
 
   Future<void> _connect(String provider) async {
+    if (provider == 'apple') {
+      if (mounted) context.push('/sync');
+      return;
+    }
     setState(() {
       _error = null;
       _actionId = provider;
@@ -138,8 +144,8 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              'Calendar connections require the DayPilot API. '
-              'Set DAYPILOT_API_URL in dart-define.json.',
+              'Calendar sync is temporarily unavailable. '
+              'Try again later, or contact support if this continues.',
               textAlign: TextAlign.center,
             ),
           ),

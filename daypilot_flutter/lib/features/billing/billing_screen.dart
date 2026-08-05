@@ -89,7 +89,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
           'currentPeriodEnd': null,
         };
         _notice =
-            'Showing Free plan. Set DAYPILOT_API_URL to sync subscription status.';
+            'Showing Free plan. Subscription status will sync when the API is available.';
       });
       return;
     }
@@ -130,7 +130,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   Future<void> _openPortal() async {
     if (!DayPilotEnv.hasDaypilotApi) {
       setState(
-        () => _error = 'Billing portal needs DAYPILOT_API_URL configured.',
+        () => _error = 'Billing portal is temporarily unavailable. Try again later.',
       );
       return;
     }

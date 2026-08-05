@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   Param,
+  Post,
   Query,
   Req,
   Res,
@@ -11,6 +13,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { CalendarConnectionsService } from './calendar-connections.service';
+import { ConnectAppleDto } from './dto/connect-apple.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CalendarProvider } from '../generated/prisma';
 
@@ -73,6 +76,20 @@ export class CalendarConnectionsController {
     } catch {
       res.redirect(`${frontend}/sync?error=outlook_callback`);
     }
+  }
+
+  /** iCloud CalDAV — Apple ID + app-specific password (not Sign in with Apple). */
+  @UseGuards(JwtAuthGuard)
+  @Post('apple/connect')
+  async connectApple(
+    @Req() req: { user: { id: string } },
+    @Body() dto: ConnectAppleDto,
+  ) {
+    return this.calendarConnections.connectAppleCalDav(
+      req.user.id,
+      dto.appleId,
+      dto.appSpecificPassword,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
