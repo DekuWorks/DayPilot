@@ -50,7 +50,8 @@ type AuthContextValue = AuthState & {
     username?: string
   ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginWithApple: () => Promise<void>;
+  /** Optional next path (e.g. `/sync`) after Apple SSO callback. */
+  loginWithApple: (options?: { next?: string }) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -345,20 +346,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, [supabase]);
 
-  const loginWithApple = useCallback(async () => {
-    if (!supabase) throw new Error("Supabase is not configured");
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: {
-        redirectTo: origin
-          ? `${origin}/auth/callback`
-          : "https://www.daypilot.co/auth/callback",
-      },
-    });
-    if (error) throw new Error(error.message);
-  }, [supabase]);
+  const loginWithApple = useCallback(
+    async (options?: { next?: string }) => {
+      if (!supabase) throw new Error("Supabase is not configured");
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const next =
+        options?.next && options.next.startsWith("/") ? options.next : null;
+      if (next && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("daypilot_auth_next", next);
+        } catch {
+          /* ignore */
+        }
+      }
+      const callbackBase = origin
+        ? `${origin}/auth/callback`
+        : "https://www.daypilot.co/auth/callback";
+      const redirectTo = next
+        ? `${callbackBase}?next=${encodeURIComponent(next)}`
+        : callbackBase;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: { redirectTo },
+      });
+      if (error) throw new Error(error.message);
+    },
+    [supabase]
+  );
 
   const logout = useCallback(async () => {
     enrichGenRef.current += 1;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
@@ -12,7 +12,10 @@ import type {
   CalendarProvider,
   ConnectionValidationStatus,
 } from "@/lib/calendar-connections-api";
-import { statusLabel } from "@/lib/calendar-connections-api";
+import {
+  normalizeAppSpecificPassword,
+  statusLabel,
+} from "@/lib/calendar-connections-api";
 
 const PROVIDERS: {
   id: CalendarProvider;
@@ -36,10 +39,32 @@ const PROVIDERS: {
     id: "apple",
     name: "Apple / iCloud Calendar",
     description:
-      "Connect with your Apple ID and an app-specific password (CalDAV). Separate from Sign in with Apple.",
+      "CalDAV with Apple ID + app-specific password. Sign in with Apple cannot grant calendar access (Apple limitation).",
     calendarReady: true,
   },
 ];
+
+function appleEmailFromIdentities(
+  identities: Array<{ provider: string; identity_data?: Record<string, unknown> }> | undefined,
+  fallbackEmail: string | undefined
+): string {
+  const apple = identities?.find((i) => i.provider === "apple");
+  const fromIdentity = apple?.identity_data?.email;
+  if (typeof fromIdentity === "string" && fromIdentity.includes("@")) {
+    // Skip Hide My Email relays — CalDAV needs the real Apple ID email
+    if (!fromIdentity.toLowerCase().endsWith("@privaterelay.appleid.com")) {
+      return fromIdentity;
+    }
+  }
+  if (
+    fallbackEmail &&
+    fallbackEmail.includes("@") &&
+    !fallbackEmail.toLowerCase().endsWith("@privaterelay.appleid.com")
+  ) {
+    return fallbackEmail;
+  }
+  return "";
+}
 
 function formatWhen(iso: string | null | undefined): string {
   if (!iso) return "Never";
@@ -67,13 +92,15 @@ export default function SyncPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [appleAuthLinked, setAppleAuthLinked] = useState(false);
   const [showAppleForm, setShowAppleForm] = useState(false);
   const [appleId, setAppleId] = useState("");
   const [applePassword, setApplePassword] = useState("");
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, loginWithApple } = useAuth();
 
   const connected = searchParams.get("connected");
   const setup = searchParams.get("setup");
@@ -119,7 +146,18 @@ export default function SyncPage() {
       const { data } = await supabase.auth.getUser();
       const linked =
         data.user?.identities?.some((i) => i.provider === "apple") ?? false;
-      if (!cancelled) setAppleAuthLinked(linked);
+      const prefill = appleEmailFromIdentities(
+        data.user?.identities as
+          | Array<{ provider: string; identity_data?: Record<string, unknown> }>
+          | undefined,
+        data.user?.email
+      );
+      if (!cancelled) {
+        setAppleAuthLinked(linked);
+        if (prefill) {
+          setAppleId((prev) => prev || prefill);
+        }
+      }
     }
     void checkAppleIdentity();
     return () => {
@@ -127,8 +165,15 @@ export default function SyncPage() {
     };
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (connected === "apple" && setup === "1") {
+      setShowAppleForm(true);
+    }
+  }, [connected, setup]);
+
   async function handleConnect(provider: CalendarProvider) {
     setError("");
+    setSuccess("");
     if (provider === "apple") {
       setShowAppleForm(true);
       return;
@@ -148,18 +193,34 @@ export default function SyncPage() {
   async function handleAppleCalDavSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setActionLoading("apple");
     try {
       await calendarConnectionsApi.connectAppleCalDav({
         appleId: appleId.trim(),
-        appSpecificPassword: applePassword,
+        appSpecificPassword: normalizeAppSpecificPassword(applePassword),
       });
       setShowAppleForm(false);
       setApplePassword("");
       await reload();
+      setSuccess(
+        "iCloud Calendar connected. Events are importing into your DayPilot calendar."
+      );
+      router.replace("/sync?connected=apple");
     } catch (err) {
       setError(err instanceof Error ? err.message : "iCloud connect failed");
     } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleLinkAppleSso() {
+    setError("");
+    setActionLoading("apple-sso");
+    try {
+      await loginWithApple({ next: "/sync?connected=apple&setup=1" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Apple sign-in failed");
       setActionLoading(null);
     }
   }
@@ -240,6 +301,17 @@ export default function SyncPage() {
           ) && "Something went wrong. Try again."}
         </div>
       )}
+      {success && (
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
+          {success}{" "}
+          <Link
+            href="/calendar"
+            className="text-[var(--brand-500)] font-medium hover:underline"
+          >
+            Open calendar
+          </Link>
+        </div>
+      )}
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
           {error}
@@ -251,7 +323,9 @@ export default function SyncPage() {
           Apple Sign-In (account)
         </h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          Account SSO via Supabase Auth. This is not iCloud Calendar access.
+          Account SSO via Supabase Auth. Linking Apple can prefill your Apple ID
+          email for iCloud Calendar — it still cannot sync calendars without an
+          app-specific password.
         </p>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4">
           <div>
@@ -261,18 +335,25 @@ export default function SyncPage() {
             <p className="text-sm text-[var(--text-secondary)]">
               {appleAuthLinked
                 ? "Linked to this DayPilot account."
-                : "Not linked — use Continue with Apple on Login or Signup."}
+                : "Not linked — link now, then continue with CalDAV below."}
             </p>
           </div>
-          <span
-            className={`text-sm font-semibold shrink-0 ${
-              appleAuthLinked
-                ? "text-[var(--brand-500)]"
-                : "text-[var(--text-tertiary)]"
-            }`}
-          >
-            {appleAuthLinked ? "Linked" : "Not linked"}
-          </span>
+          {appleAuthLinked ? (
+            <span className="text-sm font-semibold shrink-0 text-[var(--brand-500)]">
+              Linked
+            </span>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void handleLinkAppleSso()}
+              disabled={!!actionLoading}
+            >
+              {actionLoading === "apple-sso"
+                ? "Redirecting…"
+                : "Sign in with Apple"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -307,16 +388,18 @@ export default function SyncPage() {
               Connect iCloud Calendar
             </p>
             <p className="text-sm text-[var(--text-secondary)]">
-              Create an{" "}
+              1. Enable 2FA on your Apple ID. 2. Create an{" "}
               <a
-                href="https://support.apple.com/en-us/102654"
+                href="https://appleid.apple.com/account/manage"
                 target="_blank"
                 rel="noreferrer"
                 className="text-[var(--brand-500)] hover:underline"
               >
                 app-specific password
               </a>{" "}
-              for your Apple ID (2FA required), then paste it here.
+              at appleid.apple.com (Sign-In and Security). 3. Paste it below.
+              Gmail-based Apple IDs (e.g. you@gmail.com) work. Spaces in the
+              password are stripped automatically.
             </p>
             <label className="block text-sm text-[var(--text-secondary)]">
               Apple ID email
@@ -324,6 +407,8 @@ export default function SyncPage() {
                 type="email"
                 required
                 autoComplete="username"
+                name="apple-id-caldav"
+                placeholder="you@gmail.com or you@icloud.com"
                 value={appleId}
                 onChange={(e) => setAppleId(e.target.value)}
                 className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
@@ -334,7 +419,9 @@ export default function SyncPage() {
               <input
                 type="password"
                 required
-                autoComplete="current-password"
+                autoComplete="off"
+                name="apple-app-specific-password"
+                placeholder="xxxx-xxxx-xxxx-xxxx"
                 value={applePassword}
                 onChange={(e) => setApplePassword(e.target.value)}
                 className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-primary)]"

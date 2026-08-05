@@ -39,7 +39,20 @@ export default function AuthCallbackPage() {
           void exchangeNestSession(accessToken);
         }
 
-        router.replace("/dashboard");
+        let next = url.searchParams.get("next");
+        if (!next) {
+          try {
+            next = sessionStorage.getItem("daypilot_auth_next");
+            sessionStorage.removeItem("daypilot_auth_next");
+          } catch {
+            next = null;
+          }
+        }
+        const safeNext =
+          next && next.startsWith("/") && !next.startsWith("//")
+            ? next
+            : "/dashboard";
+        router.replace(safeNext);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Auth callback failed");
         setTimeout(() => router.replace("/login"), 2500);

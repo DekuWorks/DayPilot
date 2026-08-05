@@ -138,11 +138,25 @@ Two different features — do not confuse them:
 
 ### Calendar sync (CalDAV)
 
-1. User generates an [Apple app-specific password](https://support.apple.com/en-us/102654) (Apple ID with 2FA).
-2. On **Sync** (web `/sync` or Flutter Sync), choose **Connect iCloud** and enter Apple ID + app-specific password.
-3. Nest stores credentials on `calendar_connections` (`provider=apple`), discovers `https://caldav.icloud.com`, and imports VEVENTs into Prisma `events` with `source=apple` (−7…+60 days).
-4. **Validate** / **Sync now** re-check auth and re-import. Disconnect deletes Apple-sourced events.
+1. Enable two-factor authentication on the Apple ID.
+2. Generate an [app-specific password](https://support.apple.com/en-us/102654) at [appleid.apple.com](https://appleid.apple.com/account/manage) → Sign-In and Security → App-Specific Passwords.
+3. On **Sync** (web `/sync` or Flutter Sync):
+   - Optional: **Sign in with Apple** (SSO) to link the account and prefill the Apple ID email (Hide My Email relays are skipped).
+   - Choose **Connect iCloud** and enter Apple ID email + app-specific password.
+4. Nest authenticates against `caldav.icloud.com` (and `.well-known/caldav`), discovers VEVENT calendars, stores credentials on `calendar_connections` (`provider=apple`), and imports VEVENTs into Prisma `events` with `source=apple` (−7…+60 days).
+5. **Validate** / **Sync now** re-check auth and re-import. Disconnect deletes Apple-sourced events.
 
-**Limits (current):** one-way import (DayPilot ← iCloud). Push edits back to iCloud is not implemented. Sign in with Apple **does not** unlock iCloud Calendar access.
+**Apple ID email:** Use the same email you use at appleid.apple.com — including Gmail-based Apple IDs (`you@gmail.com`). Spaces in the app-specific password are stripped client- and server-side; hyphenated `xxxx-xxxx-xxxx-xxxx` form is accepted.
+
+**Limits (current):** one-way import (DayPilot ← iCloud). Push edits back to iCloud is not implemented. Sign in with Apple **does not** unlock iCloud Calendar access — Apple does not expose CalDAV via Sign in with Apple.
 
 **Unified calendar:** Nest `GET /events` returns all sources for the user (`native` / `google` / `outlook` / `apple`). Web Calendar/Home and Flutter (with `DAYPILOT_API_URL`) read that union so Google + iCloud + Outlook appear together.
+
+### Troubleshooting iCloud CalDAV
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Auth failed (401) | Wrong password or used Apple ID password | New app-specific password; paste only the 16-char value |
+| Forbidden (403) | 2FA off, Calendar disabled, or revoked ASP | Enable 2FA + iCloud Calendar; generate a new ASP |
+| “does not look like an app-specific password” | Pasted wrong secret | Must be 16 alphanumeric chars (with optional hyphens/spaces) |
+| Connected but no events | Empty window or non-VEVENT calendar | Confirm events exist in iCloud for ± weeks; tap **Sync now** |

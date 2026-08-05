@@ -126,6 +126,28 @@ class AuthRepository {
     return user.identities?.any((i) => i.provider == 'apple') ?? false;
   }
 
+  /// Best-effort Apple ID email for CalDAV prefill (skips Hide My Email relays).
+  String? get appleIdEmailForCalDav {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+    for (final identity in user.identities ?? const []) {
+      if (identity.provider != 'apple') continue;
+      final email = identity.identityData?['email'];
+      if (email is String &&
+          email.contains('@') &&
+          !email.toLowerCase().endsWith('@privaterelay.appleid.com')) {
+        return email;
+      }
+    }
+    final fallback = user.email;
+    if (fallback != null &&
+        fallback.contains('@') &&
+        !fallback.toLowerCase().endsWith('@privaterelay.appleid.com')) {
+      return fallback;
+    }
+    return null;
+  }
+
   Future<void> signOut() async {
     await _client.auth.signOut();
     if (_apiSession != null) {

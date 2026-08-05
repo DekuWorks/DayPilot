@@ -32,7 +32,7 @@ const _providers = <({
     id: 'apple',
     name: 'Apple / iCloud Calendar',
     description:
-        'Connect with Apple ID + app-specific password (CalDAV). Separate from Sign in with Apple.',
+        'CalDAV with Apple ID + app-specific password. Sign in with Apple cannot grant calendar access.',
     calendarReady: true,
   ),
 ];
@@ -102,8 +102,33 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     }
   }
 
+  Future<void> _linkAppleSso() async {
+    setState(() {
+      _error = null;
+      _actionId = 'apple-sso';
+    });
+    try {
+      await ref.read(authRepositoryProvider).signInWithApple();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Complete Sign in with Apple, then return here to connect iCloud Calendar with an app-specific password.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _actionId = null);
+    }
+  }
+
   Future<void> _connectAppleCalDav() async {
-    final appleIdCtrl = TextEditingController();
+    final prefill =
+        ref.read(authRepositoryProvider).appleIdEmailForCalDav ?? '';
+    final appleIdCtrl = TextEditingController(text: prefill);
     final passwordCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -115,8 +140,10 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Use an app-specific password from appleid.apple.com '
-                '(2FA required). This is not Sign in with Apple.',
+                'Create an app-specific password at appleid.apple.com '
+                '(Sign-In and Security → App-Specific Passwords). '
+                '2FA required. Gmail Apple IDs work. Spaces are stripped. '
+                'This is not Sign in with Apple.',
                 style: TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 12),
@@ -126,15 +153,18 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                 autofillHints: const [AutofillHints.username],
                 decoration: const InputDecoration(
                   labelText: 'Apple ID email',
+                  hintText: 'you@gmail.com or you@icloud.com',
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: passwordCtrl,
                 obscureText: true,
-                autofillHints: const [AutofillHints.password],
+                autocorrect: false,
+                enableSuggestions: false,
                 decoration: const InputDecoration(
                   labelText: 'App-specific password',
+                  hintText: 'xxxx-xxxx-xxxx-xxxx',
                 ),
               ),
             ],
@@ -158,7 +188,10 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
       return;
     }
     final appleId = appleIdCtrl.text.trim();
-    final password = passwordCtrl.text;
+    final password =
+        CalendarConnectionsRepository.normalizeAppSpecificPassword(
+      passwordCtrl.text,
+    );
     appleIdCtrl.dispose();
     passwordCtrl.dispose();
     if (appleId.isEmpty || password.isEmpty) {
@@ -178,7 +211,11 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
       ref.read(calendarDataVersionProvider.notifier).bump();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('iCloud Calendar connected.')),
+          const SnackBar(
+            content: Text(
+              'iCloud Calendar connected. Events will appear on Calendar.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -311,6 +348,9 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
             const SizedBox(height: 16),
             _AppleAuthCard(
               linked: ref.read(authRepositoryProvider).hasAppleIdentity,
+              busy: _actionId != null,
+              linking: _actionId == 'apple-sso',
+              onLinkApple: _linkAppleSso,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -406,9 +446,17 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
 }
 
 class _AppleAuthCard extends StatelessWidget {
-  const _AppleAuthCard({required this.linked});
+  const _AppleAuthCard({
+    required this.linked,
+    required this.busy,
+    required this.linking,
+    required this.onLinkApple,
+  });
 
   final bool linked;
+  final bool busy;
+  final bool linking;
+  final VoidCallback onLinkApple;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +481,8 @@ class _AppleAuthCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Account SSO via Supabase Auth. This is not iCloud Calendar access.',
+            'Account SSO. Linking can prefill your Apple ID for CalDAV — '
+            'an app-specific password is still required for iCloud Calendar.',
             style: TextStyle(
               color: DayPilotColors.textSecondary,
               fontSize: 13,
@@ -451,23 +500,27 @@ class _AppleAuthCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                linked ? 'Linked' : 'Not linked',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: linked
-                      ? DayPilotColors.brand500
-                      : DayPilotColors.textTertiary,
+              if (linked)
+                const Text(
+                  'Linked',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: DayPilotColors.brand500,
+                  ),
+                )
+              else
+                OutlinedButton(
+                  onPressed: busy ? null : onLinkApple,
+                  child: Text(linking ? 'Opening…' : 'Sign in with Apple'),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             linked
                 ? 'Linked to this DayPilot account.'
-                : 'Not linked — use Continue with Apple on Login or Signup.',
+                : 'Not linked — tap Sign in with Apple, then Connect iCloud below.',
             style: const TextStyle(
               color: DayPilotColors.textSecondary,
               fontSize: 13,

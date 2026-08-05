@@ -157,6 +157,11 @@ class CalendarConnectionsRepository {
     return url;
   }
 
+  /// Strip spaces from Apple app-specific passwords before send.
+  static String normalizeAppSpecificPassword(String raw) {
+    return raw.replaceAll(RegExp(r'[\s\u00A0\u202F\u2007]+'), '').trim();
+  }
+
   /// iCloud CalDAV: Apple ID + app-specific password.
   Future<CalendarConnection?> connectAppleCalDav({
     required String appleId,
@@ -166,8 +171,9 @@ class CalendarConnectionsRepository {
     final res = await _session.post(
       '/calendar-connections/apple/connect',
       body: {
-        'appleId': appleId,
-        'appSpecificPassword': appSpecificPassword,
+        'appleId': appleId.trim().toLowerCase(),
+        'appSpecificPassword':
+            normalizeAppSpecificPassword(appSpecificPassword),
       },
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {

@@ -83,6 +83,11 @@ export async function getConnectUrl(
   });
 }
 
+/** Strip spaces from Apple app-specific passwords before send. */
+export function normalizeAppSpecificPassword(raw: string): string {
+  return raw.replace(/[\s\u00A0\u202F\u2007]+/g, "").trim();
+}
+
 /** iCloud CalDAV: Apple ID + app-specific password. */
 export async function connectAppleCalDav(input: {
   appleId: string;
@@ -98,8 +103,10 @@ export async function connectAppleCalDav(input: {
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          appleId: input.appleId,
-          appSpecificPassword: input.appSpecificPassword,
+          appleId: input.appleId.trim().toLowerCase(),
+          appSpecificPassword: normalizeAppSpecificPassword(
+            input.appSpecificPassword
+          ),
         }),
       }
     );

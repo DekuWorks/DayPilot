@@ -128,9 +128,9 @@ Expect `external_apple_enabled: true` and client IDs starting with `com.dekuwork
 | Feature | Where credentials live | Doc |
 |---------|------------------------|-----|
 | **Sign in with Apple** | Supabase Auth → Apple provider | this file |
-| **iCloud Calendar sync** | Nest CalDAV (not shipped yet) | [CALENDAR_INTEGRATIONS_SETUP.md](./CALENDAR_INTEGRATIONS_SETUP.md) |
+| **iCloud Calendar sync** | Nest CalDAV + app-specific password | [CALENDAR_INTEGRATIONS_SETUP.md](./CALENDAR_INTEGRATIONS_SETUP.md) |
 
-Signing in with Apple does **not** grant calendar access. iCloud Calendar needs CalDAV + an [app-specific password](https://support.apple.com/en-us/102654).
+Signing in with Apple does **not** grant calendar access (Apple limitation). Sync → **Sign in with Apple** can link SSO and prefill the Apple ID email; iCloud Calendar still needs CalDAV + an [app-specific password](https://support.apple.com/en-us/102654).
 
 ## References
 
