@@ -2,8 +2,9 @@
 
 Use this guide for **Phase H** (items 28–30 in `docs/FLUTTER_MIGRATION_TASKS.md`).
 
-**Bundle ID / application ID:** `com.daypilot.daypilot`  
-**Version:** `1.0.0+1` in `daypilot_flutter/pubspec.yaml` (bump `+` build number for each store upload).
+**Bundle ID / application ID:** `com.dekuworks.daypilot` (URL scheme for Auth deep link remains `com.daypilot.daypilot://login-callback/`)  
+**ASC app:** [DayPilot Daily](https://appstoreconnect.apple.com/apps/6798407960) (`6798407960`)  
+**Version:** bump `version:` in `daypilot_flutter/pubspec.yaml` (e.g. `1.0.0+4`) for each store upload.
 
 ---
 
@@ -28,12 +29,26 @@ Use this guide for **Phase H** (items 28–30 in `docs/FLUTTER_MIGRATION_TASKS.m
 
 ### Environment
 
-Production mobile builds need Supabase (and API for Option C) baked in at compile time:
+Production mobile / TestFlight builds need Supabase + Nest API baked in at compile time (`dart-define.json` is gitignored):
 
 ```bash
 cd daypilot_flutter
-cp dart-define.example.json dart-define.prod.json
-# Edit: SUPABASE_URL, SUPABASE_ANON_KEY, DAYPILOT_API_URL (production API)
+cp dart-define.example.json dart-define.json
+# Edit:
+#   SUPABASE_URL=https://wmkytyrcxbzjqiykbauw.supabase.co
+#   SUPABASE_ANON_KEY=<anon or publishable from Supabase dashboard>
+#   DAYPILOT_API_URL=https://api-production-6c2c.up.railway.app
+```
+
+Release IPA (from Desktop sources; `./run.sh` rsyncs to `~/Developer/daypilot_flutter_run` for CodeSign):
+
+```bash
+# After editing dart-define.json + bumping pubspec build number:
+DEV_RUN="${DAYPILOT_IOS_RUN_DIR:-$HOME/Developer/daypilot_flutter_run}"
+# Prefer: sync via daypilot_flutter/run.sh pattern, then:
+cd "$DEV_RUN"
+flutter build ipa --release --dart-define-from-file=dart-define.json
+# Upload: xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios --apiKey … --apiIssuer …
 ```
 
 ### Android signing

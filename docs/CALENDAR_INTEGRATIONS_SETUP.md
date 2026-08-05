@@ -37,12 +37,15 @@ OAuth redirect URIs (must match **exactly**):
 
 For production, replace `localhost:3001` with your deployed API URL and set `FRONTEND_URL` to `https://www.daypilot.co`.
 
-Production redirect examples:
+Production redirect URIs (DayPilot — register on the same Google **Web** OAuth client as Auth, or a dedicated calendar client):
 
 | Provider | Production redirect URI |
 |----------|-------------------------|
-| Google   | `https://<your-api-host>/calendar-connections/google/callback` |
-| Outlook  | `https://<your-api-host>/calendar-connections/outlook/callback` |
+| Google   | `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` |
+| Google (optional, when DNS ready) | `https://api.daypilot.co/calendar-connections/google/callback` |
+| Outlook  | `https://api-production-6c2c.up.railway.app/calendar-connections/outlook/callback` |
+
+Nest builds the Google redirect from Railway `API_URL` + `/calendar-connections/google/callback`. After consent, Nest redirects the browser to `{FRONTEND_URL}/sync?connected=google` (`https://www.daypilot.co/sync`). Mobile Sync refreshes connections when the app resumes.
 
 Also add those URIs in Google Cloud / Azure app settings.
 

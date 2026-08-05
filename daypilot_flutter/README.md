@@ -24,6 +24,12 @@ Secrets are **not** committed. Recommended **local workflow**:
 
    `dart-define.json` is **gitignored**. Use **`http://localhost:3001`** for iOS Simulator / Chrome; **`http://10.0.2.2:3001`** for Android emulator; your LAN IP for a physical device.
 
+   **TestFlight / release IPA** must set production Nest API (not localhost):
+
+   `DAYPILOT_API_URL=https://api-production-6c2c.up.railway.app`
+
+   Build with `--dart-define-from-file=dart-define.json` (see `docs/MOBILE_INTERNAL_RELEASE.md`).
+
 2. **Run** from the repo root:
 
    ```bash

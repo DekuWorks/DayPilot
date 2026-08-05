@@ -20,8 +20,11 @@ in Supabase Auth.
      - `https://www.daypilot.co`
      - `https://daypilot.co`
      - `http://localhost:3000` (local)
-   - **Authorized redirect URIs** (Supabase callback — required)
-     - `https://wmkytyrcxbzjqiykbauw.supabase.co/auth/v1/callback`
+   - **Authorized redirect URIs** (register all that apply on this client, or split Auth vs Calendar clients):
+     - `https://wmkytyrcxbzjqiykbauw.supabase.co/auth/v1/callback` — Supabase Auth / SSO (required for Sign in with Google)
+     - `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` — Nest calendar Connect (production)
+     - `https://api.daypilot.co/calendar-connections/google/callback` — Nest calendar (when custom API DNS is live)
+     - `http://localhost:3001/calendar-connections/google/callback` — Nest calendar (local)
 5. Copy **Client ID** and **Client secret**.
 
 ## 2. Enable in Supabase (pick one)
