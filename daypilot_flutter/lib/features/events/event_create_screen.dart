@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/daypilot_page_shell.dart';
+import '../../data/services/apple_calendar_service.dart';
 import '../../domain/models/event_record.dart';
 import '../calendar/calendar_providers.dart';
 import '../insights/insights_providers.dart';
@@ -24,6 +26,15 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
   DateTime _start = DateTime.now();
   DateTime _end = DateTime.now().add(const Duration(hours: 1));
   bool _allDay = false;
+  /// null = DayPilot only; otherwise EventKit calendar id.
+  String? _destinationCalendarId;
+  List<({String id, String title})> _writableCalendars = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDestinations());
+  }
 
   @override
   void dispose() {
@@ -31,6 +42,19 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
     _desc.dispose();
     _location.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDestinations() async {
+    if (!AppleCalendarService.isSupported) return;
+    try {
+      final service = AppleCalendarService();
+      final calendars = await service.getAvailableDeviceCalendars();
+      final writable = calendars
+          .where((c) => !c.isReadOnly && !c.duplicatePrevented)
+          .map((c) => (id: c.id, title: c.title))
+          .toList();
+      if (mounted) setState(() => _writableCalendars = writable);
+    } catch (_) {}
   }
 
   String _formatStartEnd(BuildContext context, DateTime d) {
@@ -99,21 +123,90 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
       );
       return;
     }
+    final title = _title.text.trim();
+    final description =
+        _desc.text.trim().isEmpty ? null : _desc.text.trim();
+    final location =
+        _location.text.trim().isEmpty ? null : _location.text.trim();
+
+    if (_destinationCalendarId != null && AppleCalendarService.isSupported) {
+      try {
+        final service = AppleCalendarService();
+        final externalId = await service.createAppleCalendarEvent(
+          calendarId: _destinationCalendarId!,
+          title: title,
+          start: _start,
+          end: _end,
+          description: description,
+          location: location,
+          allDay: _allDay,
+        );
+        final deviceId = await service.deviceId();
+        await ref.read(calendarConnectionsRepositoryProvider).syncEventKit(
+              deviceId: deviceId,
+              deviceLabel: 'iPhone',
+                  calendars: [
+                {
+                  'externalCalendarId': _destinationCalendarId!,
+                  'title': () {
+                    for (final c in _writableCalendars) {
+                      if (c.id == _destinationCalendarId) return c.title;
+                    }
+                    return 'Calendar';
+                  }(),
+                  'isSelected': true,
+                  'isReadOnly': false,
+                },
+              ],
+              events: [
+                {
+                  'externalEventId': externalId,
+                  'externalCalendarId': _destinationCalendarId!,
+                  'title': title,
+                  'startsAt': _start.toUtc().toIso8601String(),
+                  'endsAt': _end.toUtc().toIso8601String(),
+                  if (description != null) 'description': description,
+                  if (location != null) 'location': location,
+                  'allDay': _allDay,
+                },
+              ],
+              reconcileDeletes: false,
+            );
+        ref.read(calendarDataVersionProvider.notifier).bump();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Apple Calendar save failed: $e')),
+          );
+        }
+        return;
+      }
+    }
+
     final draft = EventRecord(
       id: const Uuid().v4(),
-      title: _title.text.trim(),
-      description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
-      location: _location.text.trim().isEmpty ? null : _location.text.trim(),
+      title: title,
+      description: description,
+      location: location,
       startsAt: _start,
       endsAt: _end,
       allDay: _allDay,
     );
-    final saved = await ref.read(eventRepositoryProvider).create(draft);
+    // Still create DayPilot native when destination is DayPilot.
+    if (_destinationCalendarId == null) {
+      final saved = await ref.read(eventRepositoryProvider).create(draft);
+      ref.invalidate(calendarMonthEventsFamily);
+      ref.invalidate(calendarWeekEventsFamily);
+      ref.invalidate(calendarDayEventsFamily);
+      ref.invalidate(latestInsightProvider);
+      if (mounted) context.go('/events/${saved.id}');
+      return;
+    }
     ref.invalidate(calendarMonthEventsFamily);
     ref.invalidate(calendarWeekEventsFamily);
     ref.invalidate(calendarDayEventsFamily);
     ref.invalidate(latestInsightProvider);
-    if (mounted) context.go('/events/${saved.id}');
+    if (mounted) context.go('/calendar');
   }
 
   @override
@@ -143,6 +236,26 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
                   labelText: 'Location / meeting URL',
                 ),
               ),
+              if (_writableCalendars.isNotEmpty)
+                DropdownButtonFormField<String?>(
+                  initialValue: _destinationCalendarId,
+                  decoration: const InputDecoration(
+                    labelText: 'Save to calendar',
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('DayPilot'),
+                    ),
+                    ..._writableCalendars.map(
+                      (c) => DropdownMenuItem<String?>(
+                        value: c.id,
+                        child: Text(c.title),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _destinationCalendarId = v),
+                ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('All day'),

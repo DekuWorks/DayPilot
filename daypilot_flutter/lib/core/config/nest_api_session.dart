@@ -132,8 +132,11 @@ class NestApiSession {
     });
   }
 
-  Future<http.Response> delete(String path) async {
-    final uri = Uri.parse('$baseUrl$path');
+  Future<http.Response> delete(
+    String path, {
+    Map<String, String>? query,
+  }) async {
+    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     return _send(() async {
       final headers = await authHeaders();
       return http.delete(uri, headers: headers);

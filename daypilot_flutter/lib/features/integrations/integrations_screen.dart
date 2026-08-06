@@ -22,10 +22,10 @@ const _providers = <({String id, String name, String description})>[
     description: 'Sync events from Outlook or Microsoft 365.',
   ),
   (
-    id: 'apple',
-    name: 'Apple / iCloud Calendar',
+    id: 'apple_eventkit',
+    name: 'Apple Calendar',
     description:
-        'Connect with Apple ID + app-specific password (CalDAV). SSO is on Login.',
+        'Connect through this iPhone (EventKit). Manage status on Sync.',
   ),
 ];
 
@@ -66,8 +66,8 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
   }
 
   Future<void> _connect(String provider) async {
-    if (provider == 'apple') {
-      if (mounted) context.push('/sync');
+    if (provider == 'apple' || provider == 'apple_eventkit') {
+      if (mounted) context.push('/integrations/apple-calendar');
       return;
     }
     setState(() {

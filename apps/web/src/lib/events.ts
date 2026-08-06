@@ -126,6 +126,7 @@ export function sourceAccent(source?: string | null): {
         bg: "color-mix(in srgb, #6366F1 18%, transparent)",
       };
     case "apple":
+    case "apple_eventkit":
       return {
         border: "#A3A3A3",
         bg: "color-mix(in srgb, #A3A3A3 20%, transparent)",

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -13,8 +14,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { CalendarConnectionsService } from './calendar-connections.service';
+import { EventKitSyncService } from './eventkit-sync.service';
 import { ConnectAppleDto } from './dto/connect-apple.dto';
 import { ImportDeviceEventsDto } from './dto/import-device-events.dto';
+import {
+  DisconnectEventKitDto,
+  EventKitSyncDto,
+  PatchExternalCalendarsDto,
+} from './dto/eventkit-sync.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { CalendarProvider } from '../generated/prisma';
 
@@ -22,6 +29,7 @@ import type { CalendarProvider } from '../generated/prisma';
 export class CalendarConnectionsController {
   constructor(
     private readonly calendarConnections: CalendarConnectionsService,
+    private readonly eventKitSync: EventKitSyncService,
     private readonly config: ConfigService,
   ) {}
 
@@ -79,7 +87,7 @@ export class CalendarConnectionsController {
     }
   }
 
-  /** iCloud CalDAV — Apple ID + app-specific password (not Sign in with Apple). */
+  /** @deprecated CalDAV — dormant product path; kept for API compatibility. */
   @UseGuards(JwtAuthGuard)
   @Post('apple/connect')
   async connectApple(
@@ -93,7 +101,49 @@ export class CalendarConnectionsController {
     );
   }
 
-  /** iOS EventKit — device calendar events (no app-specific password). */
+  /** EventKit sync — primary Apple Calendar path. */
+  @UseGuards(JwtAuthGuard)
+  @Get('apple/eventkit')
+  async getEventKit(
+    @Req() req: { user: { id: string } },
+    @Query('deviceId') deviceId?: string,
+  ) {
+    return this.eventKitSync.getStatus(req.user.id, deviceId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('apple/eventkit/sync')
+  async syncEventKit(
+    @Req() req: { user: { id: string } },
+    @Body() dto: EventKitSyncDto,
+  ) {
+    return this.eventKitSync.sync(req.user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('apple/eventkit/calendars')
+  async patchEventKitCalendars(
+    @Req() req: { user: { id: string } },
+    @Body() dto: PatchExternalCalendarsDto,
+  ) {
+    return this.eventKitSync.patchCalendars(req.user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('apple/eventkit')
+  async disconnectEventKit(
+    @Req() req: { user: { id: string } },
+    @Query('deviceId') deviceId?: string,
+    @Query('keepEvents') keepEvents?: string,
+  ) {
+    const dto: DisconnectEventKitDto = {
+      deviceId,
+      keepEvents: keepEvents === '1' || keepEvents === 'true',
+    };
+    return this.eventKitSync.disconnect(req.user.id, dto);
+  }
+
+  /** @deprecated Prefer POST apple/eventkit/sync */
   @UseGuards(JwtAuthGuard)
   @Post('apple/device-import')
   async importDeviceEvents(

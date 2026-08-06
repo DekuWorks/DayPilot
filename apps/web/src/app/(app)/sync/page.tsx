@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
@@ -11,60 +11,26 @@ import type {
   CalendarConnection,
   CalendarProvider,
   ConnectionValidationStatus,
+  EventKitConnectionStatus,
 } from "@/lib/calendar-connections-api";
-import {
-  normalizeAppSpecificPassword,
-  statusLabel,
-} from "@/lib/calendar-connections-api";
+import { statusLabel } from "@/lib/calendar-connections-api";
 
 const PROVIDERS: {
   id: CalendarProvider;
   name: string;
   description: string;
-  calendarReady: boolean;
 }[] = [
   {
     id: "google",
     name: "Google Calendar",
     description: "Events sync two-way with your Google account.",
-    calendarReady: true,
   },
   {
     id: "outlook",
     name: "Outlook / Microsoft 365",
     description: "Events sync two-way with Outlook or Microsoft 365.",
-    calendarReady: true,
-  },
-  {
-    id: "apple",
-    name: "Apple / iCloud Calendar",
-    description:
-      "Continue with Apple → enter a one-time app-specific password. Apple has no calendar OAuth like Google. On iPhone you can also import via device calendars (no password).",
-    calendarReady: true,
   },
 ];
-
-function appleEmailFromIdentities(
-  identities: Array<{ provider: string; identity_data?: Record<string, unknown> }> | undefined,
-  fallbackEmail: string | undefined
-): string {
-  const apple = identities?.find((i) => i.provider === "apple");
-  const fromIdentity = apple?.identity_data?.email;
-  if (typeof fromIdentity === "string" && fromIdentity.includes("@")) {
-    // Skip Hide My Email relays — CalDAV needs the real Apple ID email
-    if (!fromIdentity.toLowerCase().endsWith("@privaterelay.appleid.com")) {
-      return fromIdentity;
-    }
-  }
-  if (
-    fallbackEmail &&
-    fallbackEmail.includes("@") &&
-    !fallbackEmail.toLowerCase().endsWith("@privaterelay.appleid.com")
-  ) {
-    return fallbackEmail;
-  }
-  return "";
-}
 
 function formatWhen(iso: string | null | undefined): string {
   if (!iso) return "Never";
@@ -90,33 +56,32 @@ function statusTone(status: ConnectionValidationStatus): string {
 
 export default function SyncPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
+  const [eventKit, setEventKit] = useState<EventKitConnectionStatus | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [appleAuthLinked, setAppleAuthLinked] = useState(false);
-  const [showAppleForm, setShowAppleForm] = useState(false);
-  const [appleId, setAppleId] = useState("");
-  const [applePassword, setApplePassword] = useState("");
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { isAuthenticated, loginWithApple } = useAuth();
 
   const connected = searchParams.get("connected");
-  const setup = searchParams.get("setup");
-  const appleConnect = searchParams.get("apple_connect");
   const err = searchParams.get("error");
 
   const reload = useCallback(async () => {
-    const data = await calendarConnectionsApi.listConnections();
+    const [data, ek] = await Promise.all([
+      calendarConnectionsApi.listConnections(),
+      calendarConnectionsApi.getEventKitStatus().catch(() => null),
+    ]);
     setConnections(data);
+    setEventKit(ek);
     setError("");
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError("");
     reload()
       .catch((e) => {
         if (!cancelled) {
@@ -135,11 +100,7 @@ export default function SyncPage() {
   useEffect(() => {
     let cancelled = false;
     async function checkAppleIdentity() {
-      if (!isAuthenticated) {
-        if (!cancelled) setAppleAuthLinked(false);
-        return;
-      }
-      if (!isSupabaseConfigured()) {
+      if (!isAuthenticated || !isSupabaseConfigured()) {
         if (!cancelled) setAppleAuthLinked(false);
         return;
       }
@@ -147,18 +108,7 @@ export default function SyncPage() {
       const { data } = await supabase.auth.getUser();
       const linked =
         data.user?.identities?.some((i) => i.provider === "apple") ?? false;
-      const prefill = appleEmailFromIdentities(
-        data.user?.identities as
-          | Array<{ provider: string; identity_data?: Record<string, unknown> }>
-          | undefined,
-        data.user?.email
-      );
-      if (!cancelled) {
-        setAppleAuthLinked(linked);
-        if (prefill) {
-          setAppleId((prev) => prev || prefill);
-        }
-      }
+      if (!cancelled) setAppleAuthLinked(linked);
     }
     void checkAppleIdentity();
     return () => {
@@ -166,34 +116,8 @@ export default function SyncPage() {
     };
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    // After Sign in with Apple returns, continue the calendar connect wizard.
-    if (
-      appleConnect === "1" ||
-      (connected === "apple" && setup === "1")
-    ) {
-      setShowAppleForm(true);
-    }
-  }, [connected, setup, appleConnect]);
-
   async function handleConnect(provider: CalendarProvider) {
     setError("");
-    setSuccess("");
-    if (provider === "apple") {
-      // Same entry point as Google: start with Apple SSO, then CalDAV password.
-      if (!appleAuthLinked) {
-        setActionLoading("apple");
-        try {
-          await loginWithApple({ next: "/sync?apple_connect=1" });
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Apple sign-in failed");
-          setActionLoading(null);
-        }
-        return;
-      }
-      setShowAppleForm(true);
-      return;
-    }
     setActionLoading(provider);
     try {
       const result = await calendarConnectionsApi.getConnectUrl(provider);
@@ -206,26 +130,13 @@ export default function SyncPage() {
     }
   }
 
-  async function handleAppleCalDavSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleLinkAppleAccount() {
     setError("");
-    setSuccess("");
-    setActionLoading("apple");
+    setActionLoading("apple-sso");
     try {
-      await calendarConnectionsApi.connectAppleCalDav({
-        appleId: appleId.trim(),
-        appSpecificPassword: normalizeAppSpecificPassword(applePassword),
-      });
-      setShowAppleForm(false);
-      setApplePassword("");
-      await reload();
-      setSuccess(
-        "iCloud Calendar connected. Events are importing into your DayPilot calendar."
-      );
-      router.replace("/sync?connected=apple");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "iCloud connect failed");
-    } finally {
+      await loginWithApple({ next: "/sync" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Apple sign-in failed");
       setActionLoading(null);
     }
   }
@@ -272,14 +183,22 @@ export default function SyncPage() {
     }
   }
 
+  const ekConn = eventKit?.connections?.[0];
+  const ekConnected = !!ekConn && ekConn.calendarStatus === "connected";
+  const selectedCount =
+    ekConn?.calendars?.filter((c) => c.isSelected).length ?? 0;
+  const deepLink = "com.daypilot.daypilot://integrations/apple-calendar";
+  const universalLink =
+    "https://www.daypilot.co/app/integrations/apple-calendar";
+
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
         Sync
       </h1>
       <p className="text-[var(--text-secondary)] mb-6">
-        Connect Google, Outlook, and iCloud. Events merge into one DayPilot
-        calendar. Use Validate / Sync now to check tokens and refresh.
+        Connect Google and Outlook. Apple Calendar syncs through the DayPilot
+        iOS app (EventKit) — no Apple ID password on the web.
       </p>
 
       {connected && !err && (
@@ -288,33 +207,11 @@ export default function SyncPage() {
             "Google Calendar connected. Events are syncing."}
           {connected === "outlook" &&
             "Outlook connected. Events are syncing."}
-          {connected === "apple" &&
-            (setup === "1"
-              ? "Enter your Apple ID and app-specific password below to sync iCloud Calendar."
-              : "iCloud Calendar connected. Events are syncing.")}
         </div>
       )}
       {err && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
-          {err === "missing_params" &&
-            "Missing OAuth parameters. Try connecting again."}
-          {err === "google_callback" && "Google connection failed. Try again."}
-          {err === "outlook_callback" &&
-            "Outlook connection failed. Try again."}
-          {!["missing_params", "google_callback", "outlook_callback"].includes(
-            err
-          ) && "Something went wrong. Try again."}
-        </div>
-      )}
-      {success && (
-        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
-          {success}{" "}
-          <Link
-            href="/calendar"
-            className="text-[var(--brand-500)] font-medium hover:underline"
-          >
-            Open calendar
-          </Link>
+          Something went wrong. Try again.
         </div>
       )}
       {error && (
@@ -322,6 +219,109 @@ export default function SyncPage() {
           {error}
         </div>
       )}
+
+      <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-4 mb-8">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+          Apple
+        </h2>
+
+        <div className="rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-medium text-[var(--text-primary)]">
+                Apple Account
+              </p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Sign in with Apple for your DayPilot account. This does not grant
+                calendar access.
+              </p>
+            </div>
+            {appleAuthLinked ? (
+              <span className="text-sm font-semibold text-[var(--brand-500)]">
+                Connected
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleLinkAppleAccount()}
+                disabled={!!actionLoading}
+              >
+                {actionLoading === "apple-sso" ? "Redirecting…" : "Sign in with Apple"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-medium text-[var(--text-primary)]">
+                Apple Calendar
+              </p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                {ekConnected
+                  ? `Connected through ${ekConn?.displayName || "iPhone"}`
+                  : "Setup required — enable calendar access in the DayPilot iOS app."}
+              </p>
+            </div>
+            <span
+              className={`text-sm font-semibold shrink-0 ${
+                ekConnected
+                  ? "text-[var(--brand-500)]"
+                  : "text-[var(--warning)]"
+              }`}
+            >
+              {ekConnected ? "Connected through iPhone" : "Setup required"}
+            </span>
+          </div>
+          {ekConnected ? (
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <div>
+                <dt className="text-[var(--text-tertiary)]">Calendars</dt>
+                <dd className="text-[var(--text-primary)]">
+                  {selectedCount} selected
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[var(--text-tertiary)]">Last synced</dt>
+                <dd className="text-[var(--text-primary)]">
+                  {formatWhen(ekConn?.lastSyncedAt)}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Open DayPilot on your iPhone to allow calendar access. iCloud
+                events then appear here automatically (read-only on web).
+              </p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                Continue setup on iPhone
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={deepLink}
+                  className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+                >
+                  Open in DayPilot app
+                </a>
+                <Link
+                  href="/app/integrations/apple-calendar"
+                  className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+                >
+                  Setup instructions
+                </Link>
+              </div>
+              <p className="text-xs text-[var(--text-tertiary)] break-all">
+                Deep link: {deepLink}
+                <br />
+                Universal: {universalLink}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-6 mb-8">
         <div className="flex items-center justify-between gap-3">
@@ -344,77 +344,6 @@ export default function SyncPage() {
             Refresh
           </Button>
         </div>
-
-        {showAppleForm && (
-          <form
-            onSubmit={handleAppleCalDavSubmit}
-            className="rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4 space-y-3"
-          >
-            <p className="font-medium text-[var(--text-primary)]">
-              Step 2 — App-specific password
-            </p>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {appleAuthLinked
-                ? "Apple account linked. Finish with a calendar password (not your Apple ID login password)."
-                : "Finish with a calendar password (not your Apple ID login password)."}{" "}
-              Create one at{" "}
-              <a
-                href="https://appleid.apple.com/account/manage"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[var(--brand-500)] hover:underline"
-              >
-                appleid.apple.com
-              </a>{" "}
-              → Sign-In and Security → App-Specific Passwords (2FA required).
-              Spaces are stripped automatically.
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              On iPhone: open the DayPilot app → Sync → Import from iPhone
-              instead (uses device calendars, no password).
-            </p>
-            <label className="block text-sm text-[var(--text-secondary)]">
-              Apple ID email
-              <input
-                type="email"
-                required
-                autoComplete="username"
-                name="apple-id-caldav"
-                placeholder="you@gmail.com or you@icloud.com"
-                value={appleId}
-                onChange={(e) => setAppleId(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
-              />
-            </label>
-            <label className="block text-sm text-[var(--text-secondary)]">
-              App-specific password
-              <input
-                type="password"
-                required
-                autoComplete="off"
-                name="apple-app-specific-password"
-                placeholder="xxxx-xxxx-xxxx-xxxx"
-                value={applePassword}
-                onChange={(e) => setApplePassword(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-primary)]"
-              />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={!!actionLoading}>
-                {actionLoading === "apple" ? "Connecting…" : "Connect & sync"}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setShowAppleForm(false)}
-                disabled={!!actionLoading}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
 
         {loading ? (
           <p className="text-[var(--text-secondary)]">Loading…</p>
@@ -472,14 +401,6 @@ export default function SyncPage() {
                             {formatWhen(conn.syncedAt)}
                           </dd>
                         </div>
-                        <div>
-                          <dt className="text-[var(--text-tertiary)]">
-                            Last validated
-                          </dt>
-                          <dd className="text-[var(--text-primary)]">
-                            {formatWhen(conn.validatedAt)}
-                          </dd>
-                        </div>
                       </dl>
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -502,17 +423,6 @@ export default function SyncPage() {
                             ? "Syncing…"
                             : "Sync now"}
                         </Button>
-                        {(conn.status === "needs_reconnect" ||
-                          conn.status === "expired" ||
-                          p.id === "apple") && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleConnect(p.id)}
-                            disabled={!!actionLoading}
-                          >
-                            Reconnect
-                          </Button>
-                        )}
                         <button
                           type="button"
                           onClick={() => handleDisconnect(conn.id)}
@@ -531,15 +441,7 @@ export default function SyncPage() {
                       onClick={() => handleConnect(p.id)}
                       disabled={!!actionLoading}
                     >
-                      {actionLoading === p.id
-                        ? p.id === "apple"
-                          ? "Continuing…"
-                          : "Redirecting…"
-                        : p.id === "apple"
-                          ? appleAuthLinked
-                            ? "Continue — add password"
-                            : "Continue with Apple"
-                          : "Connect"}
+                      {actionLoading === p.id ? "Redirecting…" : "Connect"}
                     </Button>
                   )}
                 </li>

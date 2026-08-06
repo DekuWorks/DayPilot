@@ -26,7 +26,16 @@ class EventRecord {
   final String status;
   final String source;
 
-  bool get isSyncedExternal => source == 'google' || source == 'outlook';
+  bool get isSyncedExternal =>
+      source == 'google' ||
+      source == 'outlook' ||
+      source == 'apple' ||
+      source == 'apple_eventkit';
+
+  bool get isAppleEventKit =>
+      source == 'apple_eventkit' || source == 'apple';
+
+  bool get isReadOnlyOnWeb => isAppleEventKit;
 
   EventRecord copyWith({
     String? id,
