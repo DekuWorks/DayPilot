@@ -38,6 +38,7 @@ import '../../features/projects/projects_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/sync/apple_calendar_flow_screen.dart';
 import '../../features/sync/sync_screen.dart';
 import '../../features/tasks/task_detail_screen.dart';
 import '../../features/tasks/tasks_screen.dart';
@@ -199,6 +200,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/integrations',
         builder: (context, state) => const IntegrationsScreen(),
+      ),
+      GoRoute(
+        path: '/integrations/apple-calendar',
+        builder: (context, state) => const AppleCalendarFlowScreen(),
       ),
       GoRoute(
         path: '/sync',

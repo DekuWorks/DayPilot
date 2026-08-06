@@ -149,8 +149,19 @@ export function EventDetailModal({
           {new Date(event.start).toLocaleString()} – {formatTime(event.end)}
         </p>
         {event.source && event.source !== "native" && (
-          <p className="text-xs text-[var(--text-tertiary)] mb-2 capitalize">
-            Source: {event.source}
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            {event.source === "apple_eventkit" || event.source === "apple"
+              ? "Apple Calendar"
+              : event.source === "google"
+                ? "Google Calendar"
+                : event.source === "outlook"
+                  ? "Microsoft Outlook"
+                  : `Source: ${event.source}`}
+          </p>
+        )}
+        {(event.source === "apple_eventkit" || event.source === "apple") && (
+          <p className="text-sm text-[var(--warning)] mb-4">
+            Edit this iCloud event in the DayPilot iOS app.
           </p>
         )}
         {event.description && (
@@ -159,13 +170,15 @@ export function EventDetailModal({
           </p>
         )}
         <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="text-[var(--error)] hover:underline text-sm font-medium"
-          >
-            Delete
-          </button>
+          {event.source !== "apple_eventkit" && event.source !== "apple" && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-[var(--error)] hover:underline text-sm font-medium"
+            >
+              Delete
+            </button>
+          )}
           <Button variant="outline" size="sm" onClick={onClose}>
             Close
           </Button>

@@ -1,5 +1,3 @@
-/**
- * @daypilot/lib — shared utilities and helpers
- * Export utilities here as they are added.
- */
-export {};
+export * from './calendar/types';
+export * from './calendar/normalize';
+export * from './calendar/dedupe';

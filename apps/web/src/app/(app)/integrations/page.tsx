@@ -10,12 +10,6 @@ import type { CalendarConnection } from "@/lib/calendar-connections-api";
 const PROVIDERS: { id: CalendarConnection["provider"]; name: string; description: string }[] = [
   { id: "google", name: "Google Calendar", description: "Sync events from your Google account." },
   { id: "outlook", name: "Outlook / Microsoft 365", description: "Sync events from Outlook or Microsoft 365." },
-  {
-    id: "apple",
-    name: "Apple / iCloud Calendar",
-    description:
-      "Connect with Apple ID + app-specific password (CalDAV). Sign in with Apple SSO is separate (Login).",
-  },
 ];
 
 export default function IntegrationsPage() {
@@ -26,7 +20,6 @@ export default function IntegrationsPage() {
   const searchParams = useSearchParams();
 
   const connected = searchParams.get("connected");
-  const setup = searchParams.get("setup");
   const err = searchParams.get("error");
 
   useEffect(() => {
@@ -52,10 +45,6 @@ export default function IntegrationsPage() {
 
   async function handleConnect(provider: CalendarConnection["provider"]) {
     setError("");
-    if (provider === "apple") {
-      window.location.href = "/sync?connected=apple&setup=1";
-      return;
-    }
     setActionLoading(provider);
     try {
       const result = await calendarConnectionsApi.getConnectUrl(provider);
@@ -98,24 +87,21 @@ export default function IntegrationsPage() {
     <div className="max-w-4xl">
       <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Connected calendars</h1>
       <p className="text-[var(--text-secondary)] mb-2">
-        Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.
-        Edits and deletes in DayPilot sync back to Google and Outlook.
-      </p>
-      <p className="text-sm text-[var(--text-secondary)] mb-6">
-        For live status and token validation, open{" "}
+        Link Google or Outlook so events appear in one calendar. Apple Calendar
+        connects through the DayPilot iOS app (EventKit) — manage it on{" "}
         <Link href="/sync" className="text-[var(--brand-500)] font-medium hover:underline">
           Sync
         </Link>
         .
+      </p>
+      <p className="text-sm text-[var(--text-secondary)] mb-6">
+        For live status and token validation, open Sync.
       </p>
 
       {connected && !err && (
         <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800">
           {connected === "google" && "Google Calendar connected. Events are syncing to your calendar."}
           {connected === "outlook" && "Outlook connected. Events are syncing to your calendar."}
-          {connected === "apple" &&
-            setup === "1" &&
-            "Open Sync to enter your Apple ID and app-specific password for iCloud Calendar."}
         </div>
       )}
       {err && (

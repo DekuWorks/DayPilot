@@ -93,8 +93,13 @@ export class CalendarConnectionsService {
     expiresAt: Date | null;
   }): 'valid' | 'expired' | 'needs_reconnect' | 'unknown' {
     if (!c.accessToken) return 'needs_reconnect';
-    // iCloud CalDAV uses a non-expiring app-specific password
-    if (c.providerType === 'apple') return 'valid';
+    // iCloud CalDAV / EventKit use non-expiring device credentials
+    if (
+      c.providerType === 'apple' ||
+      c.providerType === 'apple_eventkit'
+    ) {
+      return 'valid';
+    }
     if (c.expiresAt == null) return 'unknown';
     if (c.expiresAt.getTime() > Date.now()) return 'valid';
     if (c.refreshToken) return 'expired';
@@ -131,9 +136,9 @@ export class CalendarConnectionsService {
       return { redirectUrl: url };
     }
 
-    if (provider === 'apple') {
-      // iCloud Calendar = CalDAV + app-specific password (POST /apple/connect).
-      // Sign in with Apple (Supabase Auth SSO) is separate — see docs/APPLE_AUTH_SETUP.md.
+    if (provider === 'apple' || provider === 'apple_eventkit') {
+      // Product path is EventKit on iOS (POST /apple/eventkit/sync).
+      // CalDAV ASP remains dormant at POST /apple/connect.
       return { redirectUrl: null, needsCredentials: true };
     }
 
@@ -191,7 +196,11 @@ export class CalendarConnectionsService {
     const storedCalendarId = encodeCalendarIds(calendarUrls);
     await this.prisma.calendarConnection.upsert({
       where: {
-        userId_providerType: { userId, providerType: 'apple' },
+        userId_providerType_deviceId: {
+          userId,
+          providerType: 'apple',
+          deviceId: '',
+        },
       },
       create: {
         userId,
@@ -230,7 +239,11 @@ export class CalendarConnectionsService {
       'iPhone Calendar';
 
     const existing = await this.prisma.calendarConnection.findUnique({
-      where: { userId_providerType: { userId, providerType: 'apple' } },
+      where: { userId_providerType_deviceId: {
+          userId,
+          providerType: 'apple',
+          deviceId: '',
+        } },
     });
     const keepCalDav =
       !!existing?.accessToken &&
@@ -239,7 +252,11 @@ export class CalendarConnectionsService {
     if (!keepCalDav) {
       await this.prisma.calendarConnection.upsert({
         where: {
-          userId_providerType: { userId, providerType: 'apple' },
+          userId_providerType_deviceId: {
+          userId,
+          providerType: 'apple',
+          deviceId: '',
+        },
         },
         create: {
           userId,
@@ -284,7 +301,11 @@ export class CalendarConnectionsService {
         `${DEVICE_EVENT_PREFIX}${userId}:${item.externalId}`.slice(0, 512);
       await this.prisma.event.upsert({
         where: {
-          source_externalId: { source: 'apple', externalId },
+          userId_source_externalId: {
+            userId,
+            source: 'apple',
+            externalId,
+          },
         },
         create: {
           userId,
@@ -362,7 +383,11 @@ export class CalendarConnectionsService {
         : null;
       await this.prisma.calendarConnection.upsert({
         where: {
-          userId_providerType: { userId, providerType: 'google' },
+          userId_providerType_deviceId: {
+          userId,
+          providerType: 'google',
+          deviceId: '',
+        },
         },
         create: {
           userId,
@@ -420,7 +445,11 @@ export class CalendarConnectionsService {
       const email = (me.mail ?? me.userPrincipalName ?? 'outlook') as string;
       await this.prisma.calendarConnection.upsert({
         where: {
-          userId_providerType: { userId, providerType: 'outlook' },
+          userId_providerType_deviceId: {
+          userId,
+          providerType: 'outlook',
+          deviceId: '',
+        },
         },
         create: {
           userId,
@@ -451,7 +480,11 @@ export class CalendarConnectionsService {
       where: { id: connectionId, userId },
     });
     if (!conn) throw new NotFoundException('Connection not found');
-    const source = conn.providerType as 'google' | 'outlook' | 'apple';
+    const source = conn.providerType as
+      | 'google'
+      | 'outlook'
+      | 'apple'
+      | 'apple_eventkit';
     await this.prisma.event.deleteMany({
       where: { userId, source },
     });
@@ -486,9 +519,15 @@ export class CalendarConnectionsService {
       await this.syncGoogleCalendar(userId, conn, rangeStart, rangeEnd);
     } else if (provider === 'outlook') {
       await this.syncOutlookCalendar(userId, conn, rangeStart, rangeEnd);
-    } else if (provider === 'apple') {
-      if (conn.accessToken === DEVICE_EVENTKIT_TOKEN) {
-        // Device calendars refresh from the iOS app via EventKit import.
+    } else if (
+      provider === 'apple' ||
+      provider === 'apple_eventkit'
+    ) {
+      if (
+        provider === 'apple_eventkit' ||
+        conn.accessToken === DEVICE_EVENTKIT_TOKEN
+      ) {
+        // Device calendars refresh from the iOS app via EventKit sync.
         await this.prisma.calendarConnection.update({
           where: { id: conn.id },
           data: { syncedAt: now, validatedAt: now },
@@ -497,7 +536,7 @@ export class CalendarConnectionsService {
         return {
           ok: true,
           message:
-            'iPhone calendars refresh from the DayPilot iOS app (EventKit). Open Sync → Import from iPhone.',
+            'iPhone calendars refresh from the DayPilot iOS app (EventKit). Open Sync → Connect Apple Calendar.',
         };
       }
       await this.syncAppleCalendar(userId, conn, rangeStart, rangeEnd);
@@ -529,6 +568,8 @@ export class CalendarConnectionsService {
         await this.pingOutlook(conn);
       } else if (conn.providerType === 'apple') {
         await this.pingApple(conn);
+      } else if (conn.providerType === 'apple_eventkit') {
+        // EventKit connections are validated on-device; mark valid if present.
       } else {
         throw new BadRequestException('Unknown provider');
       }
@@ -669,7 +710,11 @@ export class CalendarConnectionsService {
         seenUids.add(item.uid);
         await this.prisma.event.upsert({
           where: {
-            source_externalId: { source: 'apple', externalId: item.uid },
+            userId_source_externalId: {
+              userId,
+              source: 'apple',
+              externalId: item.uid,
+            },
           },
           create: {
             userId,
@@ -862,7 +907,11 @@ export class CalendarConnectionsService {
         : new Date(item.end.date!);
       await this.prisma.event.upsert({
         where: {
-          source_externalId: { source: 'google', externalId: item.id },
+          userId_source_externalId: {
+            userId,
+            source: 'google',
+            externalId: item.id,
+          },
         },
         create: {
           userId,
@@ -927,7 +976,11 @@ export class CalendarConnectionsService {
       const end = new Date(ev.end.dateTime);
       await this.prisma.event.upsert({
         where: {
-          source_externalId: { source: 'outlook', externalId: ev.id },
+          userId_source_externalId: {
+            userId,
+            source: 'outlook',
+            externalId: ev.id,
+          },
         },
         create: {
           userId,

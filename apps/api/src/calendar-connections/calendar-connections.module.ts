@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CalendarConnectionsController } from './calendar-connections.controller';
 import { CalendarConnectionsService } from './calendar-connections.service';
+import { EventKitSyncService } from './eventkit-sync.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -17,7 +18,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     }),
   ],
   controllers: [CalendarConnectionsController],
-  providers: [CalendarConnectionsService],
-  exports: [CalendarConnectionsService],
+  providers: [CalendarConnectionsService, EventKitSyncService],
+  exports: [CalendarConnectionsService, EventKitSyncService],
 })
 export class CalendarConnectionsModule {}

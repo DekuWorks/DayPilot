@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/daypilot_env.dart';
@@ -8,7 +9,7 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
-import '../../data/services/device_calendar_import_service.dart';
+import '../../data/services/apple_calendar_service.dart';
 import '../integrations/integrations_screen.dart';
 
 const _providers = <({
@@ -30,10 +31,10 @@ const _providers = <({
     calendarReady: true,
   ),
   (
-    id: 'apple',
-    name: 'Apple / iCloud Calendar',
+    id: 'apple_eventkit',
+    name: 'Apple Calendar',
     description:
-        'Continue with Apple, then a one-time app-specific password — or Import from iPhone below (no password).',
+        'Connect through this iPhone (EventKit). Sign in with Apple is separate and does not grant calendar access.',
     calendarReady: true,
   ),
 ];
@@ -50,11 +51,13 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     with WidgetsBindingObserver {
   String? _actionId;
   String? _error;
+  Map<String, dynamic>? _eventKitStatus;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadEventKit());
   }
 
   @override
@@ -67,12 +70,85 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(calendarConnectionsProvider);
+      _loadEventKit();
+      _incrementalEventKitSync();
+    }
+  }
+
+  Future<void> _loadEventKit() async {
+    if (!DayPilotEnv.hasDaypilotApi || !AppleCalendarService.isSupported) {
+      return;
+    }
+    try {
+      final status = await ref
+          .read(calendarConnectionsRepositoryProvider)
+          .getEventKitStatus();
+      if (mounted) setState(() => _eventKitStatus = status);
+    } catch (_) {
+      // Non-fatal on Sync load.
+    }
+  }
+
+  Future<void> _incrementalEventKitSync() async {
+    if (!AppleCalendarService.isSupported || !DayPilotEnv.hasDaypilotApi) {
+      return;
+    }
+    final connections = (_eventKitStatus?['connections'] as List?) ?? [];
+    if (connections.isEmpty) return;
+    try {
+      final service = AppleCalendarService();
+      final deviceId = await service.deviceId();
+      final conn = connections.cast<dynamic>().firstWhere(
+            (c) => (c as Map)['deviceId'] == deviceId,
+            orElse: () => connections.first,
+          ) as Map;
+      final calendars = (conn['calendars'] as List? ?? [])
+          .cast<dynamic>()
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .where((c) => c['isSelected'] == true)
+          .toList();
+      if (calendars.isEmpty) return;
+      final events = await service.getSelectedCalendarEvents(
+        calendarIds: calendars.map((c) => c['externalCalendarId'] as String),
+      );
+      await ref.read(calendarConnectionsRepositoryProvider).syncEventKit(
+            deviceId: deviceId,
+            deviceLabel: (conn['displayName'] as String?) ?? 'iPhone',
+            calendars: calendars
+                .map(
+                  (c) => {
+                    'externalCalendarId': c['externalCalendarId'],
+                    'title': c['title'],
+                    'calendarType': c['calendarType'],
+                    'sourceName': c['sourceName'],
+                    'color': c['color'],
+                    'isPrimary': c['isPrimary'] == true,
+                    'isReadOnly': c['isReadOnly'] == true,
+                    'isSelected': true,
+                    'isVisible': c['isVisible'] != false,
+                  },
+                )
+                .toList(),
+            events: events.map((e) => e.toApiJson()).toList(),
+          );
+      ref.invalidate(calendarConnectionsProvider);
+      ref.read(calendarDataVersionProvider.notifier).bump();
+      await _loadEventKit();
+    } catch (_) {
+      // Background refresh — surface via manual Sync if needed.
     }
   }
 
   Future<void> _connect(String provider) async {
-    if (provider == 'apple') {
-      await _continueWithApple();
+    if (provider == 'apple_eventkit' || provider == 'apple') {
+      if (!AppleCalendarService.isSupported) {
+        setState(
+          () => _error =
+              'Apple Calendar setup requires the DayPilot iOS app.',
+        );
+        return;
+      }
+      if (mounted) context.push('/integrations/apple-calendar');
       return;
     }
     setState(() {
@@ -92,187 +168,6 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
           const SnackBar(
             content: Text(
               'Complete sign-in in your browser, then return here.',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _actionId = null);
-    }
-  }
-
-  /// Step 1: Sign in with Apple (if needed). Step 2: app-specific password.
-  Future<void> _continueWithApple() async {
-    final auth = ref.read(authRepositoryProvider);
-    if (!auth.hasAppleIdentity) {
-      setState(() {
-        _error = null;
-        _actionId = 'apple';
-      });
-      try {
-        await auth.signInWithApple();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Apple linked. Next: enter your app-specific password '
-              '(or use Import from iPhone below).',
-            ),
-          ),
-        );
-      } catch (e) {
-        if (mounted) setState(() => _error = e.toString());
-        if (mounted) setState(() => _actionId = null);
-        return;
-      } finally {
-        if (mounted) setState(() => _actionId = null);
-      }
-    }
-    if (!mounted) return;
-    await _connectAppleCalDav();
-  }
-
-  Future<void> _connectAppleCalDav() async {
-    final prefill =
-        ref.read(authRepositoryProvider).appleIdEmailForCalDav ?? '';
-    final appleIdCtrl = TextEditingController(text: prefill);
-    final passwordCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Step 2 — App-specific password'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Not your Apple ID login password. Create one at '
-                'appleid.apple.com → Sign-In and Security → '
-                'App-Specific Passwords (2FA required). Spaces are stripped.\n\n'
-                'Prefer no password? Cancel and tap Import from iPhone.',
-                style: TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: appleIdCtrl,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.username],
-                decoration: const InputDecoration(
-                  labelText: 'Apple ID email',
-                  hintText: 'you@gmail.com or you@icloud.com',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: passwordCtrl,
-                obscureText: true,
-                autocorrect: false,
-                enableSuggestions: false,
-                decoration: const InputDecoration(
-                  labelText: 'App-specific password',
-                  hintText: 'xxxx-xxxx-xxxx-xxxx',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Connect & sync'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) {
-      appleIdCtrl.dispose();
-      passwordCtrl.dispose();
-      return;
-    }
-    final appleId = appleIdCtrl.text.trim();
-    final password =
-        CalendarConnectionsRepository.normalizeAppSpecificPassword(
-      passwordCtrl.text,
-    );
-    appleIdCtrl.dispose();
-    passwordCtrl.dispose();
-    if (appleId.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Apple ID and app-specific password required.');
-      return;
-    }
-    setState(() {
-      _error = null;
-      _actionId = 'apple';
-    });
-    try {
-      await ref.read(calendarConnectionsRepositoryProvider).connectAppleCalDav(
-            appleId: appleId,
-            appSpecificPassword: password,
-          );
-      ref.invalidate(calendarConnectionsProvider);
-      ref.read(calendarDataVersionProvider.notifier).bump();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'iCloud Calendar connected. Events will appear on Calendar.',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _actionId = null);
-    }
-  }
-
-  Future<void> _importFromDevice() async {
-    if (!DeviceCalendarImportService.isSupported) {
-      setState(
-        () => _error =
-            'Device calendar import is only available on iPhone / Android.',
-      );
-      return;
-    }
-    setState(() {
-      _error = null;
-      _actionId = 'device-import';
-    });
-    try {
-      final service = DeviceCalendarImportService();
-      final events = await service.loadEvents();
-      if (events.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'No events found in the next ~60 days on this device.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-      final result =
-          await ref.read(calendarConnectionsRepositoryProvider).importDeviceEvents(
-                events: events.map((e) => e.toJson()).toList(),
-              );
-      ref.invalidate(calendarConnectionsProvider);
-      ref.read(calendarDataVersionProvider.notifier).bump();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Imported ${result.imported} events from this device. '
-              'Open Calendar to see them.',
             ),
           ),
         );
@@ -344,6 +239,53 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     }
   }
 
+  Future<void> _disconnectEventKit() async {
+    final keep = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect Apple Calendar?'),
+        content: const Text(
+          'DayPilot will stop synchronizing calendars from this device. '
+          'Your events will remain in iCloud.\n\n'
+          'Keep imported events visible in DayPilot?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Remove from DayPilot'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Keep events'),
+          ),
+        ],
+      ),
+    );
+    if (keep == null || !mounted) return;
+    setState(() {
+      _error = null;
+      _actionId = 'apple_eventkit';
+    });
+    try {
+      final deviceId = await AppleCalendarService().deviceId();
+      await ref.read(calendarConnectionsRepositoryProvider).disconnectEventKit(
+            deviceId: deviceId,
+            keepEvents: keep,
+          );
+      ref.invalidate(calendarConnectionsProvider);
+      ref.read(calendarDataVersionProvider.notifier).bump();
+      await _loadEventKit();
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _actionId = null);
+    }
+  }
+
   String _formatWhen(DateTime? dt) {
     if (dt == null) return 'Never';
     final local = dt.toLocal();
@@ -384,6 +326,11 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     }
 
     final async = ref.watch(calendarConnectionsProvider);
+    final appleLinked = ref.read(authRepositoryProvider).hasAppleIdentity;
+    final ekConnections =
+        (_eventKitStatus?['connections'] as List?)?.cast<dynamic>() ?? [];
+    final ekConnected = ekConnections.isNotEmpty;
+    final ekConn = ekConnected ? ekConnections.first as Map : null;
 
     return FeatureScaffold(
       title: 'Sync',
@@ -392,6 +339,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
         onRefresh: () async {
           ref.invalidate(calendarConnectionsProvider);
           await ref.read(calendarConnectionsProvider.future);
+          await _loadEventKit();
+          await _incrementalEventKitSync();
         },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -405,14 +354,28 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
               ),
             ),
             const SizedBox(height: 16),
-            if (DeviceCalendarImportService.isSupported) ...[
-              _DeviceImportCard(
-                busy: _actionId != null,
-                importing: _actionId == 'device-import',
-                onImport: _importFromDevice,
-              ),
-              const SizedBox(height: 12),
-            ],
+            _AppleAccountCard(linked: appleLinked),
+            const SizedBox(height: 12),
+            _AppleCalendarStatusCard(
+              connected: ekConnected,
+              displayName: ekConn?['displayName'] as String?,
+              calendarCount: (ekConn?['calendars'] as List?)?.length ?? 0,
+              lastSynced: ekConn?['lastSyncedAt'] as String?,
+              busy: _actionId != null,
+              syncing: _actionId == 'apple_eventkit-sync',
+              onConnect: () => _connect('apple_eventkit'),
+              onSyncNow: ekConnected
+                  ? () async {
+                      setState(() => _actionId = 'apple_eventkit-sync');
+                      await _incrementalEventKitSync();
+                      if (mounted) setState(() => _actionId = null);
+                    }
+                  : null,
+              onDisconnect: ekConnected ? _disconnectEventKit : null,
+              onManage: ekConnected
+                  ? () => context.push('/integrations/apple-calendar')
+                  : null,
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -453,7 +416,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
               data: (connections) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ..._providers.map((p) {
+                  ..._providers.where((p) => p.id != 'apple_eventkit').map((p) {
                     CalendarConnection? conn;
                     for (final c in connections) {
                       if (c.provider == p.id) {
@@ -486,8 +449,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                           ? null
                           : () => _disconnect(connId),
                       onReconnect: conn != null &&
-                              (p.id == 'apple' ||
-                                  conn.status ==
+                              (conn.status ==
                                       ConnectionValidationStatus
                                           .needsReconnect ||
                                   conn.status ==
@@ -506,16 +468,85 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 }
 
-class _DeviceImportCard extends StatelessWidget {
-  const _DeviceImportCard({
+class _AppleAccountCard extends StatelessWidget {
+  const _AppleAccountCard({required this.linked});
+
+  final bool linked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DayPilotColors.surfacePrimary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DayPilotColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Apple Account',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: DayPilotColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Sign in with Apple (account only — not calendar access).',
+                  style: TextStyle(
+                    color: DayPilotColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            linked ? 'Connected' : 'Not connected',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: linked
+                  ? DayPilotColors.brand500
+                  : DayPilotColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppleCalendarStatusCard extends StatelessWidget {
+  const _AppleCalendarStatusCard({
+    required this.connected,
+    required this.displayName,
+    required this.calendarCount,
+    required this.lastSynced,
     required this.busy,
-    required this.importing,
-    required this.onImport,
+    required this.syncing,
+    required this.onConnect,
+    required this.onSyncNow,
+    required this.onDisconnect,
+    required this.onManage,
   });
 
+  final bool connected;
+  final String? displayName;
+  final int calendarCount;
+  final String? lastSynced;
   final bool busy;
-  final bool importing;
-  final VoidCallback onImport;
+  final bool syncing;
+  final VoidCallback onConnect;
+  final VoidCallback? onSyncNow;
+  final VoidCallback? onDisconnect;
+  final VoidCallback? onManage;
 
   @override
   Widget build(BuildContext context) {
@@ -529,28 +560,70 @@ class _DeviceImportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Import from iPhone',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: DayPilotColors.textPrimary,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Apple Calendar',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: DayPilotColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                connected ? 'Connected' : 'Setup required',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: connected
+                      ? DayPilotColors.brand500
+                      : DayPilotColors.warning,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Uses EventKit — reads calendars already on this phone '
-            '(including iCloud). No app-specific password. '
-            'Allow Calendars when prompted.',
-            style: TextStyle(
+          const SizedBox(height: 8),
+          Text(
+            connected
+                ? 'Connected through ${displayName ?? 'this iPhone'}\n'
+                    '$calendarCount calendars · Last synced ${lastSynced ?? 'Never'}'
+                : 'Open the guided setup to allow calendar access and choose calendars.',
+            style: const TextStyle(
               color: DayPilotColors.textSecondary,
               fontSize: 13,
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 12),
-          FilledButton(
-            onPressed: busy ? null : onImport,
-            child: Text(importing ? 'Importing…' : 'Import from iPhone'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (!connected)
+                FilledButton(
+                  onPressed: busy ? null : onConnect,
+                  child: const Text('Connect Apple Calendar'),
+                )
+              else ...[
+                OutlinedButton(
+                  onPressed: busy ? null : onSyncNow,
+                  child: Text(syncing ? 'Syncing…' : 'Sync now'),
+                ),
+                OutlinedButton(
+                  onPressed: busy ? null : onManage,
+                  child: const Text('Manage calendars'),
+                ),
+                TextButton(
+                  onPressed: busy ? null : onDisconnect,
+                  style: TextButton.styleFrom(
+                    foregroundColor: DayPilotColors.error,
+                  ),
+                  child: const Text('Disconnect'),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -643,9 +716,10 @@ class _SyncProviderCard extends StatelessWidget {
           ),
           if (connection != null) ...[
             const SizedBox(height: 12),
-            _MetaRow(label: 'Account', value: connection!.email.isEmpty
-                ? '—'
-                : connection!.email),
+            _MetaRow(
+              label: 'Account',
+              value: connection!.email.isEmpty ? '—' : connection!.email,
+            ),
             _MetaRow(
               label: 'Validation',
               value: connection!.status.label,
@@ -654,10 +728,6 @@ class _SyncProviderCard extends StatelessWidget {
             _MetaRow(
               label: 'Last synced',
               value: formatWhen(connection!.syncedAt),
-            ),
-            _MetaRow(
-              label: 'Last validated',
-              value: formatWhen(connection!.validatedAt),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -690,15 +760,7 @@ class _SyncProviderCard extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: busy ? null : onConnect,
-              child: Text(
-                connecting
-                    ? (name.contains('iCloud') ? 'Continuing…' : 'Opening…')
-                    : calendarReady
-                        ? (name.contains('iCloud')
-                            ? 'Continue with Apple'
-                            : 'Connect')
-                        : 'Calendar connect (coming soon)',
-              ),
+              child: Text(connecting ? 'Opening…' : 'Connect'),
             ),
           ],
         ],

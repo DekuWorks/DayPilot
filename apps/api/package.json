@@ -23,6 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@daypilot/lib": "workspace:*",
     "@anthropic-ai/sdk": "^0.78.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@nestjs/common": "^11.0.1",

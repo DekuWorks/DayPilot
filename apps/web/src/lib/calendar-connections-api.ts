@@ -1,7 +1,11 @@
 import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
 import { ensureNestSession } from "./supabase/auth";
 
-export type CalendarProvider = "google" | "outlook" | "apple";
+export type CalendarProvider =
+  | "google"
+  | "outlook"
+  | "apple"
+  | "apple_eventkit";
 
 export type ConnectionValidationStatus =
   | "valid"
@@ -88,32 +92,40 @@ export function normalizeAppSpecificPassword(raw: string): string {
   return raw.replace(/[\s\u00A0\u202F\u2007]+/g, "").trim();
 }
 
-/** iCloud CalDAV: Apple ID + app-specific password. */
-export async function connectAppleCalDav(input: {
-  appleId: string;
-  appSpecificPassword: string;
-}): Promise<CalendarConnection | null> {
+export type EventKitConnectionStatus = {
+  authSeparate: boolean;
+  hasGoogleConnection: boolean;
+  hasMicrosoftConnection: boolean;
+  connections: Array<{
+    id: string;
+    provider: string;
+    displayName: string;
+    deviceId: string;
+    authStatus: string;
+    calendarStatus: string;
+    syncStatus: string;
+    lastSyncedAt: string | null;
+    calendars: Array<{
+      id: string;
+      title: string;
+      isSelected: boolean;
+      isReadOnly: boolean;
+      sourceName?: string | null;
+    }>;
+  }>;
+};
+
+/** Apple EventKit connection status (synced from iOS). */
+export async function getEventKitStatus(): Promise<EventKitConnectionStatus> {
   return withNestAuth(async () => {
     const res = await fetch(
-      `${getApiUrl()}/calendar-connections/apple/connect`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          appleId: input.appleId.trim().toLowerCase(),
-          appSpecificPassword: normalizeAppSpecificPassword(
-            input.appSpecificPassword
-          ),
-        }),
-      }
+      `${getApiUrl()}/calendar-connections/apple/eventkit`,
+      { headers: getAuthHeaders() }
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(
-        getApiErrorMessage(err, "Failed to connect iCloud Calendar")
+        getApiErrorMessage(err, "Failed to load Apple Calendar status")
       );
     }
     return res.json();

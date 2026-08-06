@@ -184,35 +184,71 @@ class CalendarConnectionsRepository {
     return CalendarConnection.fromJson(Map<String, dynamic>.from(data));
   }
 
-  /// iOS/Android EventKit import — no app-specific password.
-  Future<({int imported, CalendarConnection? connection})> importDeviceEvents({
+  /// Full EventKit sync (calendars + events).
+  Future<Map<String, dynamic>> syncEventKit({
+    required String deviceId,
+    required String deviceLabel,
+    required List<Map<String, dynamic>> calendars,
     required List<Map<String, dynamic>> events,
-    String deviceLabel = 'iPhone Calendar',
+    bool reconcileDeletes = true,
+    DateTime? rangeStart,
+    DateTime? rangeEnd,
   }) async {
     await _ensureSession();
+    final now = DateTime.now().toUtc();
     final res = await _session.post(
-      '/calendar-connections/apple/device-import',
+      '/calendar-connections/apple/eventkit/sync',
       body: {
+        'deviceId': deviceId,
         'deviceLabel': deviceLabel,
+        'calendars': calendars,
         'events': events,
+        'reconcileDeletes': reconcileDeletes,
+        'rangeStart': (rangeStart ?? now.subtract(const Duration(days: 90)))
+            .toIso8601String(),
+        'rangeEnd':
+            (rangeEnd ?? now.add(const Duration(days: 365))).toIso8601String(),
       },
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception(_errorMessage(res, 'Failed to import device calendars'));
+      throw Exception(_errorMessage(res, 'Failed to sync Apple Calendar'));
     }
     final data = jsonDecode(res.body);
-    if (data is! Map) {
-      return (imported: 0, connection: null);
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {'ok': true};
+  }
+
+  Future<Map<String, dynamic>> getEventKitStatus({String? deviceId}) async {
+    await _ensureSession();
+    final res = await _session.get(
+      '/calendar-connections/apple/eventkit',
+      query: deviceId == null ? null : {'deviceId': deviceId},
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(_errorMessage(res, 'Failed to load Apple Calendar status'));
     }
-    final map = Map<String, dynamic>.from(data);
-    final imported = (map['imported'] as num?)?.toInt() ?? 0;
-    final connRaw = map['connection'];
-    CalendarConnection? connection;
-    if (connRaw is Map) {
-      connection =
-          CalendarConnection.fromJson(Map<String, dynamic>.from(connRaw));
+    final data = jsonDecode(res.body);
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
+
+  Future<void> disconnectEventKit({
+    String? deviceId,
+    bool keepEvents = true,
+  }) async {
+    await _ensureSession();
+    final res = await _session.delete(
+      '/calendar-connections/apple/eventkit',
+      query: {
+        'keepEvents': keepEvents ? 'true' : 'false',
+        if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,
+      },
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(
+        _errorMessage(res, 'Failed to disconnect Apple Calendar'),
+      );
     }
-    return (imported: imported, connection: connection);
   }
 
   Future<void> disconnect(String connectionId) async {

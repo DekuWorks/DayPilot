@@ -15,7 +15,13 @@ function toEventPayload(e: {
   location: string | null;
   source: string;
   externalId: string | null;
+  allDay?: boolean;
+  externalCalendarId?: string | null;
+  syncState?: string | null;
+  readOnly?: boolean;
 }) {
+  const appleReadOnly =
+    e.source === 'apple_eventkit' || e.source === 'apple';
   return {
     id: e.id,
     title: e.title,
@@ -25,6 +31,20 @@ function toEventPayload(e: {
     location: e.location ?? undefined,
     source: e.source,
     externalId: e.externalId ?? undefined,
+    allDay: e.allDay ?? false,
+    externalCalendarId: e.externalCalendarId ?? undefined,
+    syncState: e.syncState ?? undefined,
+    readOnly: appleReadOnly,
+    providerLabel:
+      e.source === 'apple_eventkit' || e.source === 'apple'
+        ? 'Apple Calendar'
+        : e.source === 'google'
+          ? 'Google Calendar'
+          : e.source === 'outlook'
+            ? 'Microsoft Outlook'
+            : e.source === 'native'
+              ? 'DayPilot'
+              : e.source,
   };
 }
 
@@ -40,10 +60,12 @@ export class EventsService {
   async findAll(userId: string, from?: string, to?: string) {
     const where: {
       userId: string;
+      deletedAt: null;
       start?: { lte?: Date };
       end?: { gte?: Date };
     } = {
       userId,
+      deletedAt: null,
     };
     // Overlap with [from, to]: event.start <= to AND event.end >= from
     if (from && to) {

@@ -1,6 +1,8 @@
-# Calendar integrations setup (Google & Outlook)
+# Calendar integrations setup (Google, Outlook & Apple EventKit)
 
 Connect Google Calendar and Outlook/Microsoft 365 to DayPilot. Events sync **into** DayPilot on connect/sync, and edits or deletes in DayPilot **push back** to the provider (two-way sync).
+
+**Apple Calendar (product path):** iOS EventKit via the DayPilot Flutter app. The web app displays synced events as **read-only**. Sign in with Apple is account SSO only — it does **not** grant calendar access. App-specific password / CalDAV is **deprecated** for product UX (server code may remain dormant).
 
 ## Prerequisites
 
@@ -138,25 +140,19 @@ Two different features — do not confuse them:
 
 ### Calendar sync (CalDAV)
 
-1. Enable two-factor authentication on the Apple ID.
-2. Generate an [app-specific password](https://support.apple.com/en-us/102654) at [appleid.apple.com](https://appleid.apple.com/account/manage) → Sign-In and Security → App-Specific Passwords.
-3. On **Sync** (web `/sync` or Flutter Sync):
-   - Optional: **Sign in with Apple** (SSO) to link the account and prefill the Apple ID email (Hide My Email relays are skipped).
-   - Choose **Connect iCloud** and enter Apple ID email + app-specific password.
-4. Nest authenticates against `caldav.icloud.com` (and `.well-known/caldav`), discovers VEVENT calendars, stores credentials on `calendar_connections` (`provider=apple`), and imports VEVENTs into Prisma `events` with `source=apple` (−7…+60 days).
-5. **Validate** / **Sync now** re-check auth and re-import. Disconnect deletes Apple-sourced events.
+### Apple Calendar via EventKit (recommended)
 
-**Apple ID email:** Use the same email you use at appleid.apple.com — including Gmail-based Apple IDs (`you@gmail.com`). Spaces in the app-specific password are stripped client- and server-side; hyphenated `xxxx-xxxx-xxxx-xxxx` form is accepted.
+1. Install DayPilot on iPhone; sign in (any method).
+2. Profile → **Sync** → **Connect Apple Calendar** (or deep link `com.daypilot.daypilot://integrations/apple-calendar`).
+3. Allow full calendar access → select calendars (Google/Outlook device calendars are skipped when those providers are already connected in DayPilot).
+4. Initial sync imports roughly −90…+365 days into Nest (`provider=apple_eventkit`, `source=apple_eventkit`).
+5. Web **Sync** shows Apple Account vs Apple Calendar separately; calendar events are read-only on web (“Edit in the DayPilot iOS app”).
+6. Create/update/delete supported Apple events from iOS only. Disconnect stops sync and never deletes iCloud data.
 
-**Limits (current):** one-way import (DayPilot ← iCloud). Push edits back to iCloud is not implemented. Sign in with Apple **does not** unlock iCloud Calendar access — Apple does not expose CalDAV via Sign in with Apple.
+**API:** `GET/POST/DELETE /calendar-connections/apple/eventkit` (+ `/sync`, `/calendars`).
 
-**Unified calendar:** Nest `GET /events` returns all sources for the user (`native` / `google` / `outlook` / `apple`). Web Calendar/Home and Flutter (with `DAYPILOT_API_URL`) read that union so Google + iCloud + Outlook appear together.
+**Unified calendar:** Nest `GET /events` returns `native` / `google` / `outlook` / `apple` / `apple_eventkit` (soft-deleted rows excluded).
 
-### Troubleshooting iCloud CalDAV
+### CalDAV (dormant)
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| Auth failed (401) | Wrong password or used Apple ID password | New app-specific password; paste only the 16-char value |
-| Forbidden (403) | 2FA off, Calendar disabled, or revoked ASP | Enable 2FA + iCloud Calendar; generate a new ASP |
-| “does not look like an app-specific password” | Pasted wrong secret | Must be 16 alphanumeric chars (with optional hyphens/spaces) |
-| Connected but no events | Empty window or non-VEVENT calendar | Confirm events exist in iCloud for ± weeks; tap **Sync now** |
+`POST /calendar-connections/apple/connect` (ASP) remains on the server for compatibility but is **not** exposed in Sync UX. Prefer EventKit.

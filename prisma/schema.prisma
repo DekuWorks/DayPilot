@@ -34,41 +34,82 @@ enum SubscriptionStatus {
 }
 
 enum EventSource {
-  native   // DayPilot-created (manual, AI, etc.)
-  google   // Synced from Google Calendar
-  outlook  // Synced from Outlook/Microsoft
-  apple    // Synced from Apple/iCloud Calendar
-  booking  // From a shared booking link
+  native // DayPilot-created (manual, AI, etc.)
+  google // Synced from Google Calendar
+  outlook // Synced from Outlook/Microsoft
+  apple // Legacy CalDAV / dormant
+  apple_eventkit // EventKit (iOS device) sync
+  booking // From a shared booking link
 }
 
 enum CalendarProvider {
   google
   outlook
-  apple
+  apple // Dormant CalDAV
+  apple_eventkit
+}
+
+enum ConnectionAuthStatus {
+  disconnected
+  connected
+  error
+}
+
+enum ConnectionCalendarStatus {
+  disconnected
+  permission_required
+  connected
+  denied
+  restricted
+  unavailable
+  error
+}
+
+enum ConnectionSyncStatus {
+  idle
+  syncing
+  error
+}
+
+enum EventSyncState {
+  synced
+  pending_create
+  pending_update
+  pending_delete
+  conflict
+  failed
+}
+
+enum EventSyncDirection {
+  imported
+  exported
+  bidirectional
 }
 
 // --- Models ---
 
 model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  passwordHash   String?   @map("password_hash")
-  firstName      String    @map("first_name")
-  lastName       String    @map("last_name")
-  avatarUrl      String?   @map("avatar_url")
-  role           UserRole  @default(USER)
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?   @map("password_hash")
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  avatarUrl       String?   @map("avatar_url")
+  role            UserRole  @default(USER)
   emailVerifiedAt DateTime? @map("email_verified_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  ownedOrganizations Organization[]
-  teams             Team[]         @relation("TeamMembers")
-  events            Event[]
-  tasks             Task[]
+  ownedOrganizations  Organization[]
+  teams               Team[]               @relation("TeamMembers")
+  events              Event[]
+  tasks               Task[]
   subscriptions       Subscription[]
   auditLogs           AuditLog[]
   refreshTokens       RefreshToken[]
   calendarConnections CalendarConnection[]
+  externalCalendars   ExternalCalendar[]
+  calendarSyncLogs    CalendarSyncLog[]
 
   @@map("users")
 }
@@ -76,7 +117,7 @@ model User {
 model RefreshToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  tokenHash String  @map("token_hash")
+  tokenHash String   @map("token_hash")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -87,24 +128,87 @@ model RefreshToken {
 }
 
 model CalendarConnection {
-  id            String            @id @default(cuid())
-  userId        String            @map("user_id")
-  providerType  CalendarProvider  @map("provider_type")
-  email         String            // account email or display name
-  accessToken   String            @map("access_token")
-  refreshToken  String?           @map("refresh_token")
-  expiresAt     DateTime?        @map("expires_at")
-  calendarId    String?          @map("calendar_id")   // provider's primary calendar id
-  syncedAt      DateTime?        @map("synced_at")
-  validatedAt   DateTime?        @map("validated_at") // last successful token check
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
+  id                 String                    @id @default(cuid())
+  userId             String                    @map("user_id")
+  providerType       CalendarProvider          @map("provider_type")
+  email              String // account email or display name
+  accessToken        String                    @map("access_token")
+  refreshToken       String?                   @map("refresh_token")
+  expiresAt          DateTime?                 @map("expires_at")
+  calendarId         String?                   @map("calendar_id") // provider's primary calendar id
+  syncedAt           DateTime?                 @map("synced_at")
+  validatedAt        DateTime?                 @map("validated_at")
+  displayName        String?                   @map("display_name")
+  providerAccountId  String?                   @map("provider_account_id")
+  authStatus         ConnectionAuthStatus      @default(connected) @map("auth_status")
+  calendarStatus     ConnectionCalendarStatus  @default(disconnected) @map("calendar_status")
+  connectionMethod   String?                   @map("connection_method") // oauth | eventkit | native
+  deviceId           String                    @default("") @map("device_id")
+  syncStatus         ConnectionSyncStatus      @default(idle) @map("sync_status")
+  syncError          String?                   @map("sync_error")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalCalendars ExternalCalendar[]
+  syncLogs          CalendarSyncLog[]
 
-  @@unique([userId, providerType])
+  @@unique([userId, providerType, deviceId])
   @@index([userId])
   @@map("calendar_connections")
+}
+
+model ExternalCalendar {
+  id                 String           @id @default(cuid())
+  userId             String           @map("user_id")
+  connectionId       String           @map("connection_id")
+  provider           CalendarProvider
+  externalCalendarId String           @map("external_calendar_id")
+  title              String
+  calendarType       String?          @map("calendar_type")
+  sourceName         String?          @map("source_name")
+  color              String?
+  isPrimary          Boolean          @default(false) @map("is_primary")
+  isReadOnly         Boolean          @default(false) @map("is_read_only")
+  isSelected         Boolean          @default(true) @map("is_selected")
+  isVisible          Boolean          @default(true) @map("is_visible")
+  deviceId           String           @default("") @map("device_id")
+  metadata           Json             @default("{}")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  events     Event[]
+
+  @@unique([userId, provider, externalCalendarId, deviceId])
+  @@index([userId])
+  @@index([connectionId])
+  @@map("external_calendars")
+}
+
+model CalendarSyncLog {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  connectionId   String?   @map("connection_id")
+  provider       CalendarProvider
+  deviceId       String?   @map("device_id")
+  syncStartedAt  DateTime  @default(now()) @map("sync_started_at")
+  syncFinishedAt DateTime? @map("sync_finished_at")
+  status         String
+  eventsCreated  Int       @default(0) @map("events_created")
+  eventsUpdated  Int       @default(0) @map("events_updated")
+  eventsDeleted  Int       @default(0) @map("events_deleted")
+  eventsSkipped  Int       @default(0) @map("events_skipped")
+  errorMessage   String?   @map("error_message")
+  metadata       Json      @default("{}")
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([connectionId])
+  @@map("calendar_sync_logs")
 }
 
 model Organization {
@@ -115,10 +219,10 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  teams   Team[]
-  events  Event[]
-  tasks   Task[]
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  teams     Team[]
+  events    Event[]
+  tasks     Task[]
   auditLogs AuditLog[]
 
   @@map("organizations")
@@ -132,33 +236,45 @@ model Team {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members      User[]        @relation("TeamMembers")
+  members      User[]       @relation("TeamMembers")
   events       Event[]
 
   @@map("teams")
 }
 
 model Event {
-  id             String      @id @default(cuid())
-  title          String
-  start          DateTime
-  end            DateTime
-  description    String?
-  location       String?
-  source         EventSource @default(native)
-  externalId     String?     @map("external_id")  // ID in the external system (Google, booking, etc.)
-  userId         String      @map("user_id")
-  organizationId String?    @map("organization_id")
-  teamId         String?    @map("team_id")
-  createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @updatedAt @map("updated_at")
+  id                 String              @id @default(cuid())
+  title              String
+  start              DateTime
+  end                DateTime
+  description        String?
+  location           String?
+  source             EventSource         @default(native)
+  externalId         String?             @map("external_id")
+  externalCalendarId String?             @map("external_calendar_id")
+  calendarId         String?             @map("calendar_id") // FK to external_calendars
+  allDay             Boolean             @default(false) @map("all_day")
+  timezone           String?
+  recurrenceRule     String?             @map("recurrence_rule")
+  syncState          EventSyncState      @default(synced) @map("sync_state")
+  syncDirection      EventSyncDirection? @map("sync_direction")
+  sourceUpdatedAt    DateTime?           @map("source_updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  metadata           Json                @default("{}")
+  userId             String              @map("user_id")
+  organizationId     String?             @map("organization_id")
+  teamId             String?             @map("team_id")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization     Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  team             Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  externalCalendar ExternalCalendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
 
-  @@unique([source, externalId])
+  @@unique([userId, source, externalId])
   @@index([userId, start])
+  @@index([calendarId])
   @@map("events")
 }
 
@@ -179,15 +295,15 @@ model Task {
 }
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  userId               String             @map("user_id")
-  stripeCustomerId     String?            @unique @map("stripe_customer_id")
-  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
-  tier                 SubscriptionTier   @default(Free)
+  id                   String              @id @default(cuid())
+  userId               String              @map("user_id")
+  stripeCustomerId     String?             @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?             @unique @map("stripe_subscription_id")
+  tier                 SubscriptionTier    @default(Free)
   status               SubscriptionStatus? @default(active)
-  currentPeriodEnd     DateTime?         @map("current_period_end")
-  createdAt            DateTime          @default(now()) @map("created_at")
-  updatedAt            DateTime          @updatedAt @map("updated_at")
+  currentPeriodEnd     DateTime?           @map("current_period_end")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -204,7 +320,7 @@ model AuditLog {
   metadata       Json?
   createdAt      DateTime @default(now()) @map("created_at")
 
-  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
