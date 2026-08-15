@@ -2,9 +2,31 @@ import {
   RAILWAY_API_ORIGIN,
   emailFromJwt,
   redactOAuthUrl,
+  resolveMicrosoftAuthorityTenant,
   resolveOAuthCallbackBase,
   summarizeMicrosoftOAuthError,
 } from './oauth-callback-base';
+
+describe('resolveMicrosoftAuthorityTenant', () => {
+  it('uses common when MICROSOFT_TENANT_ID is a directory GUID', () => {
+    expect(
+      resolveMicrosoftAuthorityTenant('e41153b5-1d65-4b0a-aa82-cf7a2d000346'),
+    ).toBe('common');
+  });
+
+  it('keeps common / consumers / organizations', () => {
+    expect(resolveMicrosoftAuthorityTenant('common')).toBe('common');
+    expect(resolveMicrosoftAuthorityTenant('consumers')).toBe('consumers');
+    expect(resolveMicrosoftAuthorityTenant('organizations')).toBe(
+      'organizations',
+    );
+  });
+
+  it('defaults empty values to common', () => {
+    expect(resolveMicrosoftAuthorityTenant(null)).toBe('common');
+    expect(resolveMicrosoftAuthorityTenant('  ')).toBe('common');
+  });
+});
 
 describe('resolveOAuthCallbackBase', () => {
   it('skips api.daypilot.co and uses the Railway origin', () => {

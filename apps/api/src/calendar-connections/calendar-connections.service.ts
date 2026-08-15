@@ -23,6 +23,7 @@ import {
 import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import {
   emailFromJwt,
+  resolveMicrosoftAuthorityTenant,
   resolveOAuthCallbackBase,
   summarizeMicrosoftOAuthError,
 } from './oauth-callback-base';
@@ -136,9 +137,13 @@ export class CalendarConnectionsService {
       if (!clientId)
         throw new BadRequestException('Outlook Calendar is not configured');
       const redirectUri = this.outlookRedirectUri();
+      const tenant = this.microsoftTenant();
       const scope =
         'openid profile email offline_access User.Read Calendars.ReadWrite';
       const url = `${this.microsoftAuthorizeUrl()}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&response_mode=query&prompt=select_account&state=${encodeURIComponent(state)}`;
+      this.logger.log(
+        `Outlook connect start tenant=${tenant} redirect=${redirectUri}`,
+      );
       return { redirectUrl: url };
     }
 
@@ -797,8 +802,9 @@ export class CalendarConnectionsService {
   }
 
   private microsoftTenant(): string {
-    const tenant = this.config.get<string>('MICROSOFT_TENANT_ID')?.trim();
-    return tenant || 'common';
+    return resolveMicrosoftAuthorityTenant(
+      this.config.get<string>('MICROSOFT_TENANT_ID'),
+    );
   }
 
   private microsoftAuthorizeUrl(): string {

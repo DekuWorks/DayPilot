@@ -4,6 +4,27 @@ export const DEAD_CUSTOM_API_HOSTS = new Set(['api.daypilot.co']);
 /** Live Railway origin — use until api.daypilot.co DNS works. */
 export const RAILWAY_API_ORIGIN = 'https://api-production-6c2c.up.railway.app';
 
+const MULTI_TENANT_AUTHORITIES = new Set([
+  'common',
+  'organizations',
+  'consumers',
+]);
+
+/**
+ * Outlook Connect must use /common (or /consumers) so personal Microsoft
+ * accounts work. A directory GUID on MICROSOFT_TENANT_ID makes Microsoft
+ * return error=server_error / AADSTS50020 for MSA logins.
+ * @see https://learn.microsoft.com/en-us/troubleshoot/entra/entra-id/app-integration/error-code-aadsts50020-user-account-identity-provider-does-not-exist
+ */
+export function resolveMicrosoftAuthorityTenant(
+  tenantId?: string | null,
+): string {
+  const tenant = tenantId?.trim().toLowerCase();
+  if (!tenant) return 'common';
+  if (MULTI_TENANT_AUTHORITIES.has(tenant)) return tenant;
+  return 'common';
+}
+
 export function resolveOAuthCallbackBase(env: {
   oauthCallbackBase?: string | null;
   apiUrl?: string | null;
