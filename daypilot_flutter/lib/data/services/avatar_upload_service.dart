@@ -46,14 +46,24 @@ class AvatarUploadService {
     }
 
     final path = '$uid/avatar.$ext';
-    await _client.storage.from(kAvatarBucket).uploadBinary(
-          path,
-          bytes,
-          fileOptions: FileOptions(
-            upsert: true,
-            contentType: _contentType(ext),
-          ),
+    try {
+      await _client.storage.from(kAvatarBucket).uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: _contentType(ext),
+            ),
+          );
+    } on StorageException catch (e) {
+      if (e.statusCode == '404' ||
+          e.message.toLowerCase().contains('bucket not found')) {
+        throw AvatarUploadException(
+          'Photo storage is not set up yet. Your web photo still syncs from your account.',
         );
+      }
+      throw AvatarUploadException(e.message);
+    }
 
     final publicUrl = _client.storage.from(kAvatarBucket).getPublicUrl(path);
     final cacheBusted =

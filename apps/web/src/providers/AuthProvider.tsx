@@ -30,6 +30,7 @@ import {
   exchangeNestSession,
   fetchProfile,
   mapSupabaseUser,
+  persistSharedAvatarIfMissing,
   normalizeUsername,
 } from "@/lib/supabase/auth";
 import { maybeAutoConnectCalendars } from "@/lib/calendar-auto-connect";
@@ -116,10 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => window.clearTimeout(profileTimer));
 
     // Nest exchange + profile in parallel; both optional.
-    const [profile] = await Promise.all([
+    const [fetchedProfile] = await Promise.all([
       profilePromise,
       exchangeNestSession(accessToken),
     ]);
+    const profile = await persistSharedAvatarIfMissing(
+      session.user,
+      fetchedProfile
+    );
     void maybeAutoConnectCalendars(session);
 
     if (!mountedRef.current || gen !== enrichGenRef.current) return;

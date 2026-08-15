@@ -34,3 +34,9 @@ apps/api/src/generated
 
 # Flutter local compile-time secrets (see daypilot_flutter/dart-define.example.json)
 daypilot_flutter/dart-define.json
+
+# SwiftUI local config / Xcode user state
+apps/ios/Config.local.xcconfig
+apps/ios/.build/
+apps/ios/.swiftpm/
+apps/ios/DerivedData/

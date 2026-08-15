@@ -22,7 +22,7 @@ import {
 } from './icloud-caldav';
 import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import {
-  GRAPH_MICROSOFT_BASE,
+  GRAPH_MICROSOFT_ORIGIN,
   firstPartyApiHostReady,
   mailboxFromTokenResponse,
   resolveMicrosoftAuthorityTenant,
@@ -31,6 +31,11 @@ import {
   summarizeMicrosoftOAuthError,
   withTimeout,
 } from './oauth-callback-base';
+import {
+  GRAPH_CALENDAR_VIEW_PAGE_SIZE,
+  graphGetPaged,
+  withGraphRetry,
+} from './graph-client';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 /** Marker token for iOS EventKit imports (no CalDAV credentials). */
@@ -823,7 +828,9 @@ export class CalendarConnectionsService {
   private outlookGraphClient(accessToken: string): Client {
     return Client.init({
       defaultVersion: 'v1.0',
-      baseUrl: GRAPH_MICROSOFT_BASE,
+      // Origin only — the SDK appends /v1.0. Passing GRAPH_MICROSOFT_BASE
+      // here produced /v1.0/v1.0 and "Resource not found for the segment 'v1.0'".
+      baseUrl: GRAPH_MICROSOFT_ORIGIN,
       authProvider: (done) => done(null, accessToken),
     });
   }
@@ -1127,10 +1134,9 @@ export class CalendarConnectionsService {
     let outlookTitle = 'Outlook Calendar';
     let outlookColor: string | null = null;
     try {
-      const cal = (await client
-        .api('/me/calendar')
-        .select('id,name,hexColor,color')
-        .get()) as {
+      const cal = (await withGraphRetry(() =>
+        client.api('/me/calendar').select('id,name,hexColor,color').get(),
+      )) as {
         id?: string;
         name?: string;
         hexColor?: string;
@@ -1150,21 +1156,18 @@ export class CalendarConnectionsService {
       title: outlookTitle,
       color: outlookColor,
     });
-    const res = await client
-      .api('/me/calendarView')
-      .query({
-        startDateTime: rangeStart.toISOString(),
-        endDateTime: rangeEnd.toISOString(),
-      })
-      .get();
-    const events = (res.value ?? []) as Array<{
+    const events = await graphGetPaged<{
       id: string;
       subject?: string;
       start?: { dateTime: string; timeZone?: string };
       end?: { dateTime: string; timeZone?: string };
       body?: { content?: string };
       location?: { displayName?: string };
-    }>;
+    }>(client, '/me/calendarView', {
+      startDateTime: rangeStart.toISOString(),
+      endDateTime: rangeEnd.toISOString(),
+      $top: GRAPH_CALENDAR_VIEW_PAGE_SIZE,
+    });
     for (const ev of events) {
       if (!ev.id || !ev.start?.dateTime || !ev.end?.dateTime) continue;
       const start = new Date(ev.start.dateTime);

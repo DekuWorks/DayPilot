@@ -143,6 +143,7 @@ export class CalendarConnectionsController {
     return this.eventKitSync.getStatus(req.user.id, deviceId);
   }
 
+  /** Apple cloud copy for web + other devices. Clients must send EventKitSyncDto. */
   @UseGuards(JwtAuthGuard)
   @Post('apple/eventkit/sync')
   async syncEventKit(

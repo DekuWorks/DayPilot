@@ -1,4 +1,6 @@
-# DayPilot Flutter (Milestone 1)
+# DayPilot Flutter (maintenance)
+
+**Status (2026-08-15):** Tester daily driver (TestFlight 1.0.0 (12), bundle `com.dekuworks.daypilot`). **No new features.** Crash, sync, auth, and TestFlight keep-alive only. New iOS work is SwiftUI in `apps/ios/` (ADR-004). Do not delete this app until SwiftUI can do daily calendar + sync + auth.
 
 Mobile client for DayPilot. **Option C:** Supabase auth + Nest API for events — see **`../docs/OPTION_C_SETUP.md`** (full walkthrough) and **`../docs/SUPABASE_API_ALIGNMENT.md`** (architecture).
 

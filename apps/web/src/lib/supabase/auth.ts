@@ -56,9 +56,43 @@ export function mapSupabaseUser(
     firstName,
     lastName,
     username: username ? String(username) : null,
-    avatarUrl: profile?.avatar_url || meta.avatar_url || null,
+    avatarUrl: profile?.avatar_url || metadataAvatarUrl(user),
     role: "USER",
   };
+}
+
+/** Google / Apple / Microsoft store the photo on the auth user. */
+export function metadataAvatarUrl(user: SupabaseUser): string | null {
+  const meta = user.user_metadata ?? {};
+  for (const key of ["avatar_url", "picture", "avatar"] as const) {
+    const value = meta[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** Write the SSO photo into profiles so iOS and web share one URL. */
+export async function persistSharedAvatarIfMissing(
+  user: SupabaseUser,
+  profile: ProfileRow | null
+): Promise<ProfileRow | null> {
+  if (profile?.avatar_url?.trim()) return profile;
+  const fromAuth = metadataAvatarUrl(user);
+  if (!fromAuth) return profile;
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        avatar_url: fromAuth,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (error) return profile;
+    return { ...(profile ?? {}), avatar_url: fromAuth };
+  } catch {
+    return profile;
+  }
 }
 
 export async function fetchProfile(

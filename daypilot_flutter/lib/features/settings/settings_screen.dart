@@ -46,7 +46,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _first.text = (row?['first_name'] as String?) ?? '';
     _last.text = (row?['last_name'] as String?) ?? '';
     _username.text = (row?['username'] as String?) ?? '';
-    _avatarUrl = (row?['avatar_url'] as String?)?.trim();
+    _avatarUrl = resolveAvatarUrl(
+      row,
+      client.auth.currentUser,
+    );
     setState(() => _loading = false);
   }
 
