@@ -4,6 +4,25 @@ import '../../core/config/nest_api_session.dart';
 
 typedef CalendarProvider = String; // google | outlook | apple
 
+/// Events per EventKit upload. Keeps JSON under Express/Railway body limits
+/// and under Nest `@ArrayMaxSize(5000)`.
+const eventKitSyncChunkSize = 250;
+
+/// Split events into upload chunks. An empty list still yields one empty chunk
+/// so calendars-only syncs still POST once.
+List<List<T>> chunkEventKitEvents<T>(
+  List<T> events, {
+  int size = eventKitSyncChunkSize,
+}) {
+  if (events.isEmpty) return [<T>[]];
+  final chunks = <List<T>>[];
+  for (var i = 0; i < events.length; i += size) {
+    final end = i + size > events.length ? events.length : i + size;
+    chunks.add(events.sublist(i, end));
+  }
+  return chunks;
+}
+
 /// Token / connection health from Nest list + validate endpoints.
 enum ConnectionValidationStatus {
   valid,
@@ -205,6 +224,9 @@ class CalendarConnectionsRepository {
   }
 
   /// Full EventKit sync (calendars + events).
+  ///
+  /// Uploads events in chunks so Express's body limit and Nest
+  /// `ArrayMaxSize(5000)` cannot reject a large iPhone calendar set.
   Future<Map<String, dynamic>> syncEventKit({
     required String deviceId,
     required String deviceLabel,
@@ -216,6 +238,38 @@ class CalendarConnectionsRepository {
   }) async {
     await _ensureSession();
     final now = DateTime.now().toUtc();
+    final start =
+        (rangeStart ?? now.subtract(const Duration(days: 90))).toUtc();
+    final end = (rangeEnd ?? now.add(const Duration(days: 365))).toUtc();
+    final syncStartedAt = now.toIso8601String();
+    final chunks = chunkEventKitEvents(events);
+    Map<String, dynamic> last = {'ok': true};
+    for (var i = 0; i < chunks.length; i++) {
+      final isLast = i == chunks.length - 1;
+      last = await _postEventKitSync(
+        deviceId: deviceId,
+        deviceLabel: deviceLabel,
+        calendars: calendars,
+        events: chunks[i],
+        reconcileDeletes: reconcileDeletes && isLast,
+        rangeStart: start,
+        rangeEnd: end,
+        syncStartedAt: syncStartedAt,
+      );
+    }
+    return last;
+  }
+
+  Future<Map<String, dynamic>> _postEventKitSync({
+    required String deviceId,
+    required String deviceLabel,
+    required List<Map<String, dynamic>> calendars,
+    required List<Map<String, dynamic>> events,
+    required bool reconcileDeletes,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    required String syncStartedAt,
+  }) async {
     final res = await _session.post(
       '/calendar-connections/apple/eventkit/sync',
       body: {
@@ -224,10 +278,9 @@ class CalendarConnectionsRepository {
         'calendars': calendars,
         'events': events,
         'reconcileDeletes': reconcileDeletes,
-        'rangeStart': (rangeStart ?? now.subtract(const Duration(days: 90)))
-            .toIso8601String(),
-        'rangeEnd':
-            (rangeEnd ?? now.add(const Duration(days: 365))).toIso8601String(),
+        'rangeStart': rangeStart.toIso8601String(),
+        'rangeEnd': rangeEnd.toIso8601String(),
+        'syncStartedAt': syncStartedAt,
       },
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -300,9 +353,18 @@ class CalendarConnectionsRepository {
 
   String _errorMessage(dynamic res, String fallback) {
     try {
+      final status = res.statusCode as int?;
+      if (status == 413) {
+        return 'Too many calendar events to upload at once. Try fewer calendars.';
+      }
       final body = jsonDecode(res.body as String) as Map<String, dynamic>;
       final message = body['message'];
-      if (message is String) return message;
+      if (message is String) {
+        if (message.toLowerCase().contains('entity too large')) {
+          return 'Too many calendar events to upload at once. Try fewer calendars.';
+        }
+        return message;
+      }
       if (message is List && message.isNotEmpty) {
         return message.map((e) => e.toString()).join(', ');
       }

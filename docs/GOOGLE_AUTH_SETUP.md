@@ -8,11 +8,19 @@ in Supabase Auth.
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/).
 2. Create/select project **DayPilot**.
-3. **APIs & Services → OAuth consent screen**
-   - External (or Internal for Workspace)
+3. **Google Auth Platform → Audience** (OAuth consent screen)
+   - User type: **External** — required for personal Gmail. **Internal** is
+     Workspace-only (`org_internal`), the Google equivalent of Azure
+     single-tenant / AADSTS50020.
+   - Publishing status: **In production** — **Testing** only allows the
+     test-user allowlist (DayPilot hit this: 2 test users). Sign in with
+     Google (openid/email/profile) works for any Google account once
+     published. Calendar scopes are sensitive; users may see an unverified-app
+     warning until you submit verification.
    - App name: **DayPilot**
    - Authorized domains: `daypilot.co`, `supabase.co`
-   - Add yourself as a test user while in Testing
+   - Do not click **Make internal**. Use **Back to testing** only for
+     locked-down QA.
 4. **Credentials → Create credentials → OAuth client ID**
    - Type: **Web application**
    - Name: **DayPilot Supabase Auth**
@@ -22,8 +30,8 @@ in Supabase Auth.
      - `http://localhost:3000` (local)
    - **Authorized redirect URIs** (register all that apply on this client, or split Auth vs Calendar clients):
      - `https://wmkytyrcxbzjqiykbauw.supabase.co/auth/v1/callback` — Supabase Auth / SSO (required for Sign in with Google)
-     - `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` — Nest calendar Connect (production)
-     - `https://api.daypilot.co/calendar-connections/google/callback` — Nest calendar (when custom API DNS is live)
+     - `https://api.daypilot.co/calendar-connections/google/callback` — Nest calendar (preferred once TLS is live)
+     - `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` — Nest calendar fallback while TLS issues
      - `http://localhost:3001/calendar-connections/google/callback` — Nest calendar (local)
 5. Copy **Client ID** and **Client secret**.
 

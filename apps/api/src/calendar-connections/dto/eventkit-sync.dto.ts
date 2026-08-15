@@ -144,6 +144,11 @@ export class EventKitSyncDto {
   @IsOptional()
   @IsDateString()
   rangeEnd?: string;
+
+  /** Shared start of a multi-chunk upload so reconcile does not delete earlier chunks. */
+  @IsOptional()
+  @IsDateString()
+  syncStartedAt?: string;
 }
 
 export class PatchExternalCalendarsDto {

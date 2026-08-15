@@ -8,23 +8,29 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 | Check | Result |
 |-------|--------|
-| Active API host | **Railway** — `https://api-production-6c2c.up.railway.app` (project `daypilot-api`) |
-| Railway custom domain | `api.daypilot.co` registered (CNAME target `66xfwrf9.up.railway.app`). Nest uses it for OAuth once `/health` answers; Railway URL is the fallback. |
-| `https://api.daypilot.co` DNS | **NXDOMAIN at GoDaddy** until the CNAME below is added. |
+| Active API host | **Railway** — `https://api-production-6c2c.up.railway.app` (project `daypilot-api`, service `api`) |
+| Railway custom domain | `api.daypilot.co` — CNAME + TXT are live at GoDaddy (`ns01`/`ns02.domaincontrol.com`). Railway `syncStatus` ACTIVE, CNAME `PROPAGATED`. |
+| `https://api.daypilot.co` TLS | Railway `verified: false`, certificate **ISSUING**. Edge still returns `404 Application not found` until verify + cert finish. Nest keeps using the Railway origin until `GET /health` on the first-party host returns OK. |
+| Railway `API_URL` | Already `https://api.daypilot.co` (OAuth picker skips it until `/health` is 200). |
+| GitHub Actions var `NEXT_PUBLIC_API_URL` | Still Railway URL. Flip to `https://api.daypilot.co` only after TLS + `/health` work — flipping early breaks the live site. |
+| Fly app `daypilot-api` | Suspended / unused (`FLY_API_TOKEN` not set in GitHub; trial previously ended) |
+| GH Actions `deploy-api.yml` | Builds + pushes `ghcr.io/<owner>/daypilot-api:latest`; Fly deploy skipped without `FLY_API_TOKEN` |
 
-### GoDaddy DNS for `api.daypilot.co` (Marcus must click)
-
-At [GoDaddy DNS](https://dcc.godaddy.com/) for `daypilot.co` (`ns01/ns02.domaincontrol.com`):
+### GoDaddy DNS (already added)
 
 | Type | Name | Value |
 |------|------|-------|
 | CNAME | `api` | `66xfwrf9.up.railway.app` |
 | TXT | `_railway-verify.api` | `railway-verify=481b069546054133d88169eda43e0efae0b6d02e781f0565418cbce2443c1bfe` |
 
-Then verify: `curl -sS https://api.daypilot.co/health` → `{"status":"ok",...}`.
-| Fly app `daypilot-api` | Suspended / unused (`FLY_API_TOKEN` not set in GitHub; trial previously ended) |
-| GH Actions `deploy-api.yml` | Builds + pushes `ghcr.io/<owner>/daypilot-api:latest`; Fly deploy skipped without `FLY_API_TOKEN` |
-| GitHub Actions var `NEXT_PUBLIC_API_URL` | Set to Railway URL until `api.daypilot.co` resolves |
+Do **not** delete and re-add the Railway domain — that mints a new TXT token. Wait for Railway to mark `verified: true` and the cert `ISSUED`, then:
+
+```bash
+curl -sS https://api.daypilot.co/health
+# expect {"status":"ok","db":"ok"}
+```
+
+After that: set GH Actions `NEXT_PUBLIC_API_URL=https://api.daypilot.co` and re-run **Deploy to GitHub Pages**.
 
 ### Unblock checklist (Fly — preferred if you keep this host)
 

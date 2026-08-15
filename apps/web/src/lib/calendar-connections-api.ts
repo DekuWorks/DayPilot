@@ -1,5 +1,5 @@
 import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
-import { ensureNestSession } from "./supabase/auth";
+import { clearNestSession, ensureNestSession } from "./supabase/auth";
 
 export type CalendarProvider =
   | "google"
@@ -51,9 +51,7 @@ async function withNestAuth<T>(fn: () => Promise<T>): Promise<T> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (!/unauthorized/i.test(msg)) throw e;
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-    }
+    clearNestSession();
     const retry = await ensureNestSession();
     if (!retry.ok) throw e;
     return fn();

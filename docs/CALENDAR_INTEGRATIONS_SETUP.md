@@ -43,9 +43,8 @@ Production redirect URIs (DayPilot — register on the same Google **Web** OAuth
 
 | Provider | Production redirect URI |
 |----------|-------------------------|
-| Google   | `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` |
-| Google (optional, when DNS ready) | `https://api.daypilot.co/calendar-connections/google/callback` |
-| Outlook  | `https://api.daypilot.co/calendar-connections/outlook/callback` (fallback: Railway URL) |
+| Google   | `https://api.daypilot.co/calendar-connections/google/callback` (fallback: Railway URL while TLS issues) |
+| Outlook  | `https://api.daypilot.co/calendar-connections/outlook/callback` (fallback: Railway URL while TLS issues) |
 
 Nest builds the Google redirect from Railway `API_URL` + `/calendar-connections/google/callback`. After consent, Nest redirects the browser to `{FRONTEND_URL}/sync?connected=google` (`https://www.daypilot.co/sync`). Mobile Sync refreshes connections when the app resumes.
 

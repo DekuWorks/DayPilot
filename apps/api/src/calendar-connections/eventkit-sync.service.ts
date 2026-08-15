@@ -17,6 +17,22 @@ import type {
 
 const EVENTKIT_TOKEN = 'device-eventkit';
 
+/** Keep events written by earlier chunks of the same upload. */
+export function shouldDeleteStaleEventKitRow(opts: {
+  externalId: string | null;
+  seenExternalIds: Set<string>;
+  updatedAt: Date;
+  batchStartedAt: Date | null;
+}): boolean {
+  if (!opts.externalId || opts.seenExternalIds.has(opts.externalId)) {
+    return false;
+  }
+  if (opts.batchStartedAt && opts.updatedAt >= opts.batchStartedAt) {
+    return false;
+  }
+  return true;
+}
+
 @Injectable()
 export class EventKitSyncService {
   private readonly logger = new Logger(EventKitSyncService.name);
@@ -342,6 +358,9 @@ export class EventKitSyncService {
     if (dto.reconcileDeletes && dto.rangeStart && dto.rangeEnd) {
       const rangeStart = new Date(dto.rangeStart);
       const rangeEnd = new Date(dto.rangeEnd);
+      const batchStartedAt = dto.syncStartedAt
+        ? new Date(dto.syncStartedAt)
+        : null;
       const stale = await this.prisma.event.findMany({
         where: {
           userId,
@@ -350,16 +369,24 @@ export class EventKitSyncService {
           externalId: { startsWith: `ek:${deviceId}:` },
           start: { gte: rangeStart, lte: rangeEnd },
         },
-        select: { id: true, externalId: true },
+        select: { id: true, externalId: true, updatedAt: true },
       });
       for (const row of stale) {
-        if (row.externalId && !seenExternalIds.has(row.externalId)) {
-          await this.prisma.event.update({
-            where: { id: row.id },
-            data: { deletedAt: new Date(), syncState: 'synced' },
-          });
-          deleted += 1;
+        if (
+          !shouldDeleteStaleEventKitRow({
+            externalId: row.externalId,
+            seenExternalIds,
+            updatedAt: row.updatedAt,
+            batchStartedAt,
+          })
+        ) {
+          continue;
         }
+        await this.prisma.event.update({
+          where: { id: row.id },
+          data: { deletedAt: new Date(), syncState: 'synced' },
+        });
+        deleted += 1;
       }
     }
 

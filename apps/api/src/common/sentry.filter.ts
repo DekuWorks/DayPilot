@@ -9,6 +9,15 @@ import {
 import { Response } from 'express';
 import * as Sentry from '@sentry/node';
 
+function payloadTooLargeStatus(exception: unknown): number | null {
+  if (!exception || typeof exception !== 'object') return null;
+  const err = exception as { status?: number; type?: string };
+  if (err.status === 413 || err.type === 'entity.too.large') {
+    return HttpStatus.PAYLOAD_TOO_LARGE;
+  }
+  return null;
+}
+
 @Catch()
 export class SentryFilter implements ExceptionFilter {
   private readonly logger = new Logger(SentryFilter.name);
@@ -21,7 +30,7 @@ export class SentryFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : payloadTooLargeStatus(exception) ?? HttpStatus.INTERNAL_SERVER_ERROR;
     const message =
       exception instanceof HttpException
         ? typeof exception.getResponse() === 'string'

@@ -19,7 +19,7 @@ Apple Calendar (EventKit on iPhone).
 4. Redirect URI → **Web**:
    - `https://wmkytyrcxbzjqiykbauw.supabase.co/auth/v1/callback` — Supabase Auth / SSO
    - `https://api.daypilot.co/calendar-connections/outlook/callback` — Nest calendar (preferred; same-site as daypilot.co)
-   - `https://api-production-6c2c.up.railway.app/calendar-connections/outlook/callback` — Nest calendar fallback while `api` CNAME is pending
+   - `https://api-production-6c2c.up.railway.app/calendar-connections/outlook/callback` — Nest calendar fallback while Railway TLS issues
    - `http://localhost:3001/calendar-connections/outlook/callback` — Nest calendar (local)
 5. **Certificates & secrets → New client secret** — copy the **value** once.
 6. **API permissions → Add a permission → Microsoft Graph → Delegated**:
