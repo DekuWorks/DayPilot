@@ -138,15 +138,57 @@ export async function exchangeNestSession(
   }
 }
 
+/** Remaining lifetime of the stored Nest access JWT, or null if missing/invalid. */
+export function nestAccessTokenTtlMs(): number | null {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem(NEST_KEYS.accessToken);
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const json = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const pad = "=".repeat((4 - (json.length % 4)) % 4);
+    const payload = JSON.parse(atob(json + pad)) as { exp?: number };
+    if (typeof payload.exp !== "number") return null;
+    return payload.exp * 1000 - Date.now();
+  } catch {
+    return null;
+  }
+}
+
 export function hasNestAccessToken(): boolean {
+  const ttl = nestAccessTokenTtlMs();
+  return ttl != null && ttl > 30_000;
+}
+
+async function refreshNestSession(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(NEST_KEYS.accessToken));
+  const refreshToken = localStorage.getItem(NEST_KEYS.refreshToken);
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${getApiUrl()}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as {
+      accessToken: string;
+      refreshToken: string;
+      user: User;
+    };
+    localStorage.setItem(NEST_KEYS.accessToken, data.accessToken);
+    localStorage.setItem(NEST_KEYS.refreshToken, data.refreshToken);
+    localStorage.setItem(NEST_KEYS.user, JSON.stringify(data.user));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Ensure Nest JWT exists before Sync / calendar-connections calls.
- * Re-exchanges from the current Supabase session when missing (race after login).
- * Uses a longer timeout than background enrich so Sync can recover from a cold API.
+ * Ensure a usable Nest JWT exists before Sync / calendar-connections calls.
+ * Refreshes an expired Nest token, then re-exchanges the Supabase session.
  */
 export async function ensureNestSession(opts?: {
   timeoutMs?: number;
@@ -155,6 +197,8 @@ export async function ensureNestSession(opts?: {
     return { ok: false, error: "Not in browser" };
   }
   if (hasNestAccessToken()) return { ok: true };
+
+  if (await refreshNestSession()) return { ok: true };
 
   try {
     const supabase = createClient();

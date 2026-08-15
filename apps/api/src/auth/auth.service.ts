@@ -211,7 +211,9 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not found');
     }
     if (stored.expiresAt < new Date()) {
-      await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+      await this.prisma.refreshToken.deleteMany({
+        where: { userId: payload.sub, tokenHash: hash },
+      });
       throw new UnauthorizedException('Refresh token expired');
     }
     const user = await this.prisma.user.findUnique({
@@ -220,7 +222,9 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: payload.sub, tokenHash: hash },
+    });
     return this.issueTokenPair(
       user.id,
       user.email,

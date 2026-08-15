@@ -151,7 +151,14 @@ export default function SyncPage() {
       )}
       {err && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
-          Something went wrong. Try again.
+          {err === "missing_params" &&
+            "Microsoft did not return a login code. Try Connect Outlook again."}
+          {err === "outlook_callback" &&
+            "Outlook connection failed. Try Connect Outlook again."}
+          {err === "google_callback" && "Google connection failed. Try again."}
+          {!["missing_params", "google_callback", "outlook_callback"].includes(
+            err
+          ) && "Something went wrong. Try again."}
         </div>
       )}
       {error && (

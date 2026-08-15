@@ -46,7 +46,18 @@ async function withNestAuth<T>(fn: () => Promise<T>): Promise<T> {
   if (!ready.ok) {
     throw new Error(ready.error);
   }
-  return fn();
+  try {
+    return await fn();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (!/unauthorized/i.test(msg)) throw e;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("accessToken");
+    }
+    const retry = await ensureNestSession();
+    if (!retry.ok) throw e;
+    return fn();
+  }
 }
 
 export async function listConnections(): Promise<CalendarConnection[]> {

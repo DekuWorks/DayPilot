@@ -21,6 +21,11 @@ import {
   verifyIcloudCalDav,
 } from './icloud-caldav';
 import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
+import {
+  emailFromJwt,
+  resolveOAuthCallbackBase,
+  summarizeMicrosoftOAuthError,
+} from './oauth-callback-base';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 /** Marker token for iOS EventKit imports (no CalDAV credentials). */
@@ -119,7 +124,7 @@ export class CalendarConnectionsService {
       const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
       if (!clientId)
         throw new BadRequestException('Google Calendar is not configured');
-      const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
+      const redirectUri = this.googleRedirectUri();
       const scope =
         'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
       const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
@@ -130,9 +135,10 @@ export class CalendarConnectionsService {
       const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
       if (!clientId)
         throw new BadRequestException('Outlook Calendar is not configured');
-      const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/outlook/callback`;
-      const scope = 'openid email Calendars.ReadWrite offline_access';
-      const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&response_mode=query&state=${encodeURIComponent(state)}`;
+      const redirectUri = this.outlookRedirectUri();
+      const scope =
+        'openid profile email offline_access User.Read Calendars.ReadWrite';
+      const url = `${this.microsoftAuthorizeUrl()}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&response_mode=query&prompt=select_account&state=${encodeURIComponent(state)}`;
       return { redirectUrl: url };
     }
 
@@ -367,7 +373,7 @@ export class CalendarConnectionsService {
       const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
       if (!clientId || !clientSecret)
         throw new BadRequestException('Google Calendar is not configured');
-      const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
+      const redirectUri = this.googleRedirectUri();
       const oauth2 = new google.auth.OAuth2(
         clientId,
         clientSecret,
@@ -411,33 +417,12 @@ export class CalendarConnectionsService {
     }
 
     if (provider === 'outlook') {
-      const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
-      const clientSecret = this.config.get<string>('MICROSOFT_CLIENT_SECRET');
-      if (!clientId || !clientSecret)
-        throw new BadRequestException('Outlook Calendar is not configured');
-      const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/outlook/callback`;
-      const tokenUrl =
-        'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-      const res = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          code,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.text();
-        throw new BadRequestException(err || 'Failed to exchange Outlook code');
-      }
-      const data = await res.json();
+      const data = await this.exchangeOutlookAuthCode(code);
       await this.upsertOutlookFromGraphTokens(userId, {
-        accessToken: data.access_token as string,
-        refreshToken: data.refresh_token as string | undefined,
-        expiresIn: (data.expires_in as number) ?? 3600,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresIn: data.expiresIn,
+        idToken: data.idToken,
       });
       return { redirectUrl: `${frontendUrl}/sync?connected=outlook` };
     }
@@ -470,18 +455,24 @@ export class CalendarConnectionsService {
       accessToken: string;
       refreshToken?: string;
       expiresIn: number;
+      idToken?: string;
     },
   ) {
+    if (!tokens.accessToken) {
+      throw new BadRequestException('Outlook token response missing access_token');
+    }
     const client = Client.init({
       authProvider: () => Promise.resolve(tokens.accessToken),
     });
-    let email = 'outlook';
+    let email = emailFromJwt(tokens.idToken) ?? 'outlook';
     try {
-      const me = await client.api('/me').get();
-      email = (me.mail ?? me.userPrincipalName ?? 'outlook') as string;
-    } catch {
-      throw new BadRequestException(
-        'Microsoft token is missing profile or calendar access. Connect Outlook again.',
+      const me = await client.api('/me').select('mail,userPrincipalName').get();
+      email = (me.mail ?? me.userPrincipalName ?? email) as string;
+    } catch (err) {
+      this.logger.warn(
+        `Outlook Graph /me failed user=${userId}; using token email. ${
+          err instanceof Error ? err.message : 'unknown'
+        }`,
       );
     }
     const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
@@ -510,7 +501,15 @@ export class CalendarConnectionsService {
         validatedAt: new Date(),
       },
     });
-    await this.syncConnection(userId, 'outlook');
+    try {
+      await this.syncConnection(userId, 'outlook');
+    } catch (err) {
+      this.logger.warn(
+        `Outlook connected user=${userId} but initial sync failed: ${
+          err instanceof Error ? err.message : 'unknown'
+        }`,
+      );
+    }
     return { ok: true, email };
   }
 
@@ -780,8 +779,87 @@ export class CalendarConnectionsService {
     );
   }
 
+  private oauthCallbackBase(): string {
+    return resolveOAuthCallbackBase({
+      oauthCallbackBase: this.config.get<string>('OAUTH_CALLBACK_BASE'),
+      apiUrl: this.config.get<string>('API_URL'),
+      url: this.config.get<string>('URL'),
+      railwayPublicDomain: this.config.get<string>('RAILWAY_PUBLIC_DOMAIN'),
+    });
+  }
+
   private googleRedirectUri(): string {
-    return `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
+    return `${this.oauthCallbackBase()}/calendar-connections/google/callback`;
+  }
+
+  private outlookRedirectUri(): string {
+    return `${this.oauthCallbackBase()}/calendar-connections/outlook/callback`;
+  }
+
+  private microsoftTenant(): string {
+    const tenant = this.config.get<string>('MICROSOFT_TENANT_ID')?.trim();
+    return tenant || 'common';
+  }
+
+  private microsoftAuthorizeUrl(): string {
+    return `https://login.microsoftonline.com/${this.microsoftTenant()}/oauth2/v2.0/authorize`;
+  }
+
+  private microsoftTokenUrl(tenant = this.microsoftTenant()): string {
+    return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+  }
+
+  private async exchangeOutlookAuthCode(code: string): Promise<{
+    accessToken: string;
+    refreshToken?: string;
+    expiresIn: number;
+    idToken?: string;
+  }> {
+    const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
+    const clientSecret = this.config.get<string>('MICROSOFT_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Outlook Calendar is not configured');
+    }
+    const redirectUri = this.outlookRedirectUri();
+    const tenant = this.microsoftTenant();
+    const res = await fetch(this.microsoftTokenUrl(tenant), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+    if (!res.ok) {
+      const summary = summarizeMicrosoftOAuthError(await res.text());
+      this.logger.warn(
+        `Outlook token exchange failed tenant=${tenant} redirect=${redirectUri} ${summary}`,
+      );
+      throw new BadRequestException(summary);
+    }
+    const data = (await res.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      id_token?: string;
+    };
+    if (!data.access_token) {
+      throw new BadRequestException(
+        'Outlook token response missing access_token',
+      );
+    }
+    this.logger.log(
+      `Outlook token exchange ok tenant=${tenant} redirect=${redirectUri}`,
+    );
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresIn: data.expires_in ?? 3600,
+      idToken: data.id_token,
+    };
   }
 
   private async refreshGoogleTokens(
@@ -851,8 +929,7 @@ export class CalendarConnectionsService {
       throw new BadRequestException('Outlook Calendar is not configured');
     }
 
-    const tokenUrl =
-      'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+    const tokenUrl = this.microsoftTokenUrl();
     const res = await fetch(tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

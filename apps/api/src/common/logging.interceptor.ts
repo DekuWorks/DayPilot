@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
 import { MetricsService } from '../health/metrics.service';
+import { redactOAuthUrl } from '../calendar-connections/oauth-callback-base';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -21,7 +22,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const req = http.getRequest<Request>();
     const res = http.getResponse();
     const method = req.method;
-    const url = req.url ?? req.path;
+    const url = redactOAuthUrl(req.url ?? req.path);
     const start = Date.now();
 
     this.metrics.incrementRequestCount();

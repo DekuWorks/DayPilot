@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
   Post,
@@ -28,6 +29,8 @@ import type { CalendarProvider } from '../generated/prisma';
 
 @Controller('calendar-connections')
 export class CalendarConnectionsController {
+  private readonly logger = new Logger(CalendarConnectionsController.name);
+
   constructor(
     private readonly calendarConnections: CalendarConnectionsService,
     private readonly eventKitSync: EventKitSyncService,
@@ -68,10 +71,21 @@ export class CalendarConnectionsController {
   async outlookCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Query('error') msError: string,
+    @Query('error_description') msErrorDescription: string,
     @Res() res: express.Response,
   ) {
     const frontend =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    if (msError) {
+      this.logger.warn(
+        `Outlook authorize error=${msError} ${
+          msErrorDescription?.split('\r\n')[0]?.slice(0, 160) ?? ''
+        }`,
+      );
+      res.redirect(`${frontend}/sync?error=outlook_callback`);
+      return;
+    }
     if (!code || !state) {
       res.redirect(`${frontend}/sync?error=missing_params`);
       return;
@@ -83,7 +97,9 @@ export class CalendarConnectionsController {
         state,
       );
       res.redirect(redirectUrl);
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      this.logger.warn(`Outlook callback failed: ${message.slice(0, 300)}`);
       res.redirect(`${frontend}/sync?error=outlook_callback`);
     }
   }
