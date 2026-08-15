@@ -103,7 +103,7 @@ export default function MeetingsPage() {
     if (!eventsApi.canDeleteCalendarEvent(event)) return;
     if (!confirm("Delete this meeting?")) return;
     try {
-      await eventsApi.deleteEvent(id);
+      await eventsApi.deleteEvent(event.id);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete");
