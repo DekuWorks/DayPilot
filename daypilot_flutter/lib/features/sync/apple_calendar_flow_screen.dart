@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/calendar_connection_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import '../../data/services/apple_calendar_service.dart';
 import '../../domain/calendar/calendar_provider.dart';
-import '../integrations/integrations_screen.dart';
 
 enum _FlowStep { explain, permission, select, syncing, done }
 
@@ -134,7 +134,7 @@ class _AppleCalendarFlowScreenState
             rangeEnd: rangeEnd,
           );
 
-      ref.invalidate(calendarConnectionsProvider);
+      invalidateCalendarStatus(ref);
       ref.read(calendarDataVersionProvider.notifier).bump();
       if (!mounted) return;
       setState(() {

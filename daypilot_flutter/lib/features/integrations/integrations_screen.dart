@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/daypilot_env.dart';
+import '../../core/providers/calendar_connection_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
@@ -28,11 +29,6 @@ const _providers = <({String id, String name, String description})>[
         'Connect through this iPhone (EventKit). Manage status on Sync.',
   ),
 ];
-
-final calendarConnectionsProvider =
-    FutureProvider.autoDispose<List<CalendarConnection>>((ref) {
-  return ref.watch(calendarConnectionsRepositoryProvider).listConnections();
-});
 
 class IntegrationsScreen extends ConsumerStatefulWidget {
   const IntegrationsScreen({super.key});

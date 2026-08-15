@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/daypilot_env.dart';
 import '../../core/providers/bootstrap_providers.dart';
+import '../../core/providers/calendar_connection_providers.dart';
+import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
-import '../../data/repositories/calendar_connections_repository.dart';
-import '../integrations/integrations_screen.dart';
+import '../../domain/calendar/calendar_connection_ui.dart';
 
 final _profileProvider =
     FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
@@ -139,14 +140,9 @@ class ProfileScreen extends ConsumerWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            const _SyncStatusCard(),
+            const _CalendarConnectionsCard(),
             const SizedBox(height: 8),
-            NavTile(
-              icon: Icons.sync_rounded,
-              title: 'Calendar sync',
-              subtitle: 'Status, validate, sync now',
-              onTap: () => context.push('/sync'),
-            ),
+            const _SyncAllTile(),
             const SizedBox(height: 24),
             Text(
               'Workspace',
@@ -225,7 +221,7 @@ class ProfileScreen extends ConsumerWidget {
             NavTile(
               icon: Icons.link_rounded,
               title: 'Connected calendars',
-              subtitle: 'Google, Outlook, iCloud',
+              subtitle: 'Manage Google, Outlook, Apple',
               onTap: () => context.push('/sync'),
             ),
             const SizedBox(height: 8),
@@ -250,9 +246,48 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Compact Google / Outlook / Apple connection chips for the Profile hub.
-class _SyncStatusCard extends ConsumerWidget {
-  const _SyncStatusCard();
+Color _toneColor(CalendarUiTone tone) {
+  switch (tone) {
+    case CalendarUiTone.healthy:
+      return DayPilotColors.brand500;
+    case CalendarUiTone.needsAttention:
+      return DayPilotColors.warning;
+    case CalendarUiTone.notConnected:
+      return DayPilotColors.textTertiary;
+  }
+}
+
+IconData _toneIcon(CalendarUiTone tone) {
+  switch (tone) {
+    case CalendarUiTone.healthy:
+      return Icons.check_circle_rounded;
+    case CalendarUiTone.needsAttention:
+      return Icons.error_outline_rounded;
+    case CalendarUiTone.notConnected:
+      return Icons.radio_button_unchecked;
+  }
+}
+
+String _formatSyncWhen(BuildContext context, DateTime? dt) {
+  if (dt == null) return 'Never';
+  final local = dt.toLocal();
+  final d = MaterialLocalizations.of(context);
+  return '${d.formatShortDate(local)} ${d.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
+}
+
+List<CalendarProviderUi> _rowsFromProviders(WidgetRef ref) {
+  final connections =
+      ref.watch(calendarConnectionsProvider).asData?.value ?? [];
+  final eventKit = ref.watch(eventKitStatusProvider).asData?.value;
+  return buildCalendarProviderRows(
+    connections: connections,
+    eventKitStatus: eventKit,
+  );
+}
+
+/// Google / Outlook / Apple — Apple is EventKit, not Sign in with Apple.
+class _CalendarConnectionsCard extends ConsumerWidget {
+  const _CalendarConnectionsCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -265,7 +300,11 @@ class _SyncStatusCard extends ConsumerWidget {
       );
     }
 
-    final async = ref.watch(calendarConnectionsProvider);
+    final oauth = ref.watch(calendarConnectionsProvider);
+    final eventKit = ref.watch(eventKitStatusProvider);
+    final loading = oauth.isLoading || eventKit.isLoading;
+    final failed = oauth.hasError && eventKit.hasError;
+
     return InkWell(
       onTap: () => context.push('/sync'),
       borderRadius: BorderRadius.circular(12),
@@ -276,94 +315,241 @@ class _SyncStatusCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: DayPilotColors.borderSubtle),
         ),
-        child: async.when(
-          loading: () => const LinearProgressIndicator(
-            color: DayPilotColors.brand500,
-            minHeight: 2,
-          ),
-          error: (_, _) => const Text(
-            'Could not load sync status — tap to open Sync',
-            style: TextStyle(color: DayPilotColors.textSecondary, fontSize: 13),
-          ),
-          data: (connections) {
-            const providers = ['google', 'outlook', 'apple'];
-            return Column(
+        child: loading
+            ? const LinearProgressIndicator(
+                color: DayPilotColors.brand500,
+                minHeight: 2,
+              )
+            : failed
+                ? const Text(
+                    'Could not load sync status — tap to open Sync',
+                    style: TextStyle(
+                      color: DayPilotColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Calendar connections',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: DayPilotColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ..._rowsFromProviders(ref).map(
+                        (row) => _ProviderStatusRow(row: row),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+}
+
+class _ProviderStatusRow extends ConsumerWidget {
+  const _ProviderStatusRow({required this.row});
+
+  final CalendarProviderUi row;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final color = _toneColor(row.tone);
+    final detail = row.detail.isEmpty ? row.headline : row.detail;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(_toneIcon(row.tone), size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Calendar connections',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
+                Text(
+                  row.name,
+                  style: const TextStyle(
                     color: DayPilotColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(height: 10),
-                ...providers.map((id) {
-                  CalendarConnection? conn;
-                  for (final c in connections) {
-                    if (c.provider == id) {
-                      conn = c;
-                      break;
-                    }
-                  }
-                  final label = id[0].toUpperCase() + id.substring(1);
-                  final connected = conn != null;
-                  final statusText = !connected
-                      ? 'Not connected'
-                      : conn.status.label;
-                  final color = !connected
-                      ? DayPilotColors.textTertiary
-                      : conn.status == ConnectionValidationStatus.valid
-                          ? DayPilotColors.brand500
-                          : conn.status ==
-                                  ConnectionValidationStatus.needsReconnect
-                              ? DayPilotColors.error
-                              : DayPilotColors.warning;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        Icon(
-                          connected
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked,
-                          size: 18,
-                          color: color,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            label,
-                            style: const TextStyle(
-                              color: DayPilotColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            connected && conn.email.isNotEmpty
-                                ? '${conn.email} · $statusText'
-                                : statusText,
-                            textAlign: TextAlign.end,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                Text(
+                  row.tone == CalendarUiTone.healthy
+                      ? detail
+                      : row.tone == CalendarUiTone.needsAttention
+                          ? [
+                              if (row.detail.isNotEmpty) row.detail,
+                              row.headline,
+                            ].join(' · ')
+                          : row.headline,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
-            );
-          },
+            ),
+          ),
+          if (row.canReconnect)
+            TextButton(
+              onPressed: () => _reconnect(context, ref, row),
+              style: TextButton.styleFrom(
+                foregroundColor: DayPilotColors.warning,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Reconnect'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reconnect(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarProviderUi row,
+  ) async {
+    if (row.id == 'apple') {
+      context.push('/integrations/apple-calendar');
+      return;
+    }
+    try {
+      final launched =
+          await ref.read(calendarSyncServiceProvider).launchConnect(row.id);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open browser for sign-in.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
+}
+
+class _SyncAllTile extends ConsumerStatefulWidget {
+  const _SyncAllTile();
+
+  @override
+  ConsumerState<_SyncAllTile> createState() => _SyncAllTileState();
+}
+
+class _SyncAllTileState extends ConsumerState<_SyncAllTile> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!DayPilotEnv.hasDaypilotApi) {
+      return const SizedBox.shrink();
+    }
+
+    final rows = _rowsFromProviders(ref);
+    final hint = syncAllHint(rows);
+    final latest = latestSyncAt(rows);
+    final subtitle = switch (hint) {
+      SyncAllHint.needsReconnect => 'Needs reconnect',
+      SyncAllHint.lastSynced => 'Last synced ${_formatSyncWhen(context, latest)}',
+      SyncAllHint.neverSynced => 'Never synced',
+      SyncAllHint.noneConnected => 'Connect a calendar to sync',
+    };
+
+    return Material(
+      color: DayPilotColors.surfacePrimary,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: _busy ? null : _syncAll,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: DayPilotColors.borderSubtle),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.sync_rounded,
+                color: _busy
+                    ? DayPilotColors.textTertiary
+                    : DayPilotColors.brand500,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _busy ? 'Syncing…' : 'Sync all',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: DayPilotColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: DayPilotColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_busy)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: DayPilotColors.brand500,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _syncAll() async {
+    setState(() => _busy = true);
+    try {
+      final connections =
+          ref.read(calendarConnectionsProvider).asData?.value ?? [];
+      final eventKit = ref.read(eventKitStatusProvider).asData?.value;
+      final count = await ref.read(calendarSyncServiceProvider).syncAll(
+            connections: connections,
+            eventKitStatus: eventKit,
+          );
+      invalidateCalendarStatus(ref);
+      ref.read(calendarDataVersionProvider.notifier).bump();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            count == 0
+                ? 'Nothing to sync. Connect a calendar or reconnect first.'
+                : 'Calendars synced.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 }

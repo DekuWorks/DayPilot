@@ -10,12 +10,12 @@ export default function AppleCalendarHandoffPage() {
         <h1 className="text-3xl font-bold">Apple Calendar setup</h1>
         <p className="text-[var(--text-secondary)] leading-relaxed">
           iCloud calendars connect through the DayPilot iOS app using Apple
-          EventKit. Sign in with Apple only authenticates your account — it does
-          not grant calendar access.
+          EventKit. Sign in with Apple only authenticates your account — it is
+          not a calendar connection.
         </p>
         <ol className="list-decimal pl-5 space-y-2 text-[var(--text-secondary)]">
           <li>Open the DayPilot app on your iPhone.</li>
-          <li>Go to Profile → Sync → Connect Apple Calendar.</li>
+          <li>Go to Profile → Calendar connections, then tap Apple.</li>
           <li>Allow calendar access and select calendars.</li>
           <li>Return here — events appear on the web calendar (read-only).</li>
         </ol>

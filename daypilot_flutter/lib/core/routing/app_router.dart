@@ -39,6 +39,7 @@ import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/sync/apple_calendar_flow_screen.dart';
+import '../../features/sync/calendar_auto_connect_host.dart';
 import '../../features/sync/sync_screen.dart';
 import '../../features/tasks/task_detail_screen.dart';
 import '../../features/tasks/tasks_screen.dart';
@@ -87,7 +88,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return AppShell(navigationShell: navigationShell);
+          return CalendarAutoConnectHost(
+            child: AppShell(navigationShell: navigationShell),
+          );
         },
         branches: [
           StatefulShellBranch(

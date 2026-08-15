@@ -196,7 +196,8 @@ export default function SettingsPage() {
             Sync
           </h2>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Connect Google, Outlook, or iCloud and keep events in sync.
+            Connect Google, Outlook, or Apple Calendar (iPhone) and keep events
+            in sync.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

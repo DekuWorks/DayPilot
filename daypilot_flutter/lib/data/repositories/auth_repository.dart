@@ -119,6 +119,13 @@ class AuthRepository {
     }
   }
 
+  /// True when the current Supabase user has a Google identity linked.
+  bool get hasGoogleIdentity {
+    final user = _client.auth.currentUser;
+    if (user == null) return false;
+    return user.identities?.any((i) => i.provider == 'google') ?? false;
+  }
+
   /// True when the current Supabase user has an Apple identity linked.
   bool get hasAppleIdentity {
     final user = _client.auth.currentUser;

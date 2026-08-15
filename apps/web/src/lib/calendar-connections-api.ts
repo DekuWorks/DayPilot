@@ -184,10 +184,32 @@ export function statusLabel(status: ConnectionValidationStatus): string {
     case "valid":
       return "Validated";
     case "expired":
-      return "Token expired — sync may refresh";
+      return "Token expired";
     case "needs_reconnect":
       return "Needs reconnect";
     default:
       return "Not validated yet";
   }
+}
+
+/**
+ * Sync healthy / expired-with-refresh OAuth connections, then touch EventKit
+ * via Nest GET /:id/sync (web cannot push EventKit events).
+ */
+export async function syncAllConnections(args: {
+  connections: CalendarConnection[];
+  eventKitConnectionId?: string | null;
+}): Promise<number> {
+  let count = 0;
+  for (const c of args.connections) {
+    if (c.provider === "apple" || c.provider === "apple_eventkit") continue;
+    if (c.status === "needs_reconnect") continue;
+    await syncConnection(c.id);
+    count += 1;
+  }
+  if (args.eventKitConnectionId) {
+    await syncConnection(args.eventKitConnectionId);
+    count += 1;
+  }
+  return count;
 }

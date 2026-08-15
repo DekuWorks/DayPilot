@@ -1,19 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";
 import * as calendarConnectionsApi from "@/lib/calendar-connections-api";
-import type { CalendarConnection } from "@/lib/calendar-connections-api";
+import type {
+  CalendarConnection,
+  EventKitConnectionStatus,
+} from "@/lib/calendar-connections-api";
+import {
+  buildCalendarProviderRows,
+  latestSyncAt,
+  providerTitle,
+  syncAllHint,
+  toneClass,
+  type CalendarProviderUi,
+} from "@/lib/calendar-connection-ui";
 
-const PROVIDERS: { id: CalendarConnection["provider"]; name: string; description: string }[] = [
-  { id: "google", name: "Google Calendar", description: "Sync events from your Google account." },
-  { id: "outlook", name: "Outlook / Microsoft 365", description: "Sync events from Outlook or Microsoft 365." },
-];
+const DEEP_LINK = "com.daypilot.daypilot://integrations/apple-calendar";
+
+function formatWhen(iso: string | null | undefined): string {
+  if (!iso) return "Never";
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return "Never";
+  }
+}
 
 export default function IntegrationsPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
+  const [eventKit, setEventKit] = useState<EventKitConnectionStatus | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -22,17 +42,26 @@ export default function IntegrationsPage() {
   const connected = searchParams.get("connected");
   const err = searchParams.get("error");
 
+  const reload = useCallback(async () => {
+    const [data, ek] = await Promise.all([
+      calendarConnectionsApi.listConnections(),
+      calendarConnectionsApi.getEventKitStatus().catch(() => null),
+    ]);
+    setConnections(data);
+    setEventKit(ek);
+    setError("");
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    calendarConnectionsApi
-      .listConnections()
-      .then((data) => {
-        if (!cancelled) setConnections(data);
-      })
+    setLoading(true);
+    reload()
       .catch((e) => {
         if (!cancelled) {
           setConnections([]);
-          setError(e instanceof Error ? e.message : "Failed to load connections");
+          setError(
+            e instanceof Error ? e.message : "Failed to load connections"
+          );
         }
       })
       .finally(() => {
@@ -41,9 +70,18 @@ export default function IntegrationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [connected]);
+  }, [connected, reload]);
 
-  async function handleConnect(provider: CalendarConnection["provider"]) {
+  const rows = buildCalendarProviderRows({
+    connections,
+    eventKitStatus: eventKit,
+  });
+  const hint = syncAllHint(rows);
+  const latest = latestSyncAt(rows);
+  const busy = !!actionLoading;
+
+  async function handleConnect(provider: CalendarProviderUi["id"]) {
+    if (provider === "apple") return;
     setError("");
     setActionLoading(provider);
     try {
@@ -62,7 +100,7 @@ export default function IntegrationsPage() {
     setActionLoading(id);
     try {
       await calendarConnectionsApi.disconnectConnection(id);
-      setConnections((prev) => prev.filter((c) => c.id !== id));
+      await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Disconnect failed");
     } finally {
@@ -70,12 +108,19 @@ export default function IntegrationsPage() {
     }
   }
 
-  async function handleSync(id: string) {
+  async function handleSyncAll() {
     setError("");
-    setActionLoading(`sync-${id}`);
+    setActionLoading("sync-all");
     try {
-      await calendarConnectionsApi.syncConnection(id);
-      setConnections((prev) => prev.map((c) => (c.id === id ? { ...c, syncedAt: new Date().toISOString() } : c)));
+      const apple = rows.find((r) => r.id === "apple");
+      const count = await calendarConnectionsApi.syncAllConnections({
+        connections,
+        eventKitConnectionId: apple?.canSync ? apple.connectionId : null,
+      });
+      await reload();
+      if (count === 0) {
+        setError("Nothing to sync. Connect a calendar or reconnect first.");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -85,115 +130,150 @@ export default function IntegrationsPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Connected calendars</h1>
-      <p className="text-[var(--text-secondary)] mb-2">
-        Link Google or Outlook so events appear in one calendar. Apple Calendar
-        connects through the DayPilot iOS app (EventKit) — manage it on{" "}
-        <Link href="/sync" className="text-[var(--brand-500)] font-medium hover:underline">
-          Sync
-        </Link>
-        .
-      </p>
-      <p className="text-sm text-[var(--text-secondary)] mb-6">
-        For live status and token validation, open Sync.
+      <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">
+        Connected calendars
+      </h1>
+      <p className="text-[var(--text-secondary)] mb-6">
+        Google, Outlook, and Apple Calendar (EventKit on iPhone). Sign in with
+        Apple is account login only — it is not a calendar connection.
       </p>
 
       {connected && !err && (
-        <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800">
-          {connected === "google" && "Google Calendar connected. Events are syncing to your calendar."}
-          {connected === "outlook" && "Outlook connected. Events are syncing to your calendar."}
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
+          {connected === "google" &&
+            "Google Calendar connected. Events are syncing to your calendar."}
+          {connected === "outlook" &&
+            "Outlook connected. Events are syncing to your calendar."}
         </div>
       )}
       {err && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
-          {err === "missing_params" && "Missing OAuth parameters. Try connecting again."}
+          {err === "missing_params" &&
+            "Missing OAuth parameters. Try connecting again."}
           {err === "google_callback" && "Google connection failed. Try again."}
-          {err === "outlook_callback" && "Outlook connection failed. Try again."}
-          {!["missing_params", "google_callback", "outlook_callback"].includes(err) && "Something went wrong. Try again."}
+          {err === "outlook_callback" &&
+            "Outlook connection failed. Try again."}
+          {!["missing_params", "google_callback", "outlook_callback"].includes(
+            err
+          ) && "Something went wrong. Try again."}
         </div>
       )}
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">{error}</div>
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
+          {error}
+        </div>
       )}
 
       <div className="glass-effect rounded-2xl p-6 md:p-8 max-w-2xl space-y-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Your connections</h2>
+        <div>
+          <Button
+            onClick={() => void handleSyncAll()}
+            disabled={loading || busy}
+          >
+            {actionLoading === "sync-all" ? "Syncing…" : "Sync all"}
+          </Button>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            {hint === "needsReconnect" && "Needs reconnect"}
+            {hint === "lastSynced" && `Last synced ${formatWhen(latest)}`}
+            {hint === "neverSynced" && "Never synced"}
+            {hint === "noneConnected" && "Connect a calendar to sync"}
+          </p>
+        </div>
+
         {loading ? (
           <p className="text-[var(--text-secondary)]">Loading…</p>
-        ) : connections.length === 0 ? (
-          <p className="text-[var(--text-secondary)]">No calendars connected yet. Connect one below.</p>
         ) : (
-          <ul className="space-y-3">
-            {connections.map((c) => (
+          <ul className="space-y-4">
+            {rows.map((row) => (
               <li
-                key={c.id}
-                className="flex flex-wrap items-center gap-3 py-3 px-4 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)]"
+                key={row.id}
+                className="rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)] p-4 space-y-3"
               >
-                <span className="font-medium text-[var(--text-primary)] capitalize">{c.provider}</span>
-                <span className="text-[var(--text-secondary)] text-sm">{c.email}</span>
-                {c.syncedAt && (
-                  <span className="text-xs text-[var(--text-secondary)]">
-                    Synced {new Date(c.syncedAt).toLocaleString()}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {providerTitle(row.id)}
+                    </p>
+                    {row.detail ? (
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {row.detail}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`text-sm font-semibold shrink-0 ${toneClass(row.tone)}`}
+                  >
+                    {row.headline}
                   </span>
-                )}
-                {c.status && (
-                  <span className="text-xs text-[var(--text-secondary)] capitalize">
-                    · {c.status.replace("_", " ")}
-                  </span>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleSync(c.id)}
-                  disabled={!!actionLoading}
-                >
-                  {actionLoading === `sync-${c.id}` ? "Syncing…" : "Sync now"}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => handleDisconnect(c.id)}
-                  disabled={!!actionLoading}
-                  className="text-sm text-[var(--error)] hover:underline"
-                >
-                  {actionLoading === c.id ? "Disconnecting…" : "Disconnect"}
-                </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {row.tone === "notConnected" && row.id !== "apple" ? (
+                    <Button
+                      size="sm"
+                      onClick={() => void handleConnect(row.id)}
+                      disabled={busy}
+                    >
+                      {actionLoading === row.id ? "Redirecting…" : "Connect"}
+                    </Button>
+                  ) : null}
+                  {row.tone === "notConnected" && row.id === "apple" ? (
+                    <Link
+                      href="/app/integrations/apple-calendar"
+                      className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+                    >
+                      Set up on iPhone
+                    </Link>
+                  ) : null}
+                  {row.canReconnect ? (
+                    <Button
+                      size="sm"
+                      onClick={() => void handleConnect(row.id)}
+                      disabled={busy}
+                    >
+                      Reconnect
+                    </Button>
+                  ) : null}
+                  {row.id === "apple" && row.tone === "healthy" ? (
+                    <a
+                      href={DEEP_LINK}
+                      className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+                    >
+                      Manage on iPhone
+                    </a>
+                  ) : null}
+                  {row.id !== "apple" && row.connectionId ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleDisconnect(row.connectionId!)}
+                      disabled={busy}
+                      className="text-sm text-[var(--error)] hover:underline"
+                    >
+                      {actionLoading === row.connectionId
+                        ? "Disconnecting…"
+                        : "Disconnect"}
+                    </button>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
         )}
-
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] pt-4">Add a calendar</h2>
-        <ul className="space-y-4">
-          {PROVIDERS.map((p) => {
-            const isConnected = connections.some((c) => c.provider === p.id);
-            return (
-              <li
-                key={p.id}
-                className="flex flex-wrap items-center gap-4 py-4 px-4 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border-subtle)]"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
-                  <p className="text-sm text-[var(--text-secondary)]">{p.description}</p>
-                </div>
-                {isConnected ? (
-                  <span className="text-sm text-[var(--brand-500)] font-medium">Connected</span>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleConnect(p.id)}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading === p.id ? "Redirecting…" : "Connect"}
-                  </Button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
       </div>
 
       <p className="mt-6">
-        <Link href="/dashboard" className="text-[var(--brand-500)] font-medium hover:underline">← Back to Calendar</Link>
+        <Link
+          href="/sync"
+          className="text-[var(--brand-500)] font-medium hover:underline"
+        >
+          Open Sync
+        </Link>
+        {" · "}
+        <Link
+          href="/dashboard"
+          className="text-[var(--brand-500)] font-medium hover:underline"
+        >
+          ← Back to Calendar
+        </Link>
       </p>
     </div>
   );

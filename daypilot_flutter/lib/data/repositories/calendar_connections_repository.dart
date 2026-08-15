@@ -29,7 +29,7 @@ enum ConnectionValidationStatus {
       case ConnectionValidationStatus.valid:
         return 'Validated';
       case ConnectionValidationStatus.expired:
-        return 'Token expired — sync may refresh';
+        return 'Token expired';
       case ConnectionValidationStatus.needsReconnect:
         return 'Needs reconnect';
       case ConnectionValidationStatus.unknown:
