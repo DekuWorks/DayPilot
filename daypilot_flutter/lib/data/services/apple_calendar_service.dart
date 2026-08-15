@@ -1,11 +1,53 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/calendar/calendar_provider.dart';
 import 'device_install_id_service.dart';
+
+/// Maps a `device_calendar` retrieveEvents JSON row without [Event.fromJson].
+///
+/// The plugin's parser requires `availability` to be a non-null [String].
+/// EventKit often sends `null` (Birthdays, holidays, subscribed calendars),
+/// which throws `type 'Null' is not a subtype of type 'String'`.
+@visibleForTesting
+DeviceEventPayload? deviceEventPayloadFromPluginJson(
+  Map<String, dynamic> json, {
+  required String fallbackCalendarId,
+}) {
+  final eventId = json['eventId']?.toString();
+  if (eventId == null || eventId.isEmpty) return null;
+
+  final startMs = json['start'];
+  if (startMs is! num) return null;
+  final eventStart = DateTime.fromMillisecondsSinceEpoch(startMs.toInt());
+
+  final endMs = json['end'];
+  final eventEnd = endMs is num
+      ? DateTime.fromMillisecondsSinceEpoch(endMs.toInt())
+      : eventStart;
+
+  final rawTitle = (json['title']?.toString() ?? '').trim();
+  final calendarId = json['calendarId']?.toString();
+
+  return DeviceEventPayload(
+    externalEventId: eventId,
+    externalCalendarId:
+        (calendarId == null || calendarId.isEmpty)
+            ? fallbackCalendarId
+            : calendarId,
+    title: rawTitle.isEmpty ? '(No title)' : rawTitle,
+    startsAt: eventStart,
+    endsAt: eventEnd.isBefore(eventStart) ? eventStart : eventEnd,
+    description: json['description']?.toString(),
+    location: json['location']?.toString(),
+    allDay: json['allDay'] == true,
+  );
+}
 
 enum CalendarPermissionState {
   undetermined,
@@ -228,35 +270,56 @@ class AppleCalendarService {
     final payloads = <DeviceEventPayload>[];
     final seen = <String>{};
 
+    Object? lastError;
+    var calendarCount = 0;
+    var failedCalendars = 0;
     for (final calendarId in calendarIds) {
-      final eventsResult = await _plugin.retrieveEvents(
-        calendarId,
-        RetrieveEventsParams(startDate: rangeStart, endDate: rangeEnd),
-      );
-      if (!eventsResult.isSuccess || eventsResult.data == null) continue;
-      for (final event in eventsResult.data!) {
-        final eventId = event.eventId;
-        final eventStart = event.start;
-        final eventEnd = event.end ?? eventStart;
-        if (eventId == null || eventStart == null || eventEnd == null) continue;
-        final key = '$calendarId:$eventId';
-        if (!seen.add(key)) continue;
-        final title = (event.title ?? '').trim();
-        payloads.add(
-          DeviceEventPayload(
-            externalEventId: eventId,
-            externalCalendarId: calendarId,
-            title: title.isEmpty ? '(No title)' : title,
-            startsAt: eventStart,
-            endsAt: eventEnd.isBefore(eventStart) ? eventStart : eventEnd,
-            description: event.description,
-            location: event.location,
-            allDay: event.allDay ?? false,
-          ),
-        );
+      calendarCount++;
+      try {
+        final maps = await _retrieveEventMaps(calendarId, rangeStart, rangeEnd);
+        for (final map in maps) {
+          final payload = deviceEventPayloadFromPluginJson(
+            map,
+            fallbackCalendarId: calendarId,
+          );
+          if (payload == null) continue;
+          final key =
+              '${payload.externalCalendarId}:${payload.externalEventId}';
+          if (!seen.add(key)) continue;
+          payloads.add(payload);
+        }
+      } catch (e) {
+        lastError = e;
+        failedCalendars++;
       }
     }
+    if (calendarCount > 0 &&
+        failedCalendars == calendarCount &&
+        lastError != null) {
+      throw lastError;
+    }
     return payloads;
+  }
+
+  Future<List<Map<String, dynamic>>> _retrieveEventMaps(
+    String calendarId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final raw = await DeviceCalendarPlugin.channel.invokeMethod<dynamic>(
+      'retrieveEvents',
+      {
+        'calendarId': calendarId,
+        'startDate': start.millisecondsSinceEpoch,
+        'endDate': end.millisecondsSinceEpoch,
+      },
+    );
+    final decoded = raw is String ? json.decode(raw) : raw;
+    if (decoded is! List) return [];
+    return [
+      for (final item in decoded)
+        if (item is Map) Map<String, dynamic>.from(item),
+    ];
   }
 
   Future<String> createAppleCalendarEvent({
