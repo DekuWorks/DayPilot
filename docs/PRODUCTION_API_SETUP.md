@@ -4,12 +4,13 @@ You need to deploy the DayPilot API to a host that provides a public URL. Here a
 
 ---
 
-## Current production status (2026-08-05)
+## Current production status (2026-08-15)
 
 | Check | Result |
 |-------|--------|
 | Active API host | **Railway** — `https://api-production-6c2c.up.railway.app` (project `daypilot-api`) |
-| `https://api.daypilot.co` DNS | **Pending at GoDaddy** — Railway custom domain registered. Add records below; until then use the Railway URL. |
+| Railway custom domain | `api.daypilot.co` registered (CNAME target `66xfwrf9.up.railway.app`). Nest uses it for OAuth once `/health` answers; Railway URL is the fallback. |
+| `https://api.daypilot.co` DNS | **NXDOMAIN at GoDaddy** until the CNAME below is added. |
 
 ### GoDaddy DNS for `api.daypilot.co` (Marcus must click)
 

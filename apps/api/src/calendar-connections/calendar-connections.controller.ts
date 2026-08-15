@@ -67,6 +67,7 @@ export class CalendarConnectionsController {
     }
   }
 
+  /** Cookie-less: Microsoft returns `code` + signed `state`. Do not Set-Cookie. */
   @Get('outlook/callback')
   async outlookCallback(
     @Query('code') code: string,
@@ -91,6 +92,7 @@ export class CalendarConnectionsController {
       return;
     }
     try {
+      this.logger.log('Outlook callback received (cookie-less state)');
       const { redirectUrl } = await this.calendarConnections.handleCallback(
         'outlook',
         code,

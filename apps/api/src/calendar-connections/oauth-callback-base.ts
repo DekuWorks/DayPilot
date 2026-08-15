@@ -1,14 +1,23 @@
-/** Custom API host that does not resolve (GoDaddy CNAME still pending). */
-export const DEAD_CUSTOM_API_HOSTS = new Set(['api.daypilot.co']);
+/** First-party API host (same site as daypilot.co). Prefer when HTTPS answers. */
+export const FIRST_PARTY_API_HOST = 'api.daypilot.co';
+export const FIRST_PARTY_API_ORIGIN = `https://${FIRST_PARTY_API_HOST}`;
 
-/** Live Railway origin — use until api.daypilot.co DNS works. */
+/** Live Railway origin — fallback while api.daypilot.co DNS/TLS is down. */
 export const RAILWAY_API_ORIGIN = 'https://api-production-6c2c.up.railway.app';
+
+/** @deprecated Use FIRST_PARTY_API_HOST + firstPartyApiHostReady() */
+export const DEAD_CUSTOM_API_HOSTS = new Set([FIRST_PARTY_API_HOST]);
+
+export const GRAPH_MICROSOFT_BASE = 'https://graph.microsoft.com/v1.0';
 
 const MULTI_TENANT_AUTHORITIES = new Set([
   'common',
   'organizations',
   'consumers',
 ]);
+
+const FIRST_PARTY_CHECK_TTL_MS = 60_000;
+let firstPartyCache: { ready: boolean; checkedAt: number } | null = null;
 
 /**
  * Outlook Connect must use /common (or /consumers) so personal Microsoft
@@ -25,25 +34,43 @@ export function resolveMicrosoftAuthorityTenant(
   return 'common';
 }
 
-export function resolveOAuthCallbackBase(env: {
-  oauthCallbackBase?: string | null;
-  apiUrl?: string | null;
-  url?: string | null;
-  railwayPublicDomain?: string | null;
-}): string {
+/**
+ * Pick the OAuth redirect origin. Prefer api.daypilot.co only when it
+ * actually answers (DNS + TLS). Otherwise skip it so Microsoft is not
+ * sent to NXDOMAIN. State is the signed `state` query param only —
+ * never a Set-Cookie on railway.app (Chrome bounce-tracking deletes it).
+ */
+export function resolveOAuthCallbackBase(
+  env: {
+    oauthCallbackBase?: string | null;
+    apiUrl?: string | null;
+    url?: string | null;
+    railwayPublicDomain?: string | null;
+  },
+  firstPartyReady = false,
+): string {
   const fromDomain = env.railwayPublicDomain
     ? env.railwayPublicDomain.startsWith('http')
       ? env.railwayPublicDomain
       : `https://${env.railwayPublicDomain}`
     : null;
 
-  const candidates = [
-    env.oauthCallbackBase,
-    env.apiUrl,
-    env.url,
-    fromDomain,
-    RAILWAY_API_ORIGIN,
-  ];
+  const candidates = firstPartyReady
+    ? [
+        env.oauthCallbackBase,
+        FIRST_PARTY_API_ORIGIN,
+        env.apiUrl,
+        env.url,
+        fromDomain,
+        RAILWAY_API_ORIGIN,
+      ]
+    : [
+        env.oauthCallbackBase,
+        env.apiUrl,
+        env.url,
+        fromDomain,
+        RAILWAY_API_ORIGIN,
+      ];
 
   for (const raw of candidates) {
     if (!raw?.trim()) continue;
@@ -51,13 +78,58 @@ export function resolveOAuthCallbackBase(env: {
     if (!normalized) continue;
     try {
       const host = new URL(normalized).hostname.toLowerCase();
-      if (DEAD_CUSTOM_API_HOSTS.has(host)) continue;
+      if (host === FIRST_PARTY_API_HOST && !firstPartyReady) continue;
       return normalized;
     } catch {
       continue;
     }
   }
   return 'http://localhost:3001';
+}
+
+/** True when https://api.daypilot.co/health answers. Cached for 60s. */
+export async function firstPartyApiHostReady(
+  fetchImpl: typeof fetch = fetch,
+  lookupImpl?: (host: string) => Promise<unknown>,
+): Promise<boolean> {
+  if (
+    firstPartyCache &&
+    Date.now() - firstPartyCache.checkedAt < FIRST_PARTY_CHECK_TTL_MS
+  ) {
+    return firstPartyCache.ready;
+  }
+  const ready = await probeFirstPartyApi(fetchImpl, lookupImpl);
+  firstPartyCache = { ready, checkedAt: Date.now() };
+  return ready;
+}
+
+/** Test helper — clears the DNS/health cache. */
+export function resetFirstPartyApiHostCache(): void {
+  firstPartyCache = null;
+}
+
+async function probeFirstPartyApi(
+  fetchImpl: typeof fetch,
+  lookupImpl?: (host: string) => Promise<unknown>,
+): Promise<boolean> {
+  try {
+    if (lookupImpl) {
+      await lookupImpl(FIRST_PARTY_API_HOST);
+    } else {
+      const { lookup } = await import('node:dns/promises');
+      await lookup(FIRST_PARTY_API_HOST);
+    }
+  } catch {
+    return false;
+  }
+  try {
+    const res = await fetchImpl(`${FIRST_PARTY_API_ORIGIN}/health`, {
+      signal: AbortSignal.timeout(2500),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 function normalizeOrigin(raw: string): string | null {
@@ -87,6 +159,39 @@ export function summarizeMicrosoftOAuthError(body: string): string {
   }
 }
 
+/** Log-safe Microsoft Graph error (status/code/message only). */
+export function summarizeGraphError(err: unknown): string {
+  if (!err || typeof err !== 'object') {
+    return err instanceof Error ? err.message : String(err);
+  }
+  const e = err as {
+    statusCode?: number;
+    code?: string;
+    message?: string;
+    body?: string;
+  };
+  let bodyError = '';
+  if (typeof e.body === 'string') {
+    try {
+      const parsed = JSON.parse(e.body) as {
+        error?: { code?: string; message?: string };
+      };
+      bodyError = [parsed.error?.code, parsed.error?.message]
+        .filter(Boolean)
+        .join(' ');
+    } catch {
+      bodyError = e.body.slice(0, 120);
+    }
+  }
+  return [
+    e.statusCode != null && `status=${e.statusCode}`,
+    e.code && `code=${e.code}`,
+    (e.message ?? bodyError).slice(0, 160),
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 export function emailFromJwt(idToken?: string | null): string | null {
   if (!idToken) return null;
   const parts = idToken.split('.');
@@ -97,11 +202,45 @@ export function emailFromJwt(idToken?: string | null): string | null {
       email?: string;
       preferred_username?: string;
       upn?: string;
+      unique_name?: string;
     };
-    const email = payload.email || payload.preferred_username || payload.upn;
+    const email =
+      payload.email ||
+      payload.preferred_username ||
+      payload.upn ||
+      payload.unique_name;
     return email ? String(email) : null;
   } catch {
     return null;
+  }
+}
+
+/** Mailbox from id_token, then access_token JWT (Graph /me may fail for MSA). */
+export function mailboxFromTokenResponse(tokens: {
+  idToken?: string | null;
+  accessToken?: string | null;
+}): string | null {
+  return emailFromJwt(tokens.idToken) ?? emailFromJwt(tokens.accessToken);
+}
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${ms}ms`)),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

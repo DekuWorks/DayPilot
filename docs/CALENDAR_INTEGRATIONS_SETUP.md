@@ -45,7 +45,7 @@ Production redirect URIs (DayPilot — register on the same Google **Web** OAuth
 |----------|-------------------------|
 | Google   | `https://api-production-6c2c.up.railway.app/calendar-connections/google/callback` |
 | Google (optional, when DNS ready) | `https://api.daypilot.co/calendar-connections/google/callback` |
-| Outlook  | `https://api-production-6c2c.up.railway.app/calendar-connections/outlook/callback` |
+| Outlook  | `https://api.daypilot.co/calendar-connections/outlook/callback` (fallback: Railway URL) |
 
 Nest builds the Google redirect from Railway `API_URL` + `/calendar-connections/google/callback`. After consent, Nest redirects the browser to `{FRONTEND_URL}/sync?connected=google` (`https://www.daypilot.co/sync`). Mobile Sync refreshes connections when the app resumes.
 
@@ -62,13 +62,14 @@ Also add those URIs in Google Cloud / Azure app settings.
 1. Open [Google Cloud Console](https://console.cloud.google.com/).
 2. Create or select a project (e.g. **DayPilot**).
 3. **APIs & Services → Library** → enable **Google Calendar API**.
-4. **APIs & Services → OAuth consent screen**
-   - User type: **External** (or Internal for Workspace-only testing)
+4. **Google Auth Platform → Audience** (OAuth consent screen)
+   - User type: **External** (not Internal — Internal blocks personal Gmail)
+   - Publishing status: **In production** (Testing = test-user allowlist only)
    - App name: **DayPilot**
    - Add scopes:
      - `.../auth/calendar.events`
+     - `.../auth/calendar.readonly`
      - `.../auth/userinfo.email`
-   - Add your email as a **test user** while app is in Testing mode.
 5. **APIs & Services → Credentials → Create credentials → OAuth client ID**
    - Application type: **Web application**
    - Name: **DayPilot local**
@@ -129,6 +130,7 @@ Live updates: after sync/disconnect, connected clients receive `calendar:synced`
 | Symptom | Fix |
 |---------|-----|
 | “Google Calendar is not configured” | Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and restart API |
+| Personal Gmail blocked / `org_internal` / only Workspace works | Google Auth Platform → Audience: **External** + **In production** (not Internal, not Testing) |
 | OAuth redirect mismatch | Redirect URI in Google/Azure must match `API_URL` callback exactly |
 | Outlook edit fails with 403 | Disconnect Outlook, reconnect (needs `Calendars.ReadWrite`) |
 | Events don’t appear after connect | Check API logs; run **Sync now** on Sync (`/sync`) |

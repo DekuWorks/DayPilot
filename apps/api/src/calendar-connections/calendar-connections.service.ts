@@ -22,10 +22,14 @@ import {
 } from './icloud-caldav';
 import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import {
-  emailFromJwt,
+  GRAPH_MICROSOFT_BASE,
+  firstPartyApiHostReady,
+  mailboxFromTokenResponse,
   resolveMicrosoftAuthorityTenant,
   resolveOAuthCallbackBase,
+  summarizeGraphError,
   summarizeMicrosoftOAuthError,
+  withTimeout,
 } from './oauth-callback-base';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
@@ -112,20 +116,29 @@ export class CalendarConnectionsService {
     return 'needs_reconnect';
   }
 
-  getConnectUrl(
-    userId: string,
-    provider: CalendarProvider,
-  ): { redirectUrl: string | null; needsCredentials?: boolean } {
-    const state = this.jwtService.sign(
+  /**
+   * OAuth CSRF/user binding is the signed JWT in `state` only.
+   * Do not Set-Cookie on the API host — Chrome bounce-tracking deletes
+   * cookies on the Railway hop (api-*.up.railway.app).
+   */
+  private signConnectState(userId: string, provider: CalendarProvider): string {
+    return this.jwtService.sign(
       { sub: userId, provider, purpose: 'calendar-connect' },
       { expiresIn: '10m' },
     );
+  }
+
+  async getConnectUrl(
+    userId: string,
+    provider: CalendarProvider,
+  ): Promise<{ redirectUrl: string | null; needsCredentials?: boolean }> {
+    const state = this.signConnectState(userId, provider);
 
     if (provider === 'google') {
       const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
       if (!clientId)
         throw new BadRequestException('Google Calendar is not configured');
-      const redirectUri = this.googleRedirectUri();
+      const redirectUri = await this.googleRedirectUri();
       const scope =
         'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
       const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
@@ -136,13 +149,13 @@ export class CalendarConnectionsService {
       const clientId = this.config.get<string>('MICROSOFT_CLIENT_ID');
       if (!clientId)
         throw new BadRequestException('Outlook Calendar is not configured');
-      const redirectUri = this.outlookRedirectUri();
+      const redirectUri = await this.outlookRedirectUri();
       const tenant = this.microsoftTenant();
       const scope =
         'openid profile email offline_access User.Read Calendars.ReadWrite';
       const url = `${this.microsoftAuthorizeUrl()}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&response_mode=query&prompt=select_account&state=${encodeURIComponent(state)}`;
       this.logger.log(
-        `Outlook connect start tenant=${tenant} redirect=${redirectUri}`,
+        `Outlook connect start tenant=${tenant} redirect=${redirectUri} state=query`,
       );
       return { redirectUrl: url };
     }
@@ -378,7 +391,7 @@ export class CalendarConnectionsService {
       const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
       if (!clientId || !clientSecret)
         throw new BadRequestException('Google Calendar is not configured');
-      const redirectUri = this.googleRedirectUri();
+      const redirectUri = await this.googleRedirectUri();
       const oauth2 = new google.auth.OAuth2(
         clientId,
         clientSecret,
@@ -466,18 +479,23 @@ export class CalendarConnectionsService {
     if (!tokens.accessToken) {
       throw new BadRequestException('Outlook token response missing access_token');
     }
-    const client = Client.init({
-      authProvider: () => Promise.resolve(tokens.accessToken),
-    });
-    let email = emailFromJwt(tokens.idToken) ?? 'outlook';
+    let email = mailboxFromTokenResponse(tokens) ?? 'outlook';
     try {
-      const me = await client.api('/me').select('mail,userPrincipalName').get();
+      const me = (await withTimeout(
+        this.outlookGraphClient(tokens.accessToken)
+          .api('/me')
+          .select('mail,userPrincipalName')
+          .get(),
+        8_000,
+        'Outlook Graph /me',
+      )) as { mail?: string; userPrincipalName?: string };
       email = (me.mail ?? me.userPrincipalName ?? email) as string;
+      this.logger.log(
+        `Outlook Graph /me ok user=${userId} host=graph.microsoft.com`,
+      );
     } catch (err) {
       this.logger.warn(
-        `Outlook Graph /me failed user=${userId}; using token email. ${
-          err instanceof Error ? err.message : 'unknown'
-        }`,
+        `Outlook Graph /me failed user=${userId} host=graph.microsoft.com ${summarizeGraphError(err)}; using token mailbox`,
       );
     }
     const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
@@ -506,15 +524,11 @@ export class CalendarConnectionsService {
         validatedAt: new Date(),
       },
     });
-    try {
-      await this.syncConnection(userId, 'outlook');
-    } catch (err) {
+    void this.syncConnection(userId, 'outlook').catch((err) => {
       this.logger.warn(
-        `Outlook connected user=${userId} but initial sync failed: ${
-          err instanceof Error ? err.message : 'unknown'
-        }`,
+        `Outlook connected user=${userId} but initial sync failed: ${summarizeGraphError(err)}`,
       );
-    }
+    });
     return { ok: true, email };
   }
 
@@ -660,7 +674,7 @@ export class CalendarConnectionsService {
     const oauth2 = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      this.googleRedirectUri(),
+      await this.googleRedirectUri(),
     );
     oauth2.setCredentials({
       access_token: accessToken,
@@ -677,10 +691,11 @@ export class CalendarConnectionsService {
     expiresAt: Date | null;
   }) {
     const accessToken = await this.ensureOutlookAccessToken(conn);
-    const client = Client.init({
-      authProvider: () => Promise.resolve(accessToken),
-    });
-    await client.api('/me').get();
+    await withTimeout(
+      this.outlookGraphClient(accessToken).api('/me').get(),
+      8_000,
+      'Outlook Graph /me ping',
+    );
   }
 
   private async pingApple(conn: {
@@ -784,21 +799,33 @@ export class CalendarConnectionsService {
     );
   }
 
-  private oauthCallbackBase(): string {
-    return resolveOAuthCallbackBase({
-      oauthCallbackBase: this.config.get<string>('OAUTH_CALLBACK_BASE'),
-      apiUrl: this.config.get<string>('API_URL'),
-      url: this.config.get<string>('URL'),
-      railwayPublicDomain: this.config.get<string>('RAILWAY_PUBLIC_DOMAIN'),
+  private async oauthCallbackBase(): Promise<string> {
+    const firstPartyReady = await firstPartyApiHostReady();
+    return resolveOAuthCallbackBase(
+      {
+        oauthCallbackBase: this.config.get<string>('OAUTH_CALLBACK_BASE'),
+        apiUrl: this.config.get<string>('API_URL'),
+        url: this.config.get<string>('URL'),
+        railwayPublicDomain: this.config.get<string>('RAILWAY_PUBLIC_DOMAIN'),
+      },
+      firstPartyReady,
+    );
+  }
+
+  private async googleRedirectUri(): Promise<string> {
+    return `${await this.oauthCallbackBase()}/calendar-connections/google/callback`;
+  }
+
+  private async outlookRedirectUri(): Promise<string> {
+    return `${await this.oauthCallbackBase()}/calendar-connections/outlook/callback`;
+  }
+
+  private outlookGraphClient(accessToken: string): Client {
+    return Client.init({
+      defaultVersion: 'v1.0',
+      baseUrl: GRAPH_MICROSOFT_BASE,
+      authProvider: (done) => done(null, accessToken),
     });
-  }
-
-  private googleRedirectUri(): string {
-    return `${this.oauthCallbackBase()}/calendar-connections/google/callback`;
-  }
-
-  private outlookRedirectUri(): string {
-    return `${this.oauthCallbackBase()}/calendar-connections/outlook/callback`;
   }
 
   private microsoftTenant(): string {
@@ -826,7 +853,7 @@ export class CalendarConnectionsService {
     if (!clientId || !clientSecret) {
       throw new BadRequestException('Outlook Calendar is not configured');
     }
-    const redirectUri = this.outlookRedirectUri();
+    const redirectUri = await this.outlookRedirectUri();
     const tenant = this.microsoftTenant();
     const res = await fetch(this.microsoftTokenUrl(tenant), {
       method: 'POST',
@@ -880,7 +907,7 @@ export class CalendarConnectionsService {
     const oauth2 = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      this.googleRedirectUri(),
+      await this.googleRedirectUri(),
     );
     oauth2.setCredentials({
       access_token: accessToken,
@@ -1003,7 +1030,7 @@ export class CalendarConnectionsService {
     const oauth2 = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      this.googleRedirectUri(),
+      await this.googleRedirectUri(),
     );
     oauth2.setCredentials({
       access_token: accessToken,
@@ -1095,9 +1122,7 @@ export class CalendarConnectionsService {
     rangeEnd: Date,
   ) {
     const accessToken = await this.ensureOutlookAccessToken(conn);
-    const client = Client.init({
-      authProvider: () => Promise.resolve(accessToken),
-    });
+    const client = this.outlookGraphClient(accessToken);
     let outlookCalId = 'calendar';
     let outlookTitle = 'Outlook Calendar';
     let outlookColor: string | null = null;
@@ -1255,7 +1280,7 @@ export class CalendarConnectionsService {
     const oauth2 = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      this.googleRedirectUri(),
+      await this.googleRedirectUri(),
     );
     oauth2.setCredentials({
       access_token: accessToken,
@@ -1303,7 +1328,7 @@ export class CalendarConnectionsService {
     const oauth2 = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      this.googleRedirectUri(),
+      await this.googleRedirectUri(),
     );
     oauth2.setCredentials({
       access_token: accessToken,
@@ -1341,9 +1366,7 @@ export class CalendarConnectionsService {
     },
   ): Promise<void> {
     const accessToken = await this.ensureOutlookAccessToken(conn);
-    const client = Client.init({
-      authProvider: () => Promise.resolve(accessToken),
-    });
+    const client = this.outlookGraphClient(accessToken);
 
     try {
       await client.api(`/me/events/${externalId}`).patch({
@@ -1373,9 +1396,7 @@ export class CalendarConnectionsService {
     externalId: string,
   ): Promise<void> {
     const accessToken = await this.ensureOutlookAccessToken(conn);
-    const client = Client.init({
-      authProvider: () => Promise.resolve(accessToken),
-    });
+    const client = this.outlookGraphClient(accessToken);
 
     try {
       await client.api(`/me/events/${externalId}`).delete();
