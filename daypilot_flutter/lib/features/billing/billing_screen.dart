@@ -205,7 +205,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 Text(
                   'Manage your plan and payment method.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: DayPilotColors.textSecondary,
+                        color: DayPilotScheme.of(context).textSecondary,
                       ),
                 ),
                 const SizedBox(height: 16),
@@ -214,8 +214,8 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
                       _notice!,
-                      style: const TextStyle(
-                        color: DayPilotColors.textSecondary,
+                      style: TextStyle(
+                        color: DayPilotScheme.of(context).textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -225,20 +225,20 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
                       _error!,
-                      style: const TextStyle(color: DayPilotColors.error),
+                      style: TextStyle(color: DayPilotColors.error),
                     ),
                   ),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: DayPilotColors.surfacePrimary,
+                    color: DayPilotScheme.of(context).surfacePrimary,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: DayPilotColors.borderSubtle),
+                    border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Current plan',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
@@ -248,7 +248,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                       const SizedBox(height: 8),
                       Text(
                         tier,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: DayPilotColors.brand500,
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
@@ -256,8 +256,8 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                       ),
                       Text(
                         'Status: $status',
-                        style: const TextStyle(
-                          color: DayPilotColors.textSecondary,
+                        style: TextStyle(
+                          color: DayPilotScheme.of(context).textSecondary,
                         ),
                       ),
                     ],
@@ -284,7 +284,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                   }),
                   OutlinedButton(
                     onPressed: _actionBusy ? null : _restore,
-                    child: const Text('Restore purchases'),
+                    child: Text('Restore purchases'),
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -299,7 +299,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 const SizedBox(height: 10),
                 OutlinedButton(
                   onPressed: _actionBusy ? null : _openPortal,
-                  child: const Text('Open Stripe portal'),
+                  child: Text('Open Stripe portal'),
                 ),
               ],
             ),

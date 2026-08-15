@@ -75,6 +75,16 @@ class _CalendarAutoConnectHostState
             prefs.setBool('calendar_autoconnect_google_$userId', true),
         sync: sync,
       );
+      await _maybeRefreshOrConnectOutlook(
+        connections: connections,
+        hasMicrosoftIdentity: auth.hasMicrosoftIdentity,
+        prefsOffered: prefs.getBool('calendar_autoconnect_outlook_$userId') ==
+            true,
+        markOffered: () =>
+            prefs.setBool('calendar_autoconnect_outlook_$userId', true),
+        sync: sync,
+        repo: repo,
+      );
       invalidateCalendarStatus(ref);
       ref.read(calendarDataVersionProvider.notifier).bump();
     } catch (_) {
@@ -128,6 +138,55 @@ class _CalendarAutoConnectHostState
     } catch (_) {
       // User can tap Reconnect on Profile / Sync.
     }
+  }
+
+  Future<void> _maybeRefreshOrConnectOutlook({
+    required List<CalendarConnection> connections,
+    required bool hasMicrosoftIdentity,
+    required bool prefsOffered,
+    required Future<bool> Function() markOffered,
+    required CalendarSyncService sync,
+    required CalendarConnectionsRepository repo,
+  }) async {
+    CalendarConnection? outlook;
+    for (final c in connections) {
+      if (c.provider == 'outlook') {
+        outlook = c;
+        break;
+      }
+    }
+
+    if (outlook != null &&
+        outlook.status == ConnectionValidationStatus.expired) {
+      try {
+        await sync.syncOAuth(outlook.id);
+      } catch (_) {}
+      return;
+    }
+
+    final needsOauth = outlook == null
+        ? hasMicrosoftIdentity
+        : outlook.status == ConnectionValidationStatus.needsReconnect;
+    if (!needsOauth || prefsOffered) return;
+
+    await markOffered();
+    final session =
+        ref.read(supabaseClientProvider).auth.currentSession;
+    final providerToken = session?.providerToken;
+    if (providerToken != null && providerToken.isNotEmpty) {
+      try {
+        await repo.importOutlookProviderToken(
+          accessToken: providerToken,
+          refreshToken: session?.providerRefreshToken,
+        );
+        return;
+      } catch (_) {
+        // Token lacked calendar scopes — fall through to Nest OAuth.
+      }
+    }
+    try {
+      await sync.launchConnect('outlook');
+    } catch (_) {}
   }
 
   Future<void> _maybeStartAppleEventKit({

@@ -7,6 +7,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { AuthLoading } from "@/components/AuthLoading";
 import { Button } from "@/components/Button";
 import { MarketingNav } from "@/components/MarketingNav";
+import { SsoBrandButton } from "@/components/SsoButtons";
 import { normalizeUsername } from "@/lib/supabase/auth";
 
 export default function SignupPage() {
@@ -18,11 +19,18 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signup, loginWithGoogle, loginWithApple, isAuthenticated, isLoading } =
-    useAuth();
+  const {
+    signup,
+    loginWithGoogle,
+    loginWithMicrosoft,
+    loginWithApple,
+    isAuthenticated,
+    isLoading,
+  } = useAuth();
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [microsoftLoading, setMicrosoftLoading] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
@@ -181,11 +189,11 @@ export default function SignupPage() {
           <div className="h-px flex-1 bg-[var(--border-subtle)]" />
         </div>
         <div className="space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={googleLoading || appleLoading}
+          <SsoBrandButton
+            brand="google"
+            label="Sign in with Google"
+            busy={googleLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
             onClick={async () => {
               setError("");
               setGoogleLoading(true);
@@ -198,14 +206,12 @@ export default function SignupPage() {
                 setGoogleLoading(false);
               }
             }}
-          >
-            {googleLoading ? "Redirecting…" : "Continue with Google"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={googleLoading || appleLoading}
+          />
+          <SsoBrandButton
+            brand="apple"
+            label="Sign in with Apple"
+            busy={appleLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
             onClick={async () => {
               setError("");
               setAppleLoading(true);
@@ -218,9 +224,27 @@ export default function SignupPage() {
                 setAppleLoading(false);
               }
             }}
-          >
-            {appleLoading ? "Redirecting…" : "Continue with Apple"}
-          </Button>
+          />
+          <SsoBrandButton
+            brand="microsoft"
+            label="Sign in with Microsoft"
+            busy={microsoftLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
+            onClick={async () => {
+              setError("");
+              setMicrosoftLoading(true);
+              try {
+                await loginWithMicrosoft();
+              } catch (err) {
+                setError(
+                  err instanceof Error
+                    ? err.message
+                    : "Microsoft sign-in failed"
+                );
+                setMicrosoftLoading(false);
+              }
+            }}
+          />
         </div>
         <p className="mt-6 text-[var(--text-secondary)] text-sm">
           Already have an account?{" "}

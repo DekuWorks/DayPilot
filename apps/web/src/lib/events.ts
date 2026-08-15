@@ -27,10 +27,22 @@ function mapNestToCalendar(e: nestEvents.Event): CalendarEvent {
     description: e.description ?? null,
     location: e.location ?? null,
     meetingUrl: null,
-    calendarId: null,
+    calendarId: e.calendarId ?? null,
+    externalCalendarId: e.externalCalendarId ?? null,
+    calendarColor: e.calendarColor ?? null,
     allDay: false,
     source: e.source,
+    syncDirection: e.syncDirection,
   };
+}
+
+/** Only DayPilot-created events. Imported calendars cannot be deleted. */
+export function canDeleteCalendarEvent(event: {
+  source?: string | null;
+  syncDirection?: string | null;
+}): boolean {
+  if (event.syncDirection === "imported") return false;
+  return (event.source ?? "native") === "native";
 }
 
 export async function listEvents(params?: {
@@ -109,35 +121,7 @@ export async function deleteEvent(id: string): Promise<void> {
   await supabaseEvents.deleteEvent(id);
 }
 
-/** Source accent colours for calendar chips (parity with Flutter). */
-export function sourceAccent(source?: string | null): {
-  border: string;
-  bg: string;
-} {
-  switch (source) {
-    case "google":
-      return {
-        border: "#4285F4",
-        bg: "color-mix(in srgb, #4285F4 18%, transparent)",
-      };
-    case "outlook":
-      return {
-        border: "#6366F1",
-        bg: "color-mix(in srgb, #6366F1 18%, transparent)",
-      };
-    case "apple":
-    case "apple_eventkit":
-      return {
-        border: "#A3A3A3",
-        bg: "color-mix(in srgb, #A3A3A3 20%, transparent)",
-      };
-    default:
-      return {
-        border: "var(--brand-500)",
-        bg: "color-mix(in srgb, var(--brand-500) 15%, transparent)",
-      };
-  }
-}
+export { calendarChipStyle } from "./event-color";
 
 export function getApiBase(): string {
   return getApiUrl();

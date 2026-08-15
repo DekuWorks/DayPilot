@@ -4,9 +4,9 @@
 /// (`/book/:slug`, auth screens). Signed-in users hitting auth-only routes go
 /// to `/home`. Legacy `/dashboard` redirects to `/home`.
 ///
-/// Shell: bottom tabs use [StatefulShellRoute.indexedStack] (Home · Calendar ·
-/// Tasks · Insights · Profile). Secondary features are top-level routes outside
-/// the tab stack so the back stack stays predictable.
+/// Shell: bottom tabs use [StatefulShellRoute.indexedStack] (Home · Tasks ·
+/// Insights · Profile). Home hosts the calendar. `/calendar` redirects to
+/// `/home`. Secondary features are top-level routes outside the tab stack.
 library;
 
 import 'package:flutter/material.dart';
@@ -20,7 +20,6 @@ import '../../features/auth/signup_screen.dart';
 import '../../features/billing/billing_screen.dart';
 import '../../features/booking/booking_links_screen.dart';
 import '../../features/booking/public_booking_screen.dart';
-import '../../features/calendar/calendar_screen.dart';
 import '../../features/contacts/contacts_screen.dart';
 import '../../features/events/event_create_screen.dart';
 import '../../features/events/event_detail_screen.dart';
@@ -56,6 +55,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loc = state.matchedLocation;
       if (loc == '/dashboard') return '/home';
+      if (loc == '/calendar' || loc.startsWith('/calendar/')) {
+        final view = state.uri.queryParameters['view'];
+        if (view == null || view.isEmpty) return '/home';
+        return '/home?view=$view';
+      }
       final session = Supabase.instance.client.auth.currentSession;
       final isPublic = _isPublicRoute(loc);
       if (session == null && !isPublic) {
@@ -98,14 +102,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/home',
                 builder: (context, state) => const HomeScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/calendar',
-                builder: (context, state) => const CalendarScreen(),
               ),
             ],
           ),

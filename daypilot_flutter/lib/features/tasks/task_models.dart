@@ -66,8 +66,8 @@ class PriorityDot extends StatelessWidget {
     final color = switch (priority) {
       'urgent' => DayPilotColors.error,
       'high' => DayPilotColors.warning,
-      'low' => DayPilotColors.textTertiary,
-      _ => DayPilotColors.textSecondary,
+      'low' => DayPilotScheme.of(context).textTertiary,
+      _ => DayPilotScheme.of(context).textSecondary,
     };
     return Container(
       width: 8,

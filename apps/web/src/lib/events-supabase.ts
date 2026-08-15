@@ -9,8 +9,11 @@ export type CalendarEvent = {
   location?: string | null;
   meetingUrl?: string | null;
   calendarId?: string | null;
+  externalCalendarId?: string | null;
+  calendarColor?: string | null;
   allDay?: boolean;
   source?: string;
+  syncDirection?: string;
 };
 
 type EventRow = {
@@ -202,6 +205,16 @@ export async function updateEvent(
 
 export async function deleteEvent(id: string): Promise<void> {
   const supabase = createClient();
+  const { data: row } = await supabase
+    .from("events")
+    .select("source, sync_direction")
+    .eq("id", id)
+    .maybeSingle();
+  const source = (row?.source as string | undefined) ?? "native";
+  const direction = row?.sync_direction as string | undefined;
+  if (source !== "native" || direction === "imported") {
+    throw new Error("Imported calendar events cannot be deleted in DayPilot");
+  }
   // Soft delete when column exists; otherwise hard delete
   const soft = await supabase
     .from("events")

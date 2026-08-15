@@ -22,8 +22,9 @@ class FeatureScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         title: Text(title),
         leading: IconButton(
@@ -60,8 +61,9 @@ class NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
     return Material(
-      color: DayPilotColors.surfacePrimary,
+      color: colors.surfacePrimary,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -70,11 +72,11 @@ class NavTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: DayPilotColors.borderSubtle),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: Row(
             children: [
-              Icon(icon, color: DayPilotColors.brand500),
+              Icon(icon, color: colors.accent),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -82,25 +84,25 @@ class NavTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: DayPilotColors.textPrimary,
+                        color: colors.textPrimary,
                       ),
                     ),
                     if (subtitle != null)
                       Text(
                         subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: DayPilotColors.textSecondary,
+                          color: colors.textSecondary,
                         ),
                       ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: DayPilotColors.textTertiary,
+                color: colors.textTertiary,
               ),
             ],
           ),

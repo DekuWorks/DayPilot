@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/api_session_sync_provider.dart';
+import 'calendar_chip_color.dart';
 import 'calendar_error_view.dart';
 import 'calendar_providers.dart';
 
@@ -34,7 +35,19 @@ class DayCalendarView extends ConsumerWidget {
           separatorBuilder: (context, index) => const Divider(height: 1),
           itemBuilder: (context, i) {
             final e = events[i];
+            final chip = calendarChipStyleForEvent(
+              e,
+              lightSurface: Theme.of(context).brightness == Brightness.light,
+            );
             return ListTile(
+              leading: Container(
+                width: 8,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: chip.accent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
               title: Text(e.title),
               subtitle: Text(TimeOfDay.fromDateTime(e.startsAt).format(context)),
               onTap: () => context.push('/events/${e.id}'),

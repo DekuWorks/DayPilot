@@ -86,6 +86,11 @@ Also add those URIs in Google Cloud / Azure app settings.
 
 ## 3. Outlook / Microsoft 365
 
+For **Sign in with Microsoft** (Supabase Auth SSO), see
+[OUTLOOK_AUTH_SETUP.md](./OUTLOOK_AUTH_SETUP.md). You can reuse the same Azure
+app if you register both the Supabase Auth callback and the Nest calendar
+callback below.
+
 ### Register an app in Azure
 
 1. Open [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade).

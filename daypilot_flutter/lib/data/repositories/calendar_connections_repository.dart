@@ -140,6 +140,26 @@ class CalendarConnectionsRepository {
         .toList();
   }
 
+  /// Store Graph tokens from Supabase Azure SSO (`provider_token`).
+  Future<void> importOutlookProviderToken({
+    required String accessToken,
+    String? refreshToken,
+    int? expiresIn,
+  }) async {
+    await _ensureSession();
+    final res = await _session.post(
+      '/calendar-connections/outlook/from-token',
+      body: {
+        'accessToken': accessToken,
+        'refreshToken': ?refreshToken,
+        'expiresIn': ?expiresIn,
+      },
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(_errorMessage(res, 'Failed to import Outlook token'));
+    }
+  }
+
   Future<String> getConnectUrl(CalendarProvider provider) async {
     await _ensureSession();
     final res = await _session.get('/calendar-connections/$provider/connect');

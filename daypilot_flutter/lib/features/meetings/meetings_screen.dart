@@ -39,7 +39,7 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
       title: 'Meetings',
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/events/new'),
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
       body: Column(
         children: [
@@ -61,12 +61,12 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
                       selectedColor: DayPilotColors.brand500,
                       labelStyle: TextStyle(
                         color: _filter == f
-                            ? DayPilotColors.textInverse
-                            : DayPilotColors.textSecondary,
+                            ? DayPilotScheme.of(context).textInverse
+                            : DayPilotScheme.of(context).textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
-                      backgroundColor: DayPilotColors.surfacePrimary,
-                      side: const BorderSide(color: DayPilotColors.borderSubtle),
+                      backgroundColor: DayPilotScheme.of(context).surfacePrimary,
+                      side: BorderSide(color: DayPilotScheme.of(context).borderSubtle),
                       showCheckmark: false,
                     ),
                   ),
@@ -90,10 +90,10 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
                   }
                 }).toList();
                 if (list.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No meetings here.',
-                      style: TextStyle(color: DayPilotColors.textSecondary),
+                      style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                     ),
                   );
                 }

@@ -99,7 +99,8 @@ export default function MeetingsPage() {
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(event: CalendarEvent) {
+    if (!eventsApi.canDeleteCalendarEvent(event)) return;
     if (!confirm("Delete this meeting?")) return;
     try {
       await eventsApi.deleteEvent(id);
@@ -246,13 +247,15 @@ export default function MeetingsPage() {
                       Join
                     </a>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(m.id)}
-                    className="text-xs text-[var(--error)] hover:underline"
-                  >
-                    Delete
-                  </button>
+                  {eventsApi.canDeleteCalendarEvent(m) && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(m)}
+                      className="text-xs text-[var(--error)] hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </li>

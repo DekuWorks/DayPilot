@@ -32,6 +32,7 @@ import {
   mapSupabaseUser,
   normalizeUsername,
 } from "@/lib/supabase/auth";
+import { maybeAutoConnectCalendars } from "@/lib/calendar-auto-connect";
 
 type AuthState = {
   user: User | null;
@@ -50,6 +51,7 @@ type AuthContextValue = AuthState & {
     username?: string
   ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
   /** Optional next path (e.g. `/sync`) after Apple SSO callback. */
   loginWithApple: (options?: { next?: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -118,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profilePromise,
       exchangeNestSession(accessToken),
     ]);
+    void maybeAutoConnectCalendars(session);
 
     if (!mountedRef.current || gen !== enrichGenRef.current) return;
     if (appliedAccessTokenRef.current !== accessToken) return;
@@ -346,6 +349,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, [supabase]);
 
+  const loginWithMicrosoft = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase is not configured");
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: {
+        scopes: "email openid profile offline_access Calendars.ReadWrite",
+        redirectTo: origin
+          ? `${origin}/auth/callback`
+          : "https://www.daypilot.co/auth/callback",
+      },
+    });
+    if (error) throw new Error(error.message);
+  }, [supabase]);
+
   const loginWithApple = useCallback(
     async (options?: { next?: string }) => {
       if (!supabase) throw new Error("Supabase is not configured");
@@ -396,6 +415,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithMagicLink,
     signup,
     loginWithGoogle,
+    loginWithMicrosoft,
     loginWithApple,
     logout,
     refresh,

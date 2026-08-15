@@ -408,7 +408,7 @@ export default function TasksPage() {
                           onClick={() => void toggleSubtask(s)}
                           className={`h-4 w-4 rounded border text-[9px] ${
                             s.status === "completed"
-                              ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-black"
+                              ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[var(--text-inverse)]"
                               : "border-[var(--border-strong)]"
                           }`}
                         >

@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/providers/AuthProvider";
+import { useTheme } from "@/providers/ThemeProvider";
 import { Button } from "@/components/Button";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { normalizeUsername } from "@/lib/supabase/auth";
+import { uploadAvatarFile } from "@/lib/avatar-upload";
 
 export default function SettingsPage() {
   const { user, refresh } = useAuth();
+  const { theme, setLight } = useTheme();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -91,7 +96,97 @@ export default function SettingsPage() {
           <p className="text-sm text-[var(--text-secondary)]">{user?.email}</p>
         </div>
 
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              Light mode
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={theme === "light"}
+            onClick={() => setLight(theme !== "light")}
+            className={`relative h-7 w-12 rounded-full transition-colors ${
+              theme === "light"
+                ? "bg-[var(--brand-500)]"
+                : "bg-[var(--border-strong)]"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+                theme === "light" ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="relative h-16 w-16 overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--brand-500)_18%,transparent)]"
+              aria-label="Change photo"
+            >
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-bold text-[var(--brand-500)]">
+                  {firstName?.[0]?.toUpperCase() ||
+                    user?.email?.[0]?.toUpperCase() ||
+                    "?"}
+                </span>
+              )}
+            </button>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={uploading || !user}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploading ? "Uploading…" : "Change photo"}
+              </Button>
+              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                JPEG, PNG or WebP · under 5 MB
+              </p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file || !user) return;
+                  setUploading(true);
+                  setMessage(null);
+                  try {
+                    const url = await uploadAvatarFile(user.id, file);
+                    setAvatarUrl(url);
+                    await refresh();
+                    setMessage({ type: "success", text: "Photo saved." });
+                  } catch (err) {
+                    setMessage({
+                      type: "error",
+                      text:
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to upload photo",
+                    });
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label
@@ -157,22 +252,6 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="avatarUrl"
-              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
-            >
-              Profile image URL
-            </label>
-            <input
-              id="avatarUrl"
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://example.com/your-photo.jpg"
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
-            />
-          </div>
           {message && (
             <p
               className={`text-sm ${

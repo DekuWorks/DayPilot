@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/gradient_brand_title.dart';
+import '../../core/widgets/sso_brand_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -68,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: DayPilotScheme.of(context).backgroundPrimary,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -86,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   'Plan. Pilot. Perform.',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: DayPilotColors.brand500,
+                        color: DayPilotScheme.of(context).accent,
                         fontWeight: FontWeight.w700,
                       ),
                   textAlign: TextAlign.center,
@@ -112,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   'Sign in',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: DayPilotColors.textPrimary,
+                        color: DayPilotScheme.of(context).textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                   textAlign: TextAlign.center,
@@ -122,17 +123,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Expanded(
                       child: ChoiceChip(
-                        label: const Text('Password'),
+                        label: Text('Password'),
                         selected: !_magicMode,
                         onSelected: (_) => setState(() {
                           _magicMode = false;
                           _magicSent = false;
                         }),
-                        selectedColor: DayPilotColors.brand500,
+                        selectedColor: DayPilotScheme.of(context).accent,
                         labelStyle: TextStyle(
                           color: !_magicMode
-                              ? DayPilotColors.textInverse
-                              : DayPilotColors.textSecondary,
+                              ? DayPilotScheme.of(context).textInverse
+                              : DayPilotScheme.of(context).textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                         showCheckmark: false,
@@ -141,17 +142,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ChoiceChip(
-                        label: const Text('Magic link'),
+                        label: Text('Magic link'),
                         selected: _magicMode,
                         onSelected: (_) => setState(() {
                           _magicMode = true;
                           _magicSent = false;
                         }),
-                        selectedColor: DayPilotColors.brand500,
+                        selectedColor: DayPilotScheme.of(context).accent,
                         labelStyle: TextStyle(
                           color: _magicMode
-                              ? DayPilotColors.textInverse
-                              : DayPilotColors.textSecondary,
+                              ? DayPilotScheme.of(context).textInverse
+                              : DayPilotScheme.of(context).textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                         showCheckmark: false,
@@ -165,13 +166,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.all(14),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: DayPilotColors.brand500.withValues(alpha: 0.12),
+                      color: DayPilotScheme.of(context).accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: DayPilotColors.brand500),
+                      border: Border.all(color: DayPilotScheme.of(context).accent),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Check your email for a magic link. After you open it, come back and the app will pick up your session (or sign in with password).',
-                      style: TextStyle(color: DayPilotColors.textPrimary),
+                      style: TextStyle(color: DayPilotScheme.of(context).textPrimary),
                     ),
                   ),
                 TextFormField(
@@ -185,7 +186,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   autofillHints: const [AutofillHints.email],
                   autocorrect: false,
                   enableSuggestions: false,
-                  style: const TextStyle(color: DayPilotColors.textPrimary),
+                  style: TextStyle(color: DayPilotScheme.of(context).textPrimary),
                   onFieldSubmitted: (_) {
                     if (_magicMode) {
                       _submit();
@@ -207,7 +208,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     obscureText: _obscure,
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.password],
-                    style: const TextStyle(color: DayPilotColors.textPrimary),
+                    style: TextStyle(color: DayPilotScheme.of(context).textPrimary),
                     onFieldSubmitted: (_) => _busy ? null : _submit(),
                     decoration: InputDecoration(
                       labelText: 'Password',
@@ -217,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           _obscure
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          color: DayPilotColors.textSecondary,
+                          color: DayPilotScheme.of(context).textSecondary,
                         ),
                       ),
                     ),
@@ -235,64 +236,78 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : Text(_magicMode ? 'Email magic link' : 'Continue'),
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          setState(() => _busy = true);
-                          try {
-                            await ref
-                                .read(authRepositoryProvider)
-                                .signInWithGoogle();
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Google sign-in failed: $e'),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _busy = false);
-                          }
-                        },
-                  icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-                  label: const Text('Continue with Google'),
+                SsoBrandButton(
+                  brand: SsoBrand.google,
+                  label: 'Sign in with Google',
+                  busy: _busy,
+                  onPressed: () async {
+                    setState(() => _busy = true);
+                    try {
+                      await ref.read(authRepositoryProvider).signInWithGoogle();
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Google sign-in failed: $e')),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          setState(() => _busy = true);
-                          try {
-                            await ref
-                                .read(authRepositoryProvider)
-                                .signInWithApple();
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Apple sign-in failed: $e'),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _busy = false);
-                          }
-                        },
-                  icon: const Icon(Icons.apple, size: 24),
-                  label: const Text('Continue with Apple'),
+                SsoBrandButton(
+                  brand: SsoBrand.apple,
+                  label: 'Sign in with Apple',
+                  busy: _busy,
+                  onPressed: () async {
+                    setState(() => _busy = true);
+                    try {
+                      await ref.read(authRepositoryProvider).signInWithApple();
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Apple sign-in failed: $e')),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                SsoBrandButton(
+                  brand: SsoBrand.microsoft,
+                  label: 'Sign in with Microsoft',
+                  busy: _busy,
+                  onPressed: () async {
+                    setState(() => _busy = true);
+                    try {
+                      await ref
+                          .read(authRepositoryProvider)
+                          .signInWithMicrosoft();
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Microsoft sign-in failed: $e'),
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
                 ),
                 if (!_magicMode)
                   TextButton(
                     onPressed:
                         _busy ? null : () => context.push('/forgot-password'),
-                    child: const Text('Forgot password'),
+                    child: Text('Forgot password'),
                   ),
                 TextButton(
                   onPressed: _busy ? null : () => context.push('/signup'),
-                  child: const Text('Create an account'),
+                  child: Text('Create an account'),
                 ),
               ],
             ),
@@ -315,12 +330,12 @@ class _FeatureRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: DayPilotColors.brand500),
+          Icon(icon, size: 18, color: DayPilotScheme.of(context).accent),
           const SizedBox(width: 10),
           Text(
             label,
-            style: const TextStyle(
-              color: DayPilotColors.textSecondary,
+            style: TextStyle(
+              color: DayPilotScheme.of(context).textSecondary,
               fontWeight: FontWeight.w500,
               fontSize: 14,
             ),

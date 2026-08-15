@@ -27,6 +27,13 @@ const VIEW_OPTIONS: { id: CalendarViewMode; label: string }[] = [
 export function CalendarApp() {
   const { user } = useAuth();
   const [mode, setMode] = useState<CalendarViewMode>("month");
+
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view === "week" || view === "day" || view === "month") {
+      setMode(view);
+    }
+  }, []);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +130,9 @@ export function CalendarApp() {
   }
 
   async function handleDelete(id: string) {
+    if (selectedEvent && !eventsApi.canDeleteCalendarEvent(selectedEvent)) {
+      return;
+    }
     if (!confirm("Delete this event?")) return;
     try {
       await eventsApi.deleteEvent(id);

@@ -7,6 +7,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { AuthLoading } from "@/components/AuthLoading";
 import { Button } from "@/components/Button";
 import { MarketingNav } from "@/components/MarketingNav";
+import { SsoBrandButton } from "@/components/SsoButtons";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -20,6 +21,7 @@ export default function LoginPage() {
     login,
     loginWithMagicLink,
     loginWithGoogle,
+    loginWithMicrosoft,
     loginWithApple,
     isAuthenticated,
     isLoading,
@@ -27,6 +29,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [microsoftLoading, setMicrosoftLoading] = useState(false);
 
   useEffect(() => {
     // Prefetch the post-login route while the form is visible.
@@ -185,11 +188,11 @@ export default function LoginPage() {
           <div className="h-px flex-1 bg-[var(--border-subtle)]" />
         </div>
         <div className="space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={googleLoading || appleLoading}
+          <SsoBrandButton
+            brand="google"
+            label="Sign in with Google"
+            busy={googleLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
             onClick={async () => {
               setError("");
               setGoogleLoading(true);
@@ -202,14 +205,12 @@ export default function LoginPage() {
                 setGoogleLoading(false);
               }
             }}
-          >
-            {googleLoading ? "Redirecting…" : "Continue with Google"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={googleLoading || appleLoading}
+          />
+          <SsoBrandButton
+            brand="apple"
+            label="Sign in with Apple"
+            busy={appleLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
             onClick={async () => {
               setError("");
               setAppleLoading(true);
@@ -222,9 +223,27 @@ export default function LoginPage() {
                 setAppleLoading(false);
               }
             }}
-          >
-            {appleLoading ? "Redirecting…" : "Continue with Apple"}
-          </Button>
+          />
+          <SsoBrandButton
+            brand="microsoft"
+            label="Sign in with Microsoft"
+            busy={microsoftLoading}
+            disabled={googleLoading || appleLoading || microsoftLoading}
+            onClick={async () => {
+              setError("");
+              setMicrosoftLoading(true);
+              try {
+                await loginWithMicrosoft();
+              } catch (err) {
+                setError(
+                  err instanceof Error
+                    ? err.message
+                    : "Microsoft sign-in failed"
+                );
+                setMicrosoftLoading(false);
+              }
+            }}
+          />
         </div>
         <p className="mt-4 text-sm">
           <Link

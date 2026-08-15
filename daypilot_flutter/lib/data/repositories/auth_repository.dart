@@ -119,11 +119,46 @@ class AuthRepository {
     }
   }
 
+  /// Microsoft / Outlook OAuth — opens browser; returns via deep link.
+  ///
+  /// Requires Azure enabled in Supabase Auth (see docs/OUTLOOK_AUTH_SETUP.md).
+  Future<bool> signInWithMicrosoft() async {
+    try {
+      return await _client.auth.signInWithOAuth(
+        OAuthProvider.azure,
+        redirectTo: 'com.daypilot.daypilot://login-callback/',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+        scopes: 'email openid profile offline_access Calendars.ReadWrite',
+      );
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('provider is not enabled') ||
+          msg.contains('unsupported provider')) {
+        throw AuthException(
+          'Microsoft sign-in is unavailable right now. Try email sign-in, or try again later.',
+          statusCode: e.statusCode,
+          code: e.code,
+        );
+      }
+      rethrow;
+    }
+  }
+
   /// True when the current Supabase user has a Google identity linked.
   bool get hasGoogleIdentity {
     final user = _client.auth.currentUser;
     if (user == null) return false;
     return user.identities?.any((i) => i.provider == 'google') ?? false;
+  }
+
+  /// True when the current Supabase user has a Microsoft/Azure identity linked.
+  bool get hasMicrosoftIdentity {
+    final user = _client.auth.currentUser;
+    if (user == null) return false;
+    return user.identities?.any(
+          (i) => i.provider == 'azure' || i.provider == 'microsoft',
+        ) ??
+        false;
   }
 
   /// True when the current Supabase user has an Apple identity linked.

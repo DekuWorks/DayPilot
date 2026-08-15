@@ -40,7 +40,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New contact'),
+        title: Text('New contact'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -70,11 +70,11 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
+            child: Text('Create'),
           ),
         ],
       ),
@@ -106,7 +106,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
       title: 'Contacts',
       floatingActionButton: FloatingActionButton(
         onPressed: _create,
-        child: const Icon(Icons.person_add_alt_1_rounded),
+        child: Icon(Icons.person_add_alt_1_rounded),
       ),
       body: Column(
         children: [
@@ -137,10 +137,10 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                         return hay.contains(q);
                       }).toList();
                 if (list.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No contacts yet.',
-                      style: TextStyle(color: DayPilotColors.textSecondary),
+                      style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                     ),
                   );
                 }
@@ -256,9 +256,9 @@ class _ContactDetailScreenState extends ConsumerState<ContactDetailScreen> {
       actions: [
         IconButton(
           onPressed: _loading ? null : _delete,
-          icon: const Icon(Icons.delete_outline),
+          icon: Icon(Icons.delete_outline),
         ),
-        TextButton(onPressed: _loading ? null : _save, child: const Text('Save')),
+        TextButton(onPressed: _loading ? null : _save, child: Text('Save')),
       ],
       body: _loading
           ? const Center(child: CircularProgressIndicator())

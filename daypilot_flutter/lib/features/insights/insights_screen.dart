@@ -124,41 +124,47 @@ class InsightsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: DayPilotScheme.of(context).backgroundPrimary,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            const Text(
+            Text(
               'Insights',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: DayPilotColors.textPrimary,
+                color: DayPilotScheme.of(context).textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Focus time and weekly rhythm',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: DayPilotColors.textSecondary,
+                    color: DayPilotScheme.of(context).textSecondary,
                   ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/insights/brief'),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: const Text('Open Pilot Brief'),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: DayPilotColors.surfacePrimary,
+                color: DayPilotScheme.of(context).surfacePrimary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: DayPilotColors.borderSubtle),
+                border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Focus Time',
                     style: TextStyle(
-                      color: DayPilotColors.textSecondary,
+                      color: DayPilotScheme.of(context).textSecondary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -166,18 +172,18 @@ class InsightsScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     weekSeconds > 0 ? _formatFocus(weekSeconds) : '12h 45m',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
-                      color: DayPilotColors.textPrimary,
+                      color: DayPilotScheme.of(context).textPrimary,
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'This week',
                     style: TextStyle(
-                      color: DayPilotColors.brand500,
+                      color: DayPilotScheme.of(context).accent,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -189,7 +195,7 @@ class InsightsScreen extends ConsumerWidget {
                     child: CustomPaint(
                       painter: _SparklinePainter(
                         values: series,
-                        color: DayPilotColors.brand500,
+                        color: DayPilotScheme.of(context).accent,
                       ),
                     ),
                   ),
@@ -232,14 +238,14 @@ class InsightsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: DayPilotColors.surfacePrimary,
+                color: DayPilotScheme.of(context).surfacePrimary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: DayPilotColors.borderSubtle),
+                border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Focus timer',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
@@ -251,8 +257,8 @@ class InsightsScreen extends ConsumerWidget {
                       if (session == null) {
                         return FilledButton.icon(
                           onPressed: () => _startFocus(ref),
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Start focus'),
+                          icon: Icon(Icons.play_arrow_rounded),
+                          label: Text('Start focus'),
                         );
                       }
                       final started = DateTime.tryParse(
@@ -264,8 +270,8 @@ class InsightsScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               'Focusing since ${TimeOfDay.fromDateTime(started.toLocal()).format(context)}',
-                              style: const TextStyle(
-                                color: DayPilotColors.brand500,
+                              style: TextStyle(
+                                color: DayPilotScheme.of(context).accent,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -276,7 +282,7 @@ class InsightsScreen extends ConsumerWidget {
                               session['id'] as String,
                               started,
                             ),
-                            child: const Text('Stop'),
+                            child: Text('Stop'),
                           ),
                         ],
                       );
@@ -288,8 +294,8 @@ class InsightsScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () => context.push('/insights/brief'),
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('Open Pilot Brief'),
+              icon: Icon(Icons.auto_awesome_rounded),
+              label: Text('Open Pilot Brief'),
             ),
           ],
         ),
@@ -316,17 +322,17 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DayPilotColors.surfacePrimary,
+        color: DayPilotScheme.of(context).surfacePrimary,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: DayPilotColors.borderSubtle),
+        border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: DayPilotColors.textSecondary,
+            style: TextStyle(
+              color: DayPilotScheme.of(context).textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -334,8 +340,8 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              color: DayPilotColors.textPrimary,
+            style: TextStyle(
+              color: DayPilotScheme.of(context).textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.w800,
             ),
@@ -345,7 +351,7 @@ class _StatCard extends StatelessWidget {
             delta,
             style: TextStyle(
               color: deltaPositive
-                  ? DayPilotColors.brand500
+                  ? DayPilotScheme.of(context).accent
                   : DayPilotColors.error,
               fontSize: 12,
               fontWeight: FontWeight.w700,

@@ -81,3 +81,4 @@ Add `--also-calendar` to write the same values into repo-root `.env` for Nest ca
 You can reuse the same Google Cloud project, but use **separate OAuth clients** (or at least separate redirect URIs) for Auth vs Calendar API.
 
 For Apple Sign-In (SSO), see [APPLE_AUTH_SETUP.md](./APPLE_AUTH_SETUP.md).
+For Microsoft / Outlook, see [OUTLOOK_AUTH_SETUP.md](./OUTLOOK_AUTH_SETUP.md).

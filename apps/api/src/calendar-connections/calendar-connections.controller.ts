@@ -16,6 +16,7 @@ import * as express from 'express';
 import { CalendarConnectionsService } from './calendar-connections.service';
 import { EventKitSyncService } from './eventkit-sync.service';
 import { ConnectAppleDto } from './dto/connect-apple.dto';
+import { ImportOutlookTokenDto } from './dto/import-outlook-token.dto';
 import { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import {
   DisconnectEventKitDto,
@@ -85,6 +86,19 @@ export class CalendarConnectionsController {
     } catch {
       res.redirect(`${frontend}/sync?error=outlook_callback`);
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('outlook/from-token')
+  async importOutlookToken(
+    @Req() req: { user: { id: string } },
+    @Body() dto: ImportOutlookTokenDto,
+  ) {
+    return this.calendarConnections.importOutlookProviderToken(req.user.id, {
+      accessToken: dto.accessToken,
+      refreshToken: dto.refreshToken,
+      expiresIn: dto.expiresIn,
+    });
   }
 
   /** @deprecated CalDAV — dormant product path; kept for API compatibility. */

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/gradient_brand_title.dart';
+import '../../core/widgets/sso_brand_button.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -64,6 +65,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Future<void> _microsoftSignIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithMicrosoft();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Microsoft sign-in failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _appleSignIn() async {
     setState(() => _busy = true);
     try {
@@ -81,7 +96,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: DayPilotScheme.of(context).backgroundPrimary,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -91,7 +106,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             Text(
               'Create account',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: DayPilotColors.textPrimary,
+                    color: DayPilotScheme.of(context).textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
               textAlign: TextAlign.center,
@@ -124,23 +139,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Sign up'),
+                  : Text('Sign up'),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _googleSignIn,
-              icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-              label: const Text('Continue with Google'),
+            SsoBrandButton(
+              brand: SsoBrand.google,
+              label: 'Sign in with Google',
+              busy: _busy,
+              onPressed: _googleSignIn,
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _appleSignIn,
-              icon: const Icon(Icons.apple, size: 24),
-              label: const Text('Continue with Apple'),
+            SsoBrandButton(
+              brand: SsoBrand.apple,
+              label: 'Sign in with Apple',
+              busy: _busy,
+              onPressed: _appleSignIn,
+            ),
+            const SizedBox(height: 12),
+            SsoBrandButton(
+              brand: SsoBrand.microsoft,
+              label: 'Sign in with Microsoft',
+              busy: _busy,
+              onPressed: _microsoftSignIn,
             ),
             TextButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Already have an account? Sign in'),
+              child: Text('Already have an account? Sign in'),
             ),
           ],
         ),

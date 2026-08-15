@@ -157,7 +157,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       _query.text.trim().length < 2
                           ? 'Type at least 2 characters'
                           : 'No matches',
-                      style: const TextStyle(color: DayPilotColors.textSecondary),
+                      style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                     ),
                   )
                 : ListView.separated(

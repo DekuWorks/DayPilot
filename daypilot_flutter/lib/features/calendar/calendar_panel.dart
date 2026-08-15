@@ -7,13 +7,19 @@ import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/realtime_service.dart';
+import 'calendar_view_mode.dart';
 import 'day_view.dart';
 import 'month_view.dart';
 import 'week_view.dart';
 
-/// Month / week / day calendar views (used by [CalendarScreen]).
+/// Month / week / day calendar views (Home hero).
 class CalendarPanel extends ConsumerStatefulWidget {
-  const CalendarPanel({super.key});
+  const CalendarPanel({
+    super.key,
+    this.initialView = CalendarViewMode.month,
+  });
+
+  final CalendarViewMode initialView;
 
   @override
   ConsumerState<CalendarPanel> createState() => _CalendarPanelState();
@@ -21,8 +27,11 @@ class CalendarPanel extends ConsumerStatefulWidget {
 
 class _CalendarPanelState extends ConsumerState<CalendarPanel>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs =
-      TabController(length: 3, vsync: this, initialIndex: 0);
+  late final TabController _tabs = TabController(
+    length: 3,
+    vsync: this,
+    initialIndex: widget.initialView.index,
+  );
   RealtimeChannel? _realtime;
 
   late DateTime _visibleMonth;
@@ -38,7 +47,6 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (DayPilotEnv.hasDaypilotApi) return;
-      // Supabase Realtime on `events` (legacy path). Option C uses NestEventsSocketListener.
       final client = ref.read(supabaseClientProvider);
       _realtime = RealtimeService(client).subscribeToEvents((_) {
         ref.read(calendarDataVersionProvider.notifier).bump();
@@ -60,27 +68,29 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
     return Column(
       children: [
         Material(
-          color: DayPilotColors.backgroundPrimary,
+          color: colors.backgroundPrimary,
           child: TabBar(
             controller: _tabs,
-            labelStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+            labelPadding: EdgeInsets.zero,
+            labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
             unselectedLabelStyle:
-                Theme.of(context).textTheme.titleSmall?.copyWith(
+                Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
-            tabs: const [
-              Tab(text: 'Day'),
-              Tab(text: 'Week'),
-              Tab(text: 'Month'),
+            tabs: [
+              for (final label in kCalendarViewLabels)
+                Tab(text: label, height: 32),
             ],
           ),
         ),
-        if (_tabs.index == 2)
+        if (_tabs.index == CalendarViewMode.month.index)
           _MonthNav(
             month: _visibleMonth,
             onChanged: (m) => setState(() => _visibleMonth = m),
@@ -92,7 +102,7 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
               });
             },
           )
-        else if (_tabs.index == 1)
+        else if (_tabs.index == CalendarViewMode.week.index)
           _DayStepper(
             label: 'Week of',
             day: _focusDay,
@@ -118,8 +128,6 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
           child: TabBarView(
             controller: _tabs,
             children: [
-              DayCalendarView(focusDay: _focusDay),
-              WeekCalendarView(focusDay: _focusDay),
               MonthCalendarView(
                 visibleMonth: _visibleMonth,
                 onDayTap: (d) {
@@ -127,9 +135,11 @@ class _CalendarPanelState extends ConsumerState<CalendarPanel>
                     _focusDay = DateTime(d.year, d.month, d.day);
                     _visibleMonth = DateTime(d.year, d.month, 1);
                   });
-                  _tabs.animateTo(0);
+                  _tabs.animateTo(CalendarViewMode.day.index);
                 },
               ),
+              WeekCalendarView(focusDay: _focusDay),
+              DayCalendarView(focusDay: _focusDay),
             ],
           ),
         ),
@@ -151,34 +161,50 @@ class _MonthNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              onChanged(DateTime(month.year, month.month - 1, 1));
-            },
-          ),
-          Expanded(
-            child: Text(
-              MaterialLocalizations.of(context).formatMonthYear(month),
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
+      color: colors.surfaceSecondary,
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              icon: const Icon(Icons.chevron_left),
+              onPressed: () {
+                onChanged(DateTime(month.year, month.month - 1, 1));
+              },
             ),
-          ),
-          TextButton(
-            onPressed: onToday,
-            child: const Text('Today'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              onChanged(DateTime(month.year, month.month + 1, 1));
-            },
-          ),
-        ],
+            Expanded(
+              child: Text(
+                MaterialLocalizations.of(context).formatMonthYear(month),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            TextButton(
+              onPressed: onToday,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(44, 32),
+              ),
+              child: const Text('Today'),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              icon: const Icon(Icons.chevron_right),
+              onPressed: () {
+                onChanged(DateTime(month.year, month.month + 1, 1));
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -200,18 +226,35 @@ class _DayStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = MaterialLocalizations.of(context);
+    final colors = context.dp;
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(icon: const Icon(Icons.chevron_left), onPressed: onPrev),
-          Text(
-            '$label ${loc.formatMediumDate(day)}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          IconButton(icon: const Icon(Icons.chevron_right), onPressed: onNext),
-        ],
+      color: colors.surfaceSecondary,
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              icon: const Icon(Icons.chevron_left),
+              onPressed: onPrev,
+            ),
+            Text(
+              '$label ${loc.formatMediumDate(day)}',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              icon: const Icon(Icons.chevron_right),
+              onPressed: onNext,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -121,7 +121,7 @@ export class CalendarConnectionsService {
         throw new BadRequestException('Google Calendar is not configured');
       const redirectUri = `${this.config.get('API_URL') ?? this.config.get('URL') ?? 'http://localhost:3001'}/calendar-connections/google/callback`;
       const scope =
-        'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+        'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
       const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
       return { redirectUrl: url };
     }
@@ -434,45 +434,84 @@ export class CalendarConnectionsService {
         throw new BadRequestException(err || 'Failed to exchange Outlook code');
       }
       const data = await res.json();
-      const accessToken = data.access_token as string;
-      const refreshToken = data.refresh_token as string | undefined;
-      const expiresIn = (data.expires_in as number) ?? 3600;
-      const expiresAt = new Date(Date.now() + expiresIn * 1000);
-      const client = Client.init({
-        authProvider: () => Promise.resolve(accessToken),
+      await this.upsertOutlookFromGraphTokens(userId, {
+        accessToken: data.access_token as string,
+        refreshToken: data.refresh_token as string | undefined,
+        expiresIn: (data.expires_in as number) ?? 3600,
       });
-      const me = await client.api('/me').get();
-      const email = (me.mail ?? me.userPrincipalName ?? 'outlook') as string;
-      await this.prisma.calendarConnection.upsert({
-        where: {
-          userId_providerType_deviceId: {
-          userId,
-          providerType: 'outlook',
-          deviceId: '',
-        },
-        },
-        create: {
-          userId,
-          providerType: 'outlook',
-          email,
-          accessToken,
-          refreshToken: refreshToken ?? null,
-          expiresAt,
-          validatedAt: new Date(),
-        },
-        update: {
-          email,
-          accessToken,
-          refreshToken: refreshToken ?? undefined,
-          expiresAt,
-          validatedAt: new Date(),
-        },
-      });
-      await this.syncConnection(userId, 'outlook');
       return { redirectUrl: `${frontendUrl}/sync?connected=outlook` };
     }
 
     return { redirectUrl: `${frontendUrl}/sync` };
+  }
+
+  /**
+   * Store Graph tokens from Supabase Azure SSO (`provider_token`) and sync.
+   * Falls back to Nest OAuth connect if the token lacks calendar scopes.
+   */
+  async importOutlookProviderToken(
+    userId: string,
+    tokens: {
+      accessToken: string;
+      refreshToken?: string;
+      expiresIn?: number;
+    },
+  ) {
+    return this.upsertOutlookFromGraphTokens(userId, {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn ?? 3600,
+    });
+  }
+
+  private async upsertOutlookFromGraphTokens(
+    userId: string,
+    tokens: {
+      accessToken: string;
+      refreshToken?: string;
+      expiresIn: number;
+    },
+  ) {
+    const client = Client.init({
+      authProvider: () => Promise.resolve(tokens.accessToken),
+    });
+    let email = 'outlook';
+    try {
+      const me = await client.api('/me').get();
+      email = (me.mail ?? me.userPrincipalName ?? 'outlook') as string;
+    } catch {
+      throw new BadRequestException(
+        'Microsoft token is missing profile or calendar access. Connect Outlook again.',
+      );
+    }
+    const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
+    await this.prisma.calendarConnection.upsert({
+      where: {
+        userId_providerType_deviceId: {
+          userId,
+          providerType: 'outlook',
+          deviceId: '',
+        },
+      },
+      create: {
+        userId,
+        providerType: 'outlook',
+        email,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken ?? null,
+        expiresAt,
+        validatedAt: new Date(),
+      },
+      update: {
+        email,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken ?? undefined,
+        expiresAt,
+        validatedAt: new Date(),
+      },
+    });
+    await this.syncConnection(userId, 'outlook');
+    return { ok: true, email };
   }
 
   async disconnect(userId: string, connectionId: string) {
@@ -889,6 +928,23 @@ export class CalendarConnectionsService {
     });
     const calendar = google.calendar({ version: 'v3', auth: oauth2 });
     const calId = conn.calendarId ?? 'primary';
+    let calendarColor: string | null = null;
+    let calendarTitle = 'Google Calendar';
+    try {
+      const listed = await calendar.calendarList.get({ calendarId: calId });
+      calendarColor = listed.data.backgroundColor ?? null;
+      calendarTitle = listed.data.summary ?? calendarTitle;
+    } catch {
+      // calendar.readonly missing on older tokens — hash fallback on the client.
+    }
+    const calendarRowId = await this.upsertSyncedCalendar({
+      userId,
+      connectionId: conn.id,
+      provider: 'google',
+      externalCalendarId: calId,
+      title: calendarTitle,
+      color: calendarColor,
+    });
     const { data } = await calendar.events.list({
       calendarId: calId,
       timeMin: rangeStart.toISOString(),
@@ -922,6 +978,8 @@ export class CalendarConnectionsService {
           end,
           description: item.description ?? null,
           location: item.location ?? null,
+          externalCalendarId: calId,
+          calendarId: calendarRowId,
         },
         update: {
           title: item.summary ?? 'Event',
@@ -929,6 +987,8 @@ export class CalendarConnectionsService {
           end,
           description: item.description ?? null,
           location: item.location ?? null,
+          externalCalendarId: calId,
+          calendarId: calendarRowId,
         },
       });
     }
@@ -954,6 +1014,33 @@ export class CalendarConnectionsService {
     const accessToken = await this.ensureOutlookAccessToken(conn);
     const client = Client.init({
       authProvider: () => Promise.resolve(accessToken),
+    });
+    let outlookCalId = 'calendar';
+    let outlookTitle = 'Outlook Calendar';
+    let outlookColor: string | null = null;
+    try {
+      const cal = (await client
+        .api('/me/calendar')
+        .select('id,name,hexColor,color')
+        .get()) as {
+        id?: string;
+        name?: string;
+        hexColor?: string;
+        color?: string;
+      };
+      outlookCalId = cal.id ?? outlookCalId;
+      outlookTitle = cal.name ?? outlookTitle;
+      outlookColor = outlookCalendarHex(cal.hexColor, cal.color);
+    } catch {
+      // Colour is optional — client hashes the calendar id if missing.
+    }
+    const calendarRowId = await this.upsertSyncedCalendar({
+      userId,
+      connectionId: conn.id,
+      provider: 'outlook',
+      externalCalendarId: outlookCalId,
+      title: outlookTitle,
+      color: outlookColor,
     });
     const res = await client
       .api('/me/calendarView')
@@ -991,6 +1078,8 @@ export class CalendarConnectionsService {
           end,
           description: ev.body?.content ?? null,
           location: ev.location?.displayName ?? null,
+          externalCalendarId: outlookCalId,
+          calendarId: calendarRowId,
         },
         update: {
           title: ev.subject ?? 'Event',
@@ -998,6 +1087,8 @@ export class CalendarConnectionsService {
           end,
           description: ev.body?.content ?? null,
           location: ev.location?.displayName ?? null,
+          externalCalendarId: outlookCalId,
+          calendarId: calendarRowId,
         },
       });
     }
@@ -1211,4 +1302,65 @@ export class CalendarConnectionsService {
       throw new BadRequestException(message);
     }
   }
+
+  private async upsertSyncedCalendar(input: {
+    userId: string;
+    connectionId: string;
+    provider: CalendarProvider;
+    externalCalendarId: string;
+    title: string;
+    color: string | null;
+  }): Promise<string> {
+    const row = await this.prisma.externalCalendar.upsert({
+      where: {
+        userId_provider_externalCalendarId_deviceId: {
+          userId: input.userId,
+          provider: input.provider,
+          externalCalendarId: input.externalCalendarId,
+          deviceId: '',
+        },
+      },
+      create: {
+        userId: input.userId,
+        connectionId: input.connectionId,
+        provider: input.provider,
+        externalCalendarId: input.externalCalendarId,
+        title: input.title.slice(0, 500),
+        color: input.color,
+        isPrimary: true,
+        isSelected: true,
+        isVisible: true,
+        deviceId: '',
+      },
+      update: {
+        title: input.title.slice(0, 500),
+        ...(input.color ? { color: input.color } : {}),
+      },
+    });
+    return row.id;
+  }
+}
+
+const OUTLOOK_PRESET: Record<string, string> = {
+  lightBlue: '#3B82F6',
+  lightGreen: '#22C55E',
+  lightOrange: '#F97316',
+  lightGray: '#94A3B8',
+  lightYellow: '#EAB308',
+  lightTeal: '#14B8A6',
+  lightPink: '#EC4899',
+  lightBrown: '#A16207',
+  lightRed: '#EF4444',
+  maxColor: '#6366F1',
+};
+
+function outlookCalendarHex(
+  hexColor?: string,
+  preset?: string,
+): string | null {
+  if (hexColor && hexColor !== 'auto' && /^#?[0-9a-fA-F]{6}$/.test(hexColor)) {
+    return hexColor.startsWith('#') ? hexColor : `#${hexColor}`;
+  }
+  if (preset && OUTLOOK_PRESET[preset]) return OUTLOOK_PRESET[preset];
+  return null;
 }

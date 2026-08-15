@@ -213,7 +213,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   Future<void> _assignProject(TaskRow task, List<TaskProject> projects) async {
     final chosen = await showModalBottomSheet<String?>(
       context: context,
-      backgroundColor: DayPilotColors.surfacePrimary,
+      backgroundColor: DayPilotScheme.of(context).surfacePrimary,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -225,7 +225,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               ),
             ),
             ListTile(
-              title: const Text('No project'),
+              title: Text('No project'),
               onTap: () => Navigator.pop(context, ''),
             ),
             for (final p in projects)
@@ -284,7 +284,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     try {
       return Color(int.parse(hex.substring(1), radix: 16) + 0xFF000000);
     } catch (_) {
-      return DayPilotColors.brand500;
+      return context.dp.accent;
     }
   }
 
@@ -308,28 +308,28 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     }
 
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: DayPilotScheme.of(context).backgroundPrimary,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(
                 'Tasks',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: DayPilotColors.textPrimary,
+                  color: DayPilotScheme.of(context).textPrimary,
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
                 'Priorities, projects, and subtasks',
                 style: TextStyle(
-                  color: DayPilotColors.textSecondary,
+                  color: DayPilotScheme.of(context).textSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -352,18 +352,27 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           }),
                           selected: _filter == f,
                           onSelected: (_) => setState(() => _filter = f),
-                          selectedColor: DayPilotColors.brand500,
+                          showCheckmark: false,
+                          color: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return context.dp.accent;
+                            }
+                            return context.dp.surfaceSecondary;
+                          }),
                           labelStyle: TextStyle(
                             color: _filter == f
-                                ? DayPilotColors.textInverse
-                                : DayPilotColors.textSecondary,
+                                ? (Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? context.dp.textInverse
+                                    : Colors.white)
+                                : context.dp.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
-                          backgroundColor: DayPilotColors.surfacePrimary,
-                          side: const BorderSide(
-                            color: DayPilotColors.borderSubtle,
+                          side: BorderSide(
+                            color: _filter == f
+                                ? context.dp.accent
+                                : context.dp.borderSubtle,
                           ),
-                          showCheckmark: false,
                         ),
                       ),
                   ],
@@ -391,7 +400,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       const SizedBox(width: 8),
                       FilledButton(
                         onPressed: _add,
-                        child: const Text('Add'),
+                        child: Text('Add'),
                       ),
                     ],
                   ),
@@ -436,7 +445,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           child: DropdownButton<String?>(
                             isExpanded: true,
                             value: _newProjectId,
-                            hint: const Text(
+                            hint: Text(
                               'No project',
                               style: TextStyle(fontSize: 13),
                             ),
@@ -470,15 +479,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 data: (all) {
                   final list = _visible(all);
                   if (list.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         'No tasks here yet.',
-                        style: TextStyle(color: DayPilotColors.textSecondary),
+                        style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                       ),
                     );
                   }
                   return RefreshIndicator(
-                    color: DayPilotColors.brand500,
+                    color: context.dp.accent,
                     onRefresh: () async {
                       ref.invalidate(tasksListProvider);
                       ref.invalidate(subtasksListProvider);
@@ -497,10 +506,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                             : projectName[t.projectId!];
                         return Container(
                           decoration: BoxDecoration(
-                            color: DayPilotColors.surfacePrimary,
+                            color: DayPilotScheme.of(context).surfacePrimary,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: DayPilotColors.borderSubtle,
+                              color: DayPilotScheme.of(context).borderSubtle,
                             ),
                           ),
                           child: Column(
@@ -514,8 +523,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                         ? Icons.check_circle_rounded
                                         : Icons.circle_outlined,
                                     color: t.isDone
-                                        ? DayPilotColors.brand500
-                                        : DayPilotColors.textTertiary,
+                                        ? context.dp.accent
+                                        : DayPilotScheme.of(context).textTertiary,
                                   ),
                                 ),
                                 title: Text(
@@ -525,8 +534,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                         ? TextDecoration.lineThrough
                                         : null,
                                     color: t.isDone
-                                        ? DayPilotColors.textTertiary
-                                        : DayPilotColors.textPrimary,
+                                        ? DayPilotScheme.of(context).textTertiary
+                                        : DayPilotScheme.of(context).textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -539,8 +548,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                     if (kids.isNotEmpty)
                                       '${kids.where((k) => k.isDone).length}/${kids.length} sub',
                                   ].join(' · '),
-                                  style: const TextStyle(
-                                    color: DayPilotColors.textSecondary,
+                                  style: TextStyle(
+                                    color: DayPilotScheme.of(context).textSecondary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -560,7 +569,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                         open
                                             ? Icons.expand_less
                                             : Icons.expand_more,
-                                        color: DayPilotColors.brand500,
+                                        color: context.dp.accent,
                                       ),
                                     ),
                                     PopupMenuButton<String>(
@@ -614,8 +623,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                             ? Icons.check_box_rounded
                                             : Icons.check_box_outline_blank,
                                         color: s.isDone
-                                            ? DayPilotColors.brand500
-                                            : DayPilotColors.textTertiary,
+                                            ? context.dp.accent
+                                            : DayPilotScheme.of(context).textTertiary,
                                         size: 20,
                                       ),
                                     ),
@@ -626,8 +635,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                             ? TextDecoration.lineThrough
                                             : null,
                                         color: s.isDone
-                                            ? DayPilotColors.textTertiary
-                                            : DayPilotColors.textPrimary,
+                                            ? DayPilotScheme.of(context).textTertiary
+                                            : DayPilotScheme.of(context).textPrimary,
                                       ),
                                     ),
                                   ),
@@ -654,7 +663,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                       IconButton(
                                         onPressed: () =>
                                             _addSubtask(t.id, kids),
-                                        icon: const Icon(Icons.add),
+                                        icon: Icon(
+                                          Icons.add,
+                                          color: context.dp.accent,
+                                        ),
                                       ),
                                     ],
                                   ),

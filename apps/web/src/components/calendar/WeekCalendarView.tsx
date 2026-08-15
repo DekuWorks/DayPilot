@@ -1,7 +1,7 @@
 "use client";
 
 import type { CalendarEvent } from "@/lib/events";
-import { sourceAccent } from "@/lib/events";
+import { calendarChipStyle } from "@/lib/event-color";
 import {
   DAY_END_HOUR,
   DAY_START_HOUR,
@@ -121,7 +121,12 @@ export function WeekCalendarView({
                     ))}
                     {dayEvents.map((ev) => {
                       const { top, height } = eventLayout(ev);
-                      const accent = sourceAccent(ev.source);
+                      const chip = calendarChipStyle({
+                        calendarColor: ev.calendarColor,
+                        externalCalendarId: ev.externalCalendarId,
+                        calendarId: ev.calendarId,
+                        source: ev.source,
+                      });
                       return (
                         <button
                           key={ev.id}
@@ -134,8 +139,9 @@ export function WeekCalendarView({
                           style={{
                             top,
                             height,
-                            borderLeftColor: accent.border,
-                            background: accent.bg,
+                            borderLeftColor: chip.accent,
+                            background: chip.fill,
+                            color: chip.foreground,
                           }}
                           title={`${ev.title} (${formatTime(ev.start)})`}
                         >

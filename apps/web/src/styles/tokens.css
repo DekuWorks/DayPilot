@@ -1,45 +1,45 @@
 /**
- * DayPilot design tokens — dark UI + electric green brand.
+ * DayPilot design tokens — sage-tinted dark + forest brand.
  * Semantic tokens only; avoid raw hex in components.
  */
 
 :root {
   /* Brand scale */
-  --brand-50: #f0ffe8;
-  --brand-100: #d9ffc2;
-  --brand-200: #b4ff8a;
-  --brand-300: #8cff3f;
-  --brand-400: #6ef24a;
-  --brand-500: #42e85f;
-  --brand-600: #16b947;
-  --brand-700: #0f8f38;
-  --brand-800: #0c6b2c;
-  --brand-900: #0a5224;
+  --brand-50: #e8f5ee;
+  --brand-100: #c5e4d2;
+  --brand-200: #9dceb3;
+  --brand-300: #6bb58c;
+  --brand-400: #2e8b57;
+  --brand-500: #3d9b6a;
+  --brand-600: #1b7a4a;
+  --brand-700: #145c38;
+  --brand-800: #0f462b;
+  --brand-900: #0a301e;
 
-  /* Neutral dark theme */
-  --background-primary: #0a0b0d;
-  --background-secondary: #101215;
-  --surface-primary: #14161a;
-  --surface-secondary: #1a1d23;
-  --surface-elevated: #22262e;
-  --border-subtle: #2a2f38;
-  --border-strong: #3d4450;
-  --text-primary: #f4f5f7;
-  --text-secondary: #9aa3b2;
-  --text-tertiary: #6b7380;
-  --text-inverse: #0a0b0d;
+  /* Sage-tinted dark theme */
+  --background-primary: #0c1210;
+  --background-secondary: #0e1612;
+  --surface-primary: #15201a;
+  --surface-secondary: #1a2620;
+  --surface-elevated: #1a2620;
+  --border-subtle: #2a3d34;
+  --border-strong: #3d5648;
+  --text-primary: #f4f7f5;
+  --text-secondary: #8a9a90;
+  --text-tertiary: #6a7a70;
+  --text-inverse: #0c1210;
 
   /* Semantic */
-  --success: #42e85f;
+  --success: #3d9b6a;
   --warning: #f5a524;
   --error: #f04438;
   --information: #3b82f6;
-  --ai: #42e85f;
+  --ai: #3d9b6a;
   --ai-accent: #22d3ee;
 
   /* Category */
   --meetings: #3b82f6;
-  --tasks: #42e85f;
+  --tasks: #3d9b6a;
   --projects: #a855f7;
   --focus: #22d3ee;
   --calendar-personal: #f97316;
@@ -102,4 +102,25 @@
     --duration-fast: 0ms;
     --duration-normal: 0ms;
   }
+}
+
+[data-theme="light"] {
+  --brand-400: #2e8b57;
+  --brand-500: #1b7a4a;
+  --brand-600: #145c38;
+  --background-primary: #f3f7f3;
+  --background-secondary: #eef5f0;
+  --surface-primary: #f7fbf7;
+  --surface-secondary: #e8f0ea;
+  --surface-elevated: #f7fbf7;
+  --border-subtle: #c5d4c8;
+  --border-strong: #9bb5a3;
+  --text-primary: #0a0b0d;
+  --text-secondary: #4a5a50;
+  --text-tertiary: #6e8074;
+  --text-inverse: #f3f7f3;
+  --success: #1b7a4a;
+  --ai: #1b7a4a;
+  --tasks: #1b7a4a;
+  --focus-ring: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--brand-500);
 }

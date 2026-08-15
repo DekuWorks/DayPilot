@@ -8,6 +8,7 @@ import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
+import '../../core/widgets/sso_brand_button.dart';
 import '../../data/services/apple_calendar_service.dart';
 import '../../domain/calendar/calendar_connection_ui.dart';
 
@@ -145,8 +146,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     final keep = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect Apple Calendar?'),
-        content: const Text(
+        title: Text('Disconnect Apple Calendar?'),
+        content: Text(
           'DayPilot will stop synchronizing calendars from this device. '
           'Your events will remain in iCloud.\n\n'
           'Keep imported events visible in DayPilot?',
@@ -154,15 +155,15 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Remove from DayPilot'),
+            child: Text('Remove from DayPilot'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Keep events'),
+            child: Text('Keep events'),
           ),
         ],
       ),
@@ -197,16 +198,16 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   @override
   Widget build(BuildContext context) {
     if (!DayPilotEnv.hasDaypilotApi) {
-      return const FeatureScaffold(
+      return FeatureScaffold(
         title: 'Sync',
         body: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Text(
               'Calendar sync is temporarily unavailable. '
               'Try again later, or contact support if this continues.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: DayPilotColors.textSecondary),
+              style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
             ),
           ),
         ),
@@ -227,7 +228,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     return FeatureScaffold(
       title: 'Sync',
       body: RefreshIndicator(
-        color: DayPilotColors.brand500,
+        color: DayPilotScheme.of(context).accent,
         onRefresh: () async {
           invalidateCalendarStatus(ref);
           await ref.read(calendarConnectionsProvider.future);
@@ -240,15 +241,15 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
             FilledButton.icon(
               onPressed: busy ? null : _syncAll,
               icon: syncing
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: DayPilotColors.textInverse,
+                        color: DayPilotScheme.of(context).textInverse,
                       ),
                     )
-                  : const Icon(Icons.sync_rounded),
+                  : Icon(Icons.sync_rounded),
               label: Text(syncing ? 'Syncing…' : 'Sync all'),
             ),
             const SizedBox(height: 8),
@@ -260,8 +261,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                 SyncAllHint.neverSynced => 'Never synced',
                 SyncAllHint.noneConnected => 'Connect a calendar to sync',
               },
-              style: const TextStyle(
-                color: DayPilotColors.textSecondary,
+              style: TextStyle(
+                color: DayPilotScheme.of(context).textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -278,25 +279,25 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: DayPilotColors.error),
+                  style: TextStyle(color: DayPilotColors.error),
                 ),
               ),
             ],
             const SizedBox(height: 20),
             if (oauth.isLoading || eventKit.isLoading)
-              const LinearProgressIndicator(color: DayPilotColors.brand500)
+              LinearProgressIndicator(color: DayPilotScheme.of(context).accent)
             else if (oauth.hasError && eventKit.hasError)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     '${oauth.error}',
-                    style: const TextStyle(color: DayPilotColors.error),
+                    style: TextStyle(color: DayPilotColors.error),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () => invalidateCalendarStatus(ref),
-                    child: const Text('Retry'),
+                    child: Text('Retry'),
                   ),
                 ],
               )
@@ -327,14 +328,14 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 }
 
-Color _toneColor(CalendarUiTone tone) {
+Color _toneColor(BuildContext context, CalendarUiTone tone) {
   switch (tone) {
     case CalendarUiTone.healthy:
-      return DayPilotColors.brand500;
+      return DayPilotScheme.of(context).accent;
     case CalendarUiTone.needsAttention:
       return DayPilotColors.warning;
     case CalendarUiTone.notConnected:
-      return DayPilotColors.textTertiary;
+      return const Color(0xFF6B7380);
   }
 }
 
@@ -363,14 +364,14 @@ class _ProviderStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _toneColor(row.tone);
+    final color = _toneColor(context, row.tone);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DayPilotColors.surfacePrimary,
+        color: DayPilotScheme.of(context).surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: DayPilotColors.borderSubtle),
+        border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,10 +385,10 @@ class _ProviderStatusCard extends StatelessWidget {
                       : row.id == 'google'
                           ? 'Google Calendar'
                           : 'Outlook / Microsoft 365',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: DayPilotColors.textPrimary,
+                    color: DayPilotScheme.of(context).textPrimary,
                   ),
                 ),
               ),
@@ -405,8 +406,8 @@ class _ProviderStatusCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               row.detail,
-              style: const TextStyle(
-                color: DayPilotColors.textSecondary,
+              style: TextStyle(
+                color: DayPilotScheme.of(context).textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -415,8 +416,8 @@ class _ProviderStatusCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Last synced $lastSyncedLabel',
-              style: const TextStyle(
-                color: DayPilotColors.textTertiary,
+              style: TextStyle(
+                color: DayPilotScheme.of(context).textTertiary,
                 fontSize: 13,
               ),
             ),
@@ -426,20 +427,35 @@ class _ProviderStatusCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (row.tone == CalendarUiTone.notConnected)
-                FilledButton(
-                  onPressed: busy ? null : onConnect,
-                  child: Text(connecting ? 'Opening…' : 'Connect'),
+              if (row.tone == CalendarUiTone.notConnected &&
+                  ssoBrandForProvider(row.id) != null)
+                SizedBox(
+                  width: 260,
+                  child: SsoBrandButton(
+                    brand: ssoBrandForProvider(row.id)!,
+                    label: connecting
+                        ? 'Opening…'
+                        : ssoConnectLabel(row.id, reconnect: false),
+                    busy: connecting,
+                    expand: true,
+                    onPressed: busy ? null : onConnect,
+                  ),
                 )
-              else if (row.canReconnect)
-                FilledButton(
-                  onPressed: busy ? null : onReconnect,
-                  child: const Text('Reconnect'),
+              else if (row.canReconnect &&
+                  ssoBrandForProvider(row.id) != null)
+                SizedBox(
+                  width: 260,
+                  child: SsoBrandButton(
+                    brand: ssoBrandForProvider(row.id)!,
+                    label: ssoConnectLabel(row.id, reconnect: true),
+                    expand: true,
+                    onPressed: busy ? null : onReconnect,
+                  ),
                 ),
               if (onManage != null)
                 OutlinedButton(
                   onPressed: busy ? null : onManage,
-                  child: const Text('Manage calendars'),
+                  child: Text('Manage calendars'),
                 ),
               if (onDisconnect != null)
                 TextButton(

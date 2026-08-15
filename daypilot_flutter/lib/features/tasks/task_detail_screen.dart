@@ -137,15 +137,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete task?'),
+        title: Text('Delete task?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -188,7 +188,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       actions: [
         IconButton(
           onPressed: _loading ? null : _delete,
-          icon: const Icon(Icons.delete_outline),
+          icon: Icon(Icons.delete_outline),
         ),
         TextButton(
           onPressed: _loading || _saving ? null : _save,
@@ -203,7 +203,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 TextField(
                   controller: _title,
                   decoration: const InputDecoration(hintText: 'Title'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                   ),
@@ -221,7 +221,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 const SizedBox(height: 16),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Priority'),
+                  title: Text('Priority'),
                   trailing: DropdownButton<String>(
                     value: ['low', 'medium', 'high', 'urgent']
                             .contains(_priority)
@@ -240,21 +240,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Due date'),
+                  title: Text('Due date'),
                   subtitle: Text(
                     _dueAt == null
                         ? 'None'
                         : DateFormat.yMMMd().format(_dueAt!),
                   ),
-                  trailing: const Icon(Icons.calendar_today_outlined),
+                  trailing: Icon(Icons.calendar_today_outlined),
                   onTap: _pickDue,
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Project'),
+                  title: Text('Project'),
                   trailing: DropdownButton<String?>(
                     value: _projectId,
-                    hint: const Text('No project'),
+                    hint: Text('No project'),
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,
@@ -280,7 +280,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   label: Text(done ? 'Mark incomplete' : 'Mark complete'),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Subtasks',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -298,8 +298,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                             ? Icons.check_box_rounded
                             : Icons.check_box_outline_blank,
                         color: s.isDone
-                            ? DayPilotColors.brand500
-                            : DayPilotColors.textTertiary,
+                            ? context.dp.accent
+                            : DayPilotScheme.of(context).textTertiary,
                       ),
                     ),
                     title: Text(
@@ -308,8 +308,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                         decoration:
                             s.isDone ? TextDecoration.lineThrough : null,
                         color: s.isDone
-                            ? DayPilotColors.textTertiary
-                            : DayPilotColors.textPrimary,
+                            ? DayPilotScheme.of(context).textTertiary
+                            : DayPilotScheme.of(context).textPrimary,
                       ),
                     ),
                   ),
@@ -327,7 +327,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                     ),
                     IconButton(
                       onPressed: () => _addSubtask(kids),
-                      icon: const Icon(Icons.add),
+                      icon: Icon(Icons.add),
                     ),
                   ],
                 ),

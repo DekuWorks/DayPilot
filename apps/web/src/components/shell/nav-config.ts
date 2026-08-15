@@ -6,7 +6,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Home,
-  Calendar,
   CheckSquare,
   FolderKanban,
   Users,
@@ -31,17 +30,16 @@ export type NavItem = {
 
 export const primaryNav: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/insights", label: "Insights", icon: BarChart3 },
+  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/meetings", label: "Meetings", icon: Users },
   { href: "/notes", label: "Notes", icon: StickyNote },
-  { href: "/insights", label: "Insights", icon: BarChart3 },
   { href: "/pilot-brief", label: "Pilot Brief", icon: Sparkles, badge: "AI" },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/friends", label: "Friends", icon: UserRound },
   { href: "/sync", label: "Sync", icon: RefreshCw },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export const secondaryNav: NavItem[] = [

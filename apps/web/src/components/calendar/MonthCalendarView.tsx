@@ -1,7 +1,7 @@
 "use client";
 
 import type { CalendarEvent } from "@/lib/events";
-import { sourceAccent } from "@/lib/events";
+import { calendarChipStyle } from "@/lib/event-color";
 import {
   WEEKDAYS,
   dateKey,
@@ -137,16 +137,22 @@ export function MonthCalendarView({
                     </div>
                     <div className="space-y-1">
                       {cell.events.slice(0, 3).map((ev) => {
-                        const accent = sourceAccent(ev.source);
+                        const chip = calendarChipStyle({
+                          calendarColor: ev.calendarColor,
+                          externalCalendarId: ev.externalCalendarId,
+                          calendarId: ev.calendarId,
+                          source: ev.source,
+                        });
                         return (
                         <button
                           key={ev.id}
                           type="button"
                           onClick={() => onSelectEvent(ev)}
-                          className="w-full text-left px-2 py-1 rounded-lg text-xs font-medium text-[var(--text-primary)] truncate border-l-2"
+                          className="w-full text-left px-2 py-1 rounded-lg text-xs font-medium truncate border-l-2"
                           style={{
-                            borderLeftColor: accent.border,
-                            background: accent.bg,
+                            borderLeftColor: chip.accent,
+                            background: chip.fill,
+                            color: chip.foreground,
                           }}
                         >
                           {formatTime(ev.start)} {ev.title}

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CalendarEvent } from "@/lib/events";
-import { sourceAccent } from "@/lib/events";
+import { calendarChipStyle } from "@/lib/event-color";
 import {
   DAY_END_HOUR,
   DAY_START_HOUR,
@@ -81,7 +81,12 @@ export function DayTimeline({
               ))}
               {dayEvents.map((ev) => {
                 const { top, height } = eventLayout(ev);
-                const accent = sourceAccent(ev.source);
+                const chip = calendarChipStyle({
+                  calendarColor: ev.calendarColor,
+                  externalCalendarId: ev.externalCalendarId,
+                  calendarId: ev.calendarId,
+                  source: ev.source,
+                });
                 return (
                   <button
                     key={ev.id}
@@ -94,14 +99,15 @@ export function DayTimeline({
                     style={{
                       top,
                       height,
-                      borderLeftColor: accent.border,
-                      background: accent.bg,
+                      borderLeftColor: chip.accent,
+                      background: chip.fill,
+                      color: chip.foreground,
                     }}
                   >
-                    <div className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                    <div className="text-xs font-semibold truncate">
                       {ev.title}
                     </div>
-                    <div className="text-[10px] text-[var(--text-secondary)] truncate">
+                    <div className="text-[10px] truncate opacity-80">
                       {formatTime(ev.start)} – {formatTime(ev.end)}
                     </div>
                   </button>

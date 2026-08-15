@@ -55,7 +55,7 @@ class NotificationsScreen extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => _markAll(ref),
-          child: const Text('Mark all read'),
+          child: Text('Mark all read'),
         ),
       ],
       body: async.when(
@@ -63,10 +63,10 @@ class NotificationsScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('$e')),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No notifications yet.',
-                style: TextStyle(color: DayPilotColors.textSecondary),
+                style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
               ),
             );
           }
@@ -84,7 +84,7 @@ class NotificationsScreen extends ConsumerWidget {
                 return Material(
                   color: unread
                       ? DayPilotColors.brand500.withValues(alpha: 0.08)
-                      : DayPilotColors.surfacePrimary,
+                      : DayPilotScheme.of(context).surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -96,7 +96,7 @@ class NotificationsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: DayPilotColors.borderSubtle),
+                        border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +108,7 @@ class NotificationsScreen extends ConsumerWidget {
                                   width: 8,
                                   height: 8,
                                   margin: const EdgeInsets.only(right: 8),
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: DayPilotColors.brand500,
                                     shape: BoxShape.circle,
                                   ),
@@ -116,7 +116,7 @@ class NotificationsScreen extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   '${n['title']}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -126,9 +126,9 @@ class NotificationsScreen extends ConsumerWidget {
                                   DateFormat.MMMd()
                                       .add_jm()
                                       .format(created.toLocal()),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: DayPilotColors.textTertiary,
+                                    color: DayPilotScheme.of(context).textTertiary,
                                   ),
                                 ),
                             ],
@@ -137,8 +137,8 @@ class NotificationsScreen extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               '${n['body']}',
-                              style: const TextStyle(
-                                color: DayPilotColors.textSecondary,
+                              style: TextStyle(
+                                color: DayPilotScheme.of(context).textSecondary,
                                 fontSize: 13,
                               ),
                             ),

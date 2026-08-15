@@ -173,7 +173,7 @@ class _AppleCalendarFlowScreenState
               ),
               child: Text(
                 _error!,
-                style: const TextStyle(color: DayPilotColors.error),
+                style: TextStyle(color: DayPilotColors.error),
               ),
             ),
             const SizedBox(height: 12),
@@ -181,7 +181,7 @@ class _AppleCalendarFlowScreenState
                 (_error?.contains('denied') ?? false))
               OutlinedButton(
                 onPressed: () => _service.openSystemSettings(),
-                child: const Text('Open Settings'),
+                child: Text('Open Settings'),
               ),
             const SizedBox(height: 12),
           ],
@@ -199,34 +199,34 @@ class _AppleCalendarFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Connect Apple Calendar',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: DayPilotColors.textPrimary,
+            color: DayPilotScheme.of(context).textPrimary,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'DayPilot reads calendars already on this iPhone (including iCloud) '
           'through Apple EventKit. Sign in with Apple only signs you in — '
           'it does not grant calendar access.\n\n'
           'You will choose which calendars to import. Google or Outlook '
           'calendars already connected in DayPilot are skipped to avoid duplicates.',
           style: TextStyle(
-            color: DayPilotColors.textSecondary,
+            color: DayPilotScheme.of(context).textSecondary,
             height: 1.4,
           ),
         ),
         const SizedBox(height: 20),
         FilledButton(
           onPressed: _busy ? null : _continueFromExplain,
-          child: const Text('Continue'),
+          child: Text('Continue'),
         ),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('Cancel'),
+          child: Text('Cancel'),
         ),
       ],
     );
@@ -236,26 +236,26 @@ class _AppleCalendarFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Allow calendar access',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: DayPilotColors.textPrimary,
+            color: DayPilotScheme.of(context).textPrimary,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'DayPilot uses calendar access to display, organize, create, update, '
           'and synchronize your events.',
-          style: TextStyle(color: DayPilotColors.textSecondary, height: 1.4),
+          style: TextStyle(color: DayPilotScheme.of(context).textSecondary, height: 1.4),
         ),
         const SizedBox(height: 16),
-        if (_busy) const LinearProgressIndicator(color: DayPilotColors.brand500),
+        if (_busy) LinearProgressIndicator(color: DayPilotScheme.of(context).accent),
         if (!_busy)
           FilledButton(
             onPressed: _requestPermissionAndDiscover,
-            child: const Text('Allow access'),
+            child: Text('Allow access'),
           ),
       ],
     );
@@ -265,12 +265,12 @@ class _AppleCalendarFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Select calendars to use in DayPilot',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: DayPilotColors.textPrimary,
+            color: DayPilotScheme.of(context).textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -278,11 +278,11 @@ class _AppleCalendarFlowScreenState
           children: [
             TextButton(
               onPressed: () => _selectAll(true),
-              child: const Text('Select all'),
+              child: Text('Select all'),
             ),
             TextButton(
               onPressed: () => _selectAll(false),
-              child: const Text('Deselect all'),
+              child: Text('Deselect all'),
             ),
           ],
         ),
@@ -295,8 +295,8 @@ class _AppleCalendarFlowScreenState
                 : (v) => setState(() => c.isSelected = v ?? false),
             title: Text(
               c.title,
-              style: const TextStyle(
-                color: DayPilotColors.textPrimary,
+              style: TextStyle(
+                color: DayPilotScheme.of(context).textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -309,21 +309,21 @@ class _AppleCalendarFlowScreenState
               style: TextStyle(
                 color: c.duplicatePrevented
                     ? DayPilotColors.warning
-                    : DayPilotColors.textSecondary,
+                    : DayPilotScheme.of(context).textSecondary,
                 fontSize: 12,
               ),
             ),
-            activeColor: DayPilotColors.brand500,
+            activeColor: DayPilotScheme.of(context).accent,
           );
         }),
         const SizedBox(height: 12),
         FilledButton(
           onPressed: _busy ? null : _runSync,
-          child: const Text('Continue'),
+          child: Text('Continue'),
         ),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('Cancel'),
+          child: Text('Cancel'),
         ),
       ],
     );
@@ -333,23 +333,23 @@ class _AppleCalendarFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Synchronizing…',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: DayPilotColors.textPrimary,
+            color: DayPilotScheme.of(context).textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         LinearProgressIndicator(
           value: _progress,
-          color: DayPilotColors.brand500,
+          color: DayPilotScheme.of(context).accent,
         ),
         const SizedBox(height: 8),
         Text(
           _progressLabel,
-          style: const TextStyle(color: DayPilotColors.textSecondary),
+          style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
         ),
       ],
     );
@@ -359,28 +359,28 @@ class _AppleCalendarFlowScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Apple Calendar connected',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: DayPilotColors.textPrimary,
+            color: DayPilotScheme.of(context).textPrimary,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Selected calendars are importing into DayPilot. '
           'Events appear on Calendar here and on the web.',
-          style: TextStyle(color: DayPilotColors.textSecondary, height: 1.4),
+          style: TextStyle(color: DayPilotScheme.of(context).textSecondary, height: 1.4),
         ),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: () => context.go('/calendar'),
-          child: const Text('Open calendar'),
+          child: Text('Open calendar'),
         ),
         TextButton(
           onPressed: () => context.go('/sync'),
-          child: const Text('Back to Sync'),
+          child: Text('Back to Sync'),
         ),
       ],
     );

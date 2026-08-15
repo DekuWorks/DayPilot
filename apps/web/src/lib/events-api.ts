@@ -10,7 +10,11 @@ export type Event = {
   description?: string;
   location?: string;
   source: EventSource;
+  syncDirection?: string;
   externalId?: string;
+  externalCalendarId?: string;
+  calendarId?: string;
+  calendarColor?: string;
 };
 
 export async function listEvents(params?: { from?: string; to?: string }): Promise<Event[]> {
@@ -63,5 +67,13 @@ export async function deleteEvent(id: string): Promise<void> {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to delete event");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.message ??
+        (res.status === 403
+          ? "Imported calendar events cannot be deleted in DayPilot"
+          : "Failed to delete event"),
+    );
+  }
 }

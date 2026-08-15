@@ -69,6 +69,28 @@ export async function listConnections(): Promise<CalendarConnection[]> {
   });
 }
 
+export async function importOutlookProviderToken(args: {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}): Promise<{ ok: boolean; email?: string }> {
+  return withNestAuth(async () => {
+    const res = await fetch(
+      `${getApiUrl()}/calendar-connections/outlook/from-token`,
+      {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(args),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Failed to import Outlook token"));
+    }
+    return res.json();
+  });
+}
+
 export async function getConnectUrl(
   provider: CalendarProvider
 ): Promise<ConnectUrlResult> {

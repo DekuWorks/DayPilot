@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";
+import {
+  SsoBrandButton,
+  ssoBrandForProvider,
+  ssoConnectLabel,
+} from "@/components/SsoButtons";
 import * as calendarConnectionsApi from "@/lib/calendar-connections-api";
 import type {
   CalendarConnection,
@@ -207,14 +212,22 @@ export default function IntegrationsPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {row.tone === "notConnected" && row.id !== "apple" ? (
-                    <Button
-                      size="sm"
-                      onClick={() => void handleConnect(row.id)}
-                      disabled={busy}
-                    >
-                      {actionLoading === row.id ? "Redirecting…" : "Connect"}
-                    </Button>
+                  {row.tone === "notConnected" &&
+                  row.id !== "apple" &&
+                  ssoBrandForProvider(row.id) ? (
+                    <div className="w-full max-w-xs">
+                      <SsoBrandButton
+                        brand={ssoBrandForProvider(row.id)!}
+                        label={
+                          actionLoading === row.id
+                            ? "Redirecting…"
+                            : ssoConnectLabel(row.id, false)
+                        }
+                        busy={actionLoading === row.id}
+                        disabled={busy}
+                        onClick={() => void handleConnect(row.id)}
+                      />
+                    </div>
                   ) : null}
                   {row.tone === "notConnected" && row.id === "apple" ? (
                     <Link
@@ -224,14 +237,15 @@ export default function IntegrationsPage() {
                       Set up on iPhone
                     </Link>
                   ) : null}
-                  {row.canReconnect ? (
-                    <Button
-                      size="sm"
-                      onClick={() => void handleConnect(row.id)}
-                      disabled={busy}
-                    >
-                      Reconnect
-                    </Button>
+                  {row.canReconnect && ssoBrandForProvider(row.id) ? (
+                    <div className="w-full max-w-xs">
+                      <SsoBrandButton
+                        brand={ssoBrandForProvider(row.id)!}
+                        label={ssoConnectLabel(row.id, true)}
+                        disabled={busy}
+                        onClick={() => void handleConnect(row.id)}
+                      />
+                    </div>
                   ) : null}
                   {row.id === "apple" && row.tone === "healthy" ? (
                     <a

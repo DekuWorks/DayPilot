@@ -46,17 +46,17 @@ class NotesScreen extends ConsumerWidget {
             context.push('/notes/${row['id']}');
           }
         },
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (notes) {
           if (notes.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No notes yet. Tap + to write one.',
-                style: TextStyle(color: DayPilotColors.textSecondary),
+                style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
               ),
             );
           }
@@ -165,7 +165,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         IconButton(
           tooltip: 'Archive',
           onPressed: _loading ? null : _archive,
-          icon: const Icon(Icons.archive_outlined),
+          icon: Icon(Icons.archive_outlined),
         ),
         TextButton(
           onPressed: _loading || _saving ? null : _save,
@@ -180,7 +180,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 TextField(
                   controller: _title,
                   decoration: const InputDecoration(hintText: 'Title'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),

@@ -31,15 +31,16 @@ class DayPilotPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            DayPilotColors.cream,
-            DayPilotColors.creamLight,
-            DayPilotColors.cream,
+            colors.backgroundPrimary,
+            colors.surfacePrimary,
+            colors.backgroundPrimary,
           ],
         ),
       ),

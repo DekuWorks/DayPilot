@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/Button";
+import {
+  SsoBrandButton,
+  ssoBrandForProvider,
+  ssoConnectLabel,
+} from "@/components/SsoButtons";
 import * as calendarConnectionsApi from "@/lib/calendar-connections-api";
 import type {
   CalendarConnection,
@@ -199,7 +204,7 @@ export default function SyncPage() {
 
       <p className="text-sm text-[var(--text-secondary)]">
         <Link
-          href="/calendar"
+          href="/dashboard"
           className="text-[var(--brand-500)] font-medium hover:underline"
         >
           Calendar
@@ -279,15 +284,32 @@ function ProviderCard({
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {row.tone === "notConnected" ? (
-            <Button size="sm" onClick={onConnect} disabled={busy}>
-              {connecting ? "Redirecting…" : "Connect"}
-            </Button>
+          {row.tone === "notConnected" &&
+          ssoBrandForProvider(row.id) &&
+          row.id !== "apple" ? (
+            <div className="w-full max-w-xs">
+              <SsoBrandButton
+                brand={ssoBrandForProvider(row.id)!}
+                label={
+                  connecting
+                    ? "Redirecting…"
+                    : ssoConnectLabel(row.id, false)
+                }
+                busy={connecting}
+                disabled={busy}
+                onClick={onConnect}
+              />
+            </div>
           ) : null}
-          {onReconnect ? (
-            <Button size="sm" onClick={onReconnect} disabled={busy}>
-              Reconnect
-            </Button>
+          {onReconnect && ssoBrandForProvider(row.id) ? (
+            <div className="w-full max-w-xs">
+              <SsoBrandButton
+                brand={ssoBrandForProvider(row.id)!}
+                label={ssoConnectLabel(row.id, true)}
+                disabled={busy}
+                onClick={onReconnect}
+              />
+            </div>
           ) : null}
           {row.id === "apple" && row.tone === "healthy" ? (
             <a

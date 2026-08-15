@@ -8,22 +8,13 @@ import '../../core/providers/calendar_connection_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_mode_provider.dart';
 import '../../core/widgets/feature_scaffold.dart';
+import '../../core/widgets/profile_avatar.dart';
+import '../../core/widgets/sso_brand_button.dart';
+import '../../data/services/avatar_upload_service.dart';
 import '../../domain/calendar/calendar_connection_ui.dart';
-
-final _profileProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
-  final client = ref.watch(supabaseClientProvider);
-  final uid = client.auth.currentUser?.id;
-  if (uid == null) return null;
-  return client
-      .from('profiles')
-      .select(
-        'first_name, last_name, username, display_name, name, email',
-      )
-      .eq('id', uid)
-      .maybeSingle();
-});
+import 'profile_providers.dart';
 
 /// Profile tab — hub for the same product areas as daypilot.co.
 class ProfileScreen extends ConsumerWidget {
@@ -31,22 +22,25 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(_profileProvider);
+    final profile = ref.watch(currentProfileProvider);
     final user = ref.watch(supabaseClientProvider).auth.currentUser;
     final email = user?.email ?? '';
 
+    final colors = context.dp;
+    final themeMode = ref.watch(themeModeProvider);
+
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: colors.backgroundPrimary,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            const Text(
+            Text(
               'Profile',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: DayPilotColors.textPrimary,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 20),
@@ -54,85 +48,86 @@ class ProfileScreen extends ConsumerWidget {
               loading: () => const LinearProgressIndicator(),
               error: (e, _) => Text('$e'),
               data: (p) {
-                final first = (p?['first_name'] as String?)?.trim() ?? '';
-                final last = (p?['last_name'] as String?)?.trim() ?? '';
-                final name = [first, last].where((s) => s.isNotEmpty).join(' ');
-                final display = name.isNotEmpty
-                    ? name
-                    : ((p?['display_name'] as String?)?.trim().isNotEmpty ==
-                            true
-                        ? p!['display_name'] as String
-                        : email.split('@').first);
+                final display = profileDisplayName(p, email);
                 final username = (p?['username'] as String?)?.trim();
-                return InkWell(
-                  onTap: () => context.push('/settings'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: DayPilotColors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: DayPilotColors.borderSubtle),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor:
-                              DayPilotColors.brand500.withValues(alpha: 0.2),
-                          child: Text(
-                            display.isNotEmpty
-                                ? display[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: DayPilotColors.brand500,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.borderSubtle),
+                  ),
+                  child: Row(
+                    children: [
+                      ProfileAvatar(
+                        initials: profileInitials(display),
+                        imageUrl: profileAvatarUrl(p),
+                        radius: 28,
+                        onTap: () => _pickAndUploadAvatar(context, ref),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => context.push('/settings'),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 display,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 18,
-                                  color: DayPilotColors.textPrimary,
+                                  color: colors.textPrimary,
                                 ),
                               ),
                               if (username != null && username.isNotEmpty)
                                 Text(
                                   '@$username',
-                                  style: const TextStyle(
-                                    color: DayPilotColors.brand500,
+                                  style: TextStyle(
+                                    color: colors.accent,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               Text(
                                 email,
-                                style: const TextStyle(
-                                  color: DayPilotColors.textSecondary,
+                                style: TextStyle(
+                                  color: colors.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
+                      ),
+                      IconButton(
+                        tooltip: 'Edit profile',
+                        onPressed: () => context.push('/settings'),
+                        icon: Icon(
                           Icons.edit_outlined,
-                          color: DayPilotColors.textTertiary,
+                          color: colors.textTertiary,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              title: Text(
+                'Light mode',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+              value: themeMode == ThemeMode.light,
+              activeThumbColor: colors.accent,
+              onChanged: (v) =>
+                  ref.read(themeModeProvider.notifier).setLight(v),
+            ),
+            const SizedBox(height: 16),
             Text(
               'Sync',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -246,14 +241,35 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-Color _toneColor(CalendarUiTone tone) {
+Future<void> _pickAndUploadAvatar(BuildContext context, WidgetRef ref) async {
+  final service = AvatarUploadService(ref.read(supabaseClientProvider));
+  try {
+    final picked = await service.pickFromGallery();
+    if (picked == null) return;
+    await service.uploadPicked(picked);
+    ref.invalidate(currentProfileProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo saved.')),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
+  }
+}
+
+Color _toneColor(BuildContext context, CalendarUiTone tone) {
   switch (tone) {
     case CalendarUiTone.healthy:
-      return DayPilotColors.brand500;
+      return DayPilotScheme.of(context).accent;
     case CalendarUiTone.needsAttention:
       return DayPilotColors.warning;
     case CalendarUiTone.notConnected:
-      return DayPilotColors.textTertiary;
+      return const Color(0xFF6B7380);
   }
 }
 
@@ -311,31 +327,31 @@ class _CalendarConnectionsCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: DayPilotColors.surfacePrimary,
+          color: DayPilotScheme.of(context).surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: DayPilotColors.borderSubtle),
+          border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
         ),
         child: loading
-            ? const LinearProgressIndicator(
-                color: DayPilotColors.brand500,
+            ? LinearProgressIndicator(
+                color: DayPilotScheme.of(context).accent,
                 minHeight: 2,
               )
             : failed
-                ? const Text(
+                ? Text(
                     'Could not load sync status — tap to open Sync',
                     style: TextStyle(
-                      color: DayPilotColors.textSecondary,
+                      color: DayPilotScheme.of(context).textSecondary,
                       fontSize: 13,
                     ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Calendar connections',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: DayPilotColors.textPrimary,
+                          color: DayPilotScheme.of(context).textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -356,7 +372,7 @@ class _ProviderStatusRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final color = _toneColor(row.tone);
+    final color = _toneColor(context, row.tone);
     final detail = row.detail.isEmpty ? row.headline : row.detail;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -370,8 +386,8 @@ class _ProviderStatusRow extends ConsumerWidget {
               children: [
                 Text(
                   row.name,
-                  style: const TextStyle(
-                    color: DayPilotColors.textPrimary,
+                  style: TextStyle(
+                    color: DayPilotScheme.of(context).textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -395,14 +411,15 @@ class _ProviderStatusRow extends ConsumerWidget {
               ],
             ),
           ),
-          if (row.canReconnect)
-            TextButton(
-              onPressed: () => _reconnect(context, ref, row),
-              style: TextButton.styleFrom(
-                foregroundColor: DayPilotColors.warning,
-                visualDensity: VisualDensity.compact,
+          if (row.canReconnect && ssoBrandForProvider(row.id) != null)
+            SizedBox(
+              width: 200,
+              child: SsoBrandButton(
+                brand: ssoBrandForProvider(row.id)!,
+                label: ssoConnectLabel(row.id, reconnect: true),
+                expand: true,
+                onPressed: () => _reconnect(context, ref, row),
               ),
-              child: const Text('Reconnect'),
             ),
         ],
       ),
@@ -463,7 +480,7 @@ class _SyncAllTileState extends ConsumerState<_SyncAllTile> {
     };
 
     return Material(
-      color: DayPilotColors.surfacePrimary,
+      color: DayPilotScheme.of(context).surfacePrimary,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: _busy ? null : _syncAll,
@@ -472,15 +489,15 @@ class _SyncAllTileState extends ConsumerState<_SyncAllTile> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: DayPilotColors.borderSubtle),
+            border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.sync_rounded,
                 color: _busy
-                    ? DayPilotColors.textTertiary
-                    : DayPilotColors.brand500,
+                    ? DayPilotScheme.of(context).textTertiary
+                    : DayPilotScheme.of(context).accent,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -489,28 +506,28 @@ class _SyncAllTileState extends ConsumerState<_SyncAllTile> {
                   children: [
                     Text(
                       _busy ? 'Syncing…' : 'Sync all',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: DayPilotColors.textPrimary,
+                        color: DayPilotScheme.of(context).textPrimary,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: DayPilotColors.textSecondary,
+                        color: DayPilotScheme.of(context).textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
               if (_busy)
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: DayPilotColors.brand500,
+                    color: DayPilotScheme.of(context).accent,
                   ),
                 ),
             ],

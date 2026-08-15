@@ -73,3 +73,12 @@ enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 skip_nonce_check = false
+
+# Microsoft / Azure SSO (Outlook). See docs/OUTLOOK_AUTH_SETUP.md.
+# Secrets live in SUPABASE_AUTH_EXTERNAL_AZURE_* (not committed).
+[auth.external.azure]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+url = "https://login.microsoftonline.com/common"
+skip_nonce_check = false

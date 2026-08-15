@@ -9,6 +9,7 @@ import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/daypilot_page_shell.dart';
+import '../../core/widgets/sso_brand_button.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
 
 const _providers = <({String id, String name, String description})>[
@@ -153,7 +154,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
     final theme = Theme.of(context);
 
     return DayPilotPageShell(
-      title: const Text('Connected calendars'),
+      title: Text('Connected calendars'),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -161,7 +162,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
             Text(
               'Link Google, Outlook, or Apple/iCloud so all your events appear in one calendar.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: DayPilotColors.bodyMuted,
+                color: DayPilotScheme.of(context).textSecondary,
               ),
             ),
             if (_error != null) ...[
@@ -184,7 +185,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () => ref.invalidate(calendarConnectionsProvider),
-                    child: const Text('Retry'),
+                    child: Text('Retry'),
                   ),
                 ],
               ),
@@ -195,7 +196,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
                     'Your connections',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: DayPilotColors.ink,
+                      color: DayPilotScheme.of(context).textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -203,7 +204,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
                     Text(
                       'No calendars connected yet. Connect one below.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: DayPilotColors.bodyMuted,
+                        color: DayPilotScheme.of(context).textSecondary,
                       ),
                     )
                   else
@@ -222,7 +223,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
                     'Add a calendar',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: DayPilotColors.ink,
+                      color: DayPilotScheme.of(context).textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -230,6 +231,7 @@ class _IntegrationsScreenState extends ConsumerState<IntegrationsScreen>
                     final connected =
                         connections.any((c) => c.provider == p.id);
                     return _ProviderTile(
+                      id: p.id,
                       name: p.name,
                       description: p.description,
                       connected: connected,
@@ -284,7 +286,7 @@ class _ConnectionTile extends StatelessWidget {
             Text(
               connection.email,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: DayPilotColors.bodyMuted,
+                color: DayPilotScheme.of(context).textSecondary,
               ),
             ),
             Text(
@@ -292,7 +294,7 @@ class _ConnectionTile extends StatelessWidget {
               style: theme.textTheme.labelSmall?.copyWith(
                 color: connection.status == ConnectionValidationStatus.valid
                     ? DayPilotColors.brand500
-                    : DayPilotColors.bodyMuted,
+                    : DayPilotScheme.of(context).textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -300,7 +302,7 @@ class _ConnectionTile extends StatelessWidget {
               Text(
                 'Synced ${MaterialLocalizations.of(context).formatShortDate(connection.syncedAt!.toLocal())}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: DayPilotColors.bodyMuted,
+                  color: DayPilotScheme.of(context).textSecondary,
                 ),
               ),
             const SizedBox(height: 8),
@@ -330,6 +332,7 @@ class _ConnectionTile extends StatelessWidget {
 
 class _ProviderTile extends StatelessWidget {
   const _ProviderTile({
+    required this.id,
     required this.name,
     required this.description,
     required this.connected,
@@ -338,6 +341,7 @@ class _ProviderTile extends StatelessWidget {
     required this.onConnect,
   });
 
+  final String id;
   final String name;
   final String description;
   final bool connected;
@@ -368,7 +372,7 @@ class _ProviderTile extends StatelessWidget {
                   Text(
                     description,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: DayPilotColors.bodyMuted,
+                      color: DayPilotScheme.of(context).textSecondary,
                     ),
                   ),
                 ],
@@ -382,10 +386,17 @@ class _ProviderTile extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               )
-            else
-              OutlinedButton(
-                onPressed: busy ? null : onConnect,
-                child: Text(connecting ? 'Opening…' : 'Connect'),
+            else if (ssoBrandForProvider(id) != null)
+              SizedBox(
+                width: 220,
+                child: SsoBrandButton(
+                  brand: ssoBrandForProvider(id)!,
+                  label: connecting
+                      ? 'Opening…'
+                      : ssoConnectLabel(id, reconnect: false),
+                  busy: connecting,
+                  onPressed: busy ? null : onConnect,
+                ),
               ),
           ],
         ),

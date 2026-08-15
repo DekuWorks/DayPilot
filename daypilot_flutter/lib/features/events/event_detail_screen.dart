@@ -51,16 +51,6 @@ class EventDetailScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                if (event.isSyncedExternal)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Chip(
-                      avatar: const Icon(Icons.sync, size: 18),
-                      label: Text(
-                        'Synced with ${event.source[0].toUpperCase()}${event.source.substring(1)} — edits push back to your calendar',
-                      ),
-                    ),
-                  ),
                 if (event.description != null && event.description!.isNotEmpty)
                   Text(event.description!),
                 if (event.description != null && event.description!.isNotEmpty)
@@ -87,16 +77,14 @@ class EventDetailScreen extends ConsumerWidget {
                   },
                   child: const Text('Attendees & RSVP'),
                 ),
-                const SizedBox(height: 8),
-                FilledButton.tonalIcon(
-                  onPressed: () => _confirmDelete(context, ref, event),
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(
-                    event.isSyncedExternal
-                        ? 'Delete from DayPilot & ${event.source == 'google' ? 'Google' : 'Outlook'}'
-                        : 'Delete event',
+                if (event.canDelete) ...[
+                  const SizedBox(height: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _confirmDelete(context, ref, event),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete event'),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -110,17 +98,12 @@ class EventDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     EventRecord event,
   ) async {
+    if (!event.canDelete) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Delete event?'),
-        content: Text(
-          event.isSyncedExternal
-              ? 'This removes the event from DayPilot and your '
-                  '${event.source == 'google' ? 'Google Calendar' : 'Outlook calendar'}. '
-                  'This cannot be undone.'
-              : 'This cannot be undone.',
-        ),
+        content: const Text('This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),

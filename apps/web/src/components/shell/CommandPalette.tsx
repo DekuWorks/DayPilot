@@ -102,7 +102,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           ...events.slice(0, 40).map((e) => ({
             id: `event-${e.id}`,
             label: e.title,
-            href: "/calendar",
+            href: "/dashboard",
             group: "Events",
             hint: new Date(e.start).toLocaleString(undefined, {
               month: "short",

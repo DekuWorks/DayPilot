@@ -1,7 +1,18 @@
 "use client";
 
-import { CalendarApp } from "@/components/calendar/CalendarApp";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function CalendarPage() {
-  return <CalendarApp />;
+/** Legacy Calendar route — Home now hosts Month / Week / Day. */
+export default function CalendarRedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    router.replace(view ? `/dashboard?view=${encodeURIComponent(view)}` : "/dashboard");
+  }, [router]);
+
+  return (
+    <p className="text-sm text-[var(--text-secondary)]">Opening Home calendar…</p>
+  );
 }

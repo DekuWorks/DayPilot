@@ -31,7 +31,8 @@ class BrandLockup extends StatelessWidget {
           const SizedBox(height: 12),
           ShaderMask(
             blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => DayPilotColors.brandGradient.createShader(
+            shaderCallback: (bounds) =>
+                DayPilotColors.brandGradient.createShader(
               Rect.fromLTWH(0, 0, bounds.width, bounds.height),
             ),
             child: Text(
@@ -59,7 +60,8 @@ class GradientBrandTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShaderMask(
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => DayPilotColors.brandGradient.createShader(
+      shaderCallback: (bounds) =>
+          DayPilotColors.brandGradient.createShader(
         Rect.fromLTWH(0, 0, bounds.width, bounds.height),
       ),
       child: Text(

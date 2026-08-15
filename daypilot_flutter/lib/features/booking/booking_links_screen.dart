@@ -35,7 +35,7 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New booking link'),
+        title: Text('New booking link'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -60,11 +60,11 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
+            child: Text('Create'),
           ),
         ],
       ),
@@ -158,20 +158,20 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
       title: 'Booking links',
       floatingActionButton: FloatingActionButton(
         onPressed: _create,
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Text(
                   'Create a booking link so others can book time with you.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: DayPilotColors.textSecondary),
+                  style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                 ),
               ),
             );
@@ -186,20 +186,20 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
               final active = link['is_active'] as bool? ?? false;
               return Container(
                 decoration: BoxDecoration(
-                  color: DayPilotColors.surfacePrimary,
+                  color: DayPilotScheme.of(context).surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: DayPilotColors.borderSubtle),
+                  border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
                 ),
                 child: ListTile(
                   title: Text(
                     '${link['title'] ?? slug}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: Text(
                     '/book/$slug · ${link['duration'] ?? 30} min · '
                     '${active ? 'Active' : 'Paused'}',
-                    style: const TextStyle(
-                      color: DayPilotColors.textSecondary,
+                    style: TextStyle(
+                      color: DayPilotScheme.of(context).textSecondary,
                       fontSize: 12,
                     ),
                   ),

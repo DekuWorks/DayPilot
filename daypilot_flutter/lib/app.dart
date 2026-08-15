@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/widgets/api_session_bootstrap.dart';
 import 'core/widgets/nest_events_socket_listener.dart';
 
@@ -13,14 +14,15 @@ class DayPilotApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return ApiSessionBootstrap(
       child: NestEventsSocketListener(
         child: MaterialApp.router(
           title: 'DayPilot',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.dark(),
+          theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.dark,
+          themeMode: themeMode,
           routerConfig: router,
         ),
       ),

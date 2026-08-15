@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_mode_provider.dart';
 import '../../core/widgets/feature_scaffold.dart';
+import '../../core/widgets/profile_avatar.dart';
+import '../../data/services/avatar_upload_service.dart';
+import '../profile/profile_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -16,9 +20,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _first = TextEditingController();
   final _last = TextEditingController();
   final _username = TextEditingController();
-  final _avatar = TextEditingController();
+  String? _avatarUrl;
   bool _loading = true;
   bool _saving = false;
+  bool _uploading = false;
   String? _message;
   bool _error = false;
 
@@ -41,12 +46,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _first.text = (row?['first_name'] as String?) ?? '';
     _last.text = (row?['last_name'] as String?) ?? '';
     _username.text = (row?['username'] as String?) ?? '';
-    _avatar.text = (row?['avatar_url'] as String?) ?? '';
+    _avatarUrl = (row?['avatar_url'] as String?)?.trim();
     setState(() => _loading = false);
   }
 
   String _normalizeUsername(String raw) {
     return raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+  }
+
+  Future<void> _uploadAvatar() async {
+    setState(() {
+      _uploading = true;
+      _message = null;
+      _error = false;
+    });
+    try {
+      final service = AvatarUploadService(ref.read(supabaseClientProvider));
+      final picked = await service.pickFromGallery();
+      if (picked == null) return;
+      final url = await service.uploadPicked(picked);
+      ref.invalidate(currentProfileProvider);
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = url;
+        _message = 'Photo saved.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+        _message = e.toString();
+      });
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   Future<void> _save() async {
@@ -71,11 +104,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'first_name': first,
         'last_name': last.isEmpty ? null : last,
         'username': handle.isEmpty ? null : handle,
-        'avatar_url': _avatar.text.trim().isEmpty ? null : _avatar.text.trim(),
+        'avatar_url': _avatarUrl,
         'display_name': legal,
         'name': legal,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', uid);
+      ref.invalidate(currentProfileProvider);
       setState(() => _message = 'Profile updated.');
     } catch (e) {
       setState(() {
@@ -94,12 +128,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _first.dispose();
     _last.dispose();
     _username.dispose();
-    _avatar.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.dp;
+    final themeMode = ref.watch(themeModeProvider);
+    final display = [_first.text.trim(), _last.text.trim()]
+        .where((s) => s.isNotEmpty)
+        .join(' ');
     return FeatureScaffold(
       title: 'Settings',
       body: _loading
@@ -108,12 +146,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
+                  'Appearance',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Light mode'),
+                  value: themeMode == ThemeMode.light,
+                  activeThumbColor: colors.accent,
+                  onChanged: (v) =>
+                      ref.read(themeModeProvider.notifier).setLight(v),
+                ),
+                const SizedBox(height: 16),
+                Text(
                   'Profile',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    ProfileAvatar(
+                      initials: profileInitials(
+                        display.isEmpty ? 'P' : display,
+                      ),
+                      imageUrl: _avatarUrl,
+                      radius: 32,
+                      onTap: _uploading ? null : _uploadAvatar,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _uploading ? null : _uploadAvatar,
+                        icon: _uploading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.photo_outlined),
+                        label: Text(
+                          _uploading ? 'Uploading…' : 'Change photo',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _first,
                   decoration: const InputDecoration(labelText: 'First name'),
@@ -133,14 +215,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     prefixText: '@',
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _avatar,
-                  decoration: const InputDecoration(
-                    labelText: 'Avatar URL',
-                    hintText: 'https://…',
-                  ),
-                ),
                 const SizedBox(height: 20),
                 if (_message != null)
                   Padding(
@@ -150,7 +224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: TextStyle(
                         color: _error
                             ? DayPilotColors.error
-                            : DayPilotColors.brand500,
+                            : colors.accent,
                       ),
                     ),
                   ),

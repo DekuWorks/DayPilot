@@ -76,11 +76,11 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
   Widget build(BuildContext context) {
     final snap = ref.watch(todayBriefProvider);
     return Scaffold(
-      backgroundColor: DayPilotColors.backgroundPrimary,
+      backgroundColor: DayPilotScheme.of(context).backgroundPrimary,
       appBar: AppBar(
-        title: const Text('Pilot Brief'),
+        title: Text('Pilot Brief'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(Icons.arrow_back_rounded),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -112,7 +112,7 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
                         boxShadow: [
                           BoxShadow(
                             color:
-                                DayPilotColors.brand500.withValues(alpha: 0.35),
+                                DayPilotScheme.of(context).accent.withValues(alpha: 0.35),
                             blurRadius: 28,
                             spreadRadius: 2,
                           ),
@@ -130,7 +130,7 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Text(
                       '$e',
-                      style: const TextStyle(color: DayPilotColors.error),
+                      style: TextStyle(color: DayPilotColors.error),
                     ),
                     data: (brief) {
                       final content = brief?['content'];
@@ -140,11 +140,11 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
                       if (map == null) {
                         return Column(
                           children: [
-                            const Text(
+                            Text(
                               'No brief for today yet. Generate one from your schedule and tasks.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: DayPilotColors.textSecondary,
+                                color: DayPilotScheme.of(context).textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -184,8 +184,8 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
                             '${map['events_today'] ?? 0} events today · '
                             '${map['tasks_due'] ?? 0} tasks due · '
                             '${map['tasks_overdue'] ?? 0} overdue',
-                            style: const TextStyle(
-                              color: DayPilotColors.textSecondary,
+                            style: TextStyle(
+                              color: DayPilotScheme.of(context).textSecondary,
                             ),
                           ),
                           if (suggestions.isNotEmpty) ...[
@@ -243,7 +243,7 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.send_rounded),
+                    icon: Icon(Icons.send_rounded),
                   ),
                 ],
               ),
@@ -259,18 +259,18 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DayPilotColors.surfacePrimary,
+        color: DayPilotScheme.of(context).surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: DayPilotColors.borderSubtle),
+        border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: DayPilotColors.textPrimary,
+              color: DayPilotScheme.of(context).textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -279,8 +279,8 @@ class _DailyBriefScreenState extends ConsumerState<DailyBriefScreen> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 '• $item',
-                style: const TextStyle(
-                  color: DayPilotColors.textSecondary,
+                style: TextStyle(
+                  color: DayPilotScheme.of(context).textSecondary,
                   height: 1.35,
                 ),
               ),

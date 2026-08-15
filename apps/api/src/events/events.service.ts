@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditService } from '../audit/audit.service';
 import { CalendarConnectionsService } from '../calendar-connections/calendar-connections.service';
@@ -17,7 +22,10 @@ function toEventPayload(e: {
   externalId: string | null;
   allDay?: boolean;
   externalCalendarId?: string | null;
+  calendarId?: string | null;
+  calendarColor?: string | null;
   syncState?: string | null;
+  syncDirection?: string | null;
   readOnly?: boolean;
 }) {
   const appleReadOnly =
@@ -33,8 +41,11 @@ function toEventPayload(e: {
     externalId: e.externalId ?? undefined,
     allDay: e.allDay ?? false,
     externalCalendarId: e.externalCalendarId ?? undefined,
+    calendarId: e.calendarId ?? undefined,
+    calendarColor: e.calendarColor ?? undefined,
     syncState: e.syncState ?? undefined,
-    readOnly: appleReadOnly,
+    syncDirection: e.syncDirection ?? undefined,
+    readOnly: appleReadOnly || !canUserDeleteEvent(e),
     providerLabel:
       e.source === 'apple_eventkit' || e.source === 'apple'
         ? 'Apple Calendar'
@@ -46,6 +57,15 @@ function toEventPayload(e: {
               ? 'DayPilot'
               : e.source,
   };
+}
+
+/** Only DayPilot-created events. Imported EventKit/Google/Outlook stay read-only. */
+export function canUserDeleteEvent(event: {
+  source?: string | null;
+  syncDirection?: string | null;
+}): boolean {
+  if (event.syncDirection === 'imported') return false;
+  return (event.source ?? 'native') === 'native';
 }
 
 @Injectable()
@@ -79,16 +99,62 @@ export class EventsService {
     const events = await this.prisma.event.findMany({
       where,
       orderBy: { start: 'asc' },
+      include: { externalCalendar: { select: { color: true } } },
     });
-    return events.map(toEventPayload);
+    const colorByExternal = await this.calendarColorsByExternal(
+      userId,
+      events.map((e) => e.externalCalendarId),
+    );
+    return events.map((e) =>
+      toEventPayload({
+        ...e,
+        calendarColor:
+          e.externalCalendar?.color ??
+          (e.externalCalendarId
+            ? colorByExternal.get(e.externalCalendarId)
+            : undefined) ??
+          null,
+      }),
+    );
   }
 
   async findOne(userId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, userId },
+      include: { externalCalendar: { select: { color: true } } },
     });
     if (!event) throw new NotFoundException('Event not found');
-    return toEventPayload(event);
+    const colorByExternal = await this.calendarColorsByExternal(userId, [
+      event.externalCalendarId,
+    ]);
+    return toEventPayload({
+      ...event,
+      calendarColor:
+        event.externalCalendar?.color ??
+        (event.externalCalendarId
+          ? colorByExternal.get(event.externalCalendarId)
+          : undefined) ??
+        null,
+    });
+  }
+
+  private async calendarColorsByExternal(
+    userId: string,
+    externalIds: Array<string | null | undefined>,
+  ): Promise<Map<string, string>> {
+    const ids = [
+      ...new Set(externalIds.filter((id): id is string => Boolean(id))),
+    ];
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.externalCalendar.findMany({
+      where: { userId, externalCalendarId: { in: ids } },
+      select: { externalCalendarId: true, color: true },
+    });
+    const map = new Map<string, string>();
+    for (const row of rows) {
+      if (row.color) map.set(row.externalCalendarId, row.color);
+    }
+    return map;
   }
 
   async create(userId: string, dto: CreateEventDto) {
@@ -169,14 +235,9 @@ export class EventsService {
     });
     if (!existing) throw new NotFoundException('Event not found');
 
-    if (
-      (existing.source === 'google' || existing.source === 'outlook') &&
-      existing.externalId
-    ) {
-      await this.calendarConnections.pushExternalEventDelete(
-        userId,
-        existing.source,
-        existing.externalId,
+    if (!canUserDeleteEvent(existing)) {
+      throw new ForbiddenException(
+        'Imported calendar events cannot be deleted in DayPilot',
       );
     }
 

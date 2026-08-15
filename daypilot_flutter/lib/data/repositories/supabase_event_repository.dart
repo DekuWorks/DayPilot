@@ -94,6 +94,16 @@ class SupabaseEventRepository implements EventRepository {
 
   @override
   Future<void> delete(String id) async {
+    final row = await _client
+        .from('events')
+        .select('source, sync_direction')
+        .eq('id', id)
+        .maybeSingle();
+    final source = row?['source'] as String? ?? 'native';
+    final direction = row?['sync_direction'] as String?;
+    if (source != 'native' || direction == 'imported') {
+      throw Exception('Imported calendar events cannot be deleted in DayPilot');
+    }
     await _client.from('events').delete().eq('id', id);
   }
 }

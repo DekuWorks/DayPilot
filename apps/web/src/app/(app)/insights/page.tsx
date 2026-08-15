@@ -160,6 +160,12 @@ export default function InsightsPage() {
         <p className="text-sm text-[var(--text-secondary)]">
           This week’s meetings, tasks, and focus time.
         </p>
+        <a
+          href="/pilot-brief"
+          className="mt-2 inline-block text-sm font-medium text-[var(--brand-500)] hover:underline"
+        >
+          Open Pilot Brief
+        </a>
       </div>
 
       {error && <p className="text-sm text-[var(--error)]">{error}</p>}

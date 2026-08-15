@@ -33,7 +33,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setLocal) => AlertDialog(
-          title: const Text('New project'),
+          title: Text('New project'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -59,7 +59,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: color == c
-                                ? DayPilotColors.textPrimary
+                                ? DayPilotScheme.of(context).textPrimary
                                 : Colors.transparent,
                             width: 2,
                           ),
@@ -73,11 +73,11 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text('Cancel'),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Create'),
+              child: Text('Create'),
             ),
           ],
         ),
@@ -122,17 +122,17 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
       title: 'Projects',
       floatingActionButton: FloatingActionButton(
         onPressed: _create,
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No projects yet.',
-                style: TextStyle(color: DayPilotColors.textSecondary),
+                style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
               ),
             );
           }
@@ -153,9 +153,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
               }
               return Container(
                 decoration: BoxDecoration(
-                  color: DayPilotColors.surfacePrimary,
+                  color: DayPilotScheme.of(context).surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: DayPilotColors.borderSubtle),
+                  border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
                 ),
                 child: ListTile(
                   leading: Container(
@@ -168,11 +168,11 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                   ),
                   title: Text(
                     '${p['name']}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: Text(
                     '${p['status']}'.replaceAll('_', ' '),
-                    style: const TextStyle(color: DayPilotColors.textSecondary),
+                    style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (v) {

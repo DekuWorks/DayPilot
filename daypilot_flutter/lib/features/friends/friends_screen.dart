@@ -87,7 +87,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         IconButton(
           tooltip: 'Open on web',
           onPressed: _openWebFriends,
-          icon: const Icon(Icons.open_in_new_rounded),
+          icon: Icon(Icons.open_in_new_rounded),
         ),
       ],
       body: RefreshIndicator(
@@ -100,7 +100,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               decoration: InputDecoration(
                 labelText: 'Search DayPilot users',
                 hintText: 'Name or username',
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: Icon(Icons.search_rounded),
                 suffixIcon: _searching
                     ? const Padding(
                         padding: EdgeInsets.all(12),
@@ -125,7 +125,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               const SizedBox(height: 8),
               Text(
                 _searchError!,
-                style: const TextStyle(color: DayPilotColors.error),
+                style: TextStyle(color: DayPilotColors.error),
               ),
             ],
             if (_results.isNotEmpty) ...[
@@ -158,7 +158,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         );
                       }
                     },
-                    child: const Text('Add'),
+                    child: Text('Add'),
                   ),
                 ),
             ],
@@ -175,9 +175,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               error: (e, _) => Text('$e'),
               data: (data) {
                 if (data.incoming.isEmpty && data.outgoing.isEmpty) {
-                  return const Text(
+                  return Text(
                     'No pending requests.',
-                    style: TextStyle(color: DayPilotColors.textSecondary),
+                    style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                   );
                 }
                 return Column(
@@ -225,9 +225,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               error: (e, _) => Text('$e'),
               data: (list) {
                 if (list.isEmpty) {
-                  return const Text(
+                  return Text(
                     'No friends yet. Search above to send a request.',
-                    style: TextStyle(color: DayPilotColors.textSecondary),
+                    style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                   );
                 }
                 return Column(
@@ -275,7 +275,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                     .removeFriend(f.id);
                                 _refresh();
                               },
-                              icon: const Icon(Icons.person_remove_outlined),
+                              icon: Icon(Icons.person_remove_outlined),
                             ),
                           ],
                         ),
@@ -287,8 +287,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             const SizedBox(height: 24),
             TextButton.icon(
               onPressed: _openWebFriends,
-              icon: const Icon(Icons.open_in_browser_rounded),
-              label: const Text('Manage on daypilot.co'),
+              icon: Icon(Icons.open_in_browser_rounded),
+              label: Text('Manage on daypilot.co'),
             ),
           ],
         ),
@@ -317,7 +317,7 @@ class _UserTile extends StatelessWidget {
         backgroundColor: DayPilotColors.brand500.withValues(alpha: 0.2),
         child: Text(
           user.label.isNotEmpty ? user.label[0].toUpperCase() : '?',
-          style: const TextStyle(
+          style: TextStyle(
             color: DayPilotColors.brand500,
             fontWeight: FontWeight.w700,
           ),
@@ -327,7 +327,7 @@ class _UserTile extends StatelessWidget {
       subtitle: Text(
         subtitle ??
             (handle != null && handle.isNotEmpty ? '@$handle' : 'DayPilot'),
-        style: const TextStyle(color: DayPilotColors.textSecondary),
+        style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
       ),
       trailing: trailing,
     );
@@ -359,14 +359,14 @@ class _RequestTile extends StatelessWidget {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(onPressed: onDecline, child: const Text('Decline')),
+                TextButton(onPressed: onDecline, child: Text('Decline')),
                 FilledButton(
                   onPressed: onAccept,
-                  child: const Text('Accept'),
+                  child: Text('Accept'),
                 ),
               ],
             )
-          : TextButton(onPressed: onCancel, child: const Text('Cancel')),
+          : TextButton(onPressed: onCancel, child: Text('Cancel')),
     );
   }
 }

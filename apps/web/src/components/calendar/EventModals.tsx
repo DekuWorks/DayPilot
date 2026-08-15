@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/Button";
-import type { CalendarEvent } from "@/lib/events";
+import { canDeleteCalendarEvent, type CalendarEvent } from "@/lib/events";
 import { dateKey, formatTime } from "./calendar-utils";
 
 export function CreateEventModal({
@@ -156,12 +156,7 @@ export function EventDetailModal({
                 ? "Google Calendar"
                 : event.source === "outlook"
                   ? "Microsoft Outlook"
-                  : `Source: ${event.source}`}
-          </p>
-        )}
-        {(event.source === "apple_eventkit" || event.source === "apple") && (
-          <p className="text-sm text-[var(--warning)] mb-4">
-            Edit this iCloud event in the DayPilot iOS app.
+                  : "Calendar"}
           </p>
         )}
         {event.description && (
@@ -170,7 +165,7 @@ export function EventDetailModal({
           </p>
         )}
         <div className="flex justify-end gap-3">
-          {event.source !== "apple_eventkit" && event.source !== "apple" && (
+          {canDeleteCalendarEvent(event) && (
             <button
               type="button"
               onClick={onDelete}

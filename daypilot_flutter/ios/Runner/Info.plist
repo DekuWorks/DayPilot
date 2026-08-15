@@ -91,5 +91,9 @@
 		<string>DayPilot imports events from your device calendars into your unified schedule.</string>
 		<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 		<string>DayPilot may write calendar events you create in the app.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>DayPilot uses your photo library so you can set a profile picture.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>DayPilot can use the camera if you take a new profile photo.</string>
 	</dict>
 </plist>

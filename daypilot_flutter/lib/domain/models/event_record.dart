@@ -9,9 +9,12 @@ class EventRecord {
     this.location,
     this.ownerId,
     this.calendarId,
+    this.externalCalendarId,
+    this.calendarColor,
     this.allDay = false,
     this.status = 'scheduled',
     this.source = 'native',
+    this.syncDirection,
   });
 
   final String id;
@@ -22,9 +25,16 @@ class EventRecord {
   final DateTime endsAt;
   final String? ownerId;
   final String? calendarId;
+  final String? externalCalendarId;
+  final String? calendarColor;
   final bool allDay;
   final String status;
   final String source;
+  final String? syncDirection;
+
+  /// Only events the user created in DayPilot. Imported calendars are read-only.
+  bool get canDelete =>
+      source == 'native' && syncDirection != 'imported';
 
   bool get isSyncedExternal =>
       source == 'google' ||
@@ -46,9 +56,12 @@ class EventRecord {
     DateTime? endsAt,
     String? ownerId,
     String? calendarId,
+    String? externalCalendarId,
+    String? calendarColor,
     bool? allDay,
     String? status,
     String? source,
+    String? syncDirection,
   }) {
     return EventRecord(
       id: id ?? this.id,
@@ -59,9 +72,12 @@ class EventRecord {
       endsAt: endsAt ?? this.endsAt,
       ownerId: ownerId ?? this.ownerId,
       calendarId: calendarId ?? this.calendarId,
+      externalCalendarId: externalCalendarId ?? this.externalCalendarId,
+      calendarColor: calendarColor ?? this.calendarColor,
       allDay: allDay ?? this.allDay,
       status: status ?? this.status,
       source: source ?? this.source,
+      syncDirection: syncDirection ?? this.syncDirection,
     );
   }
 
@@ -81,10 +97,13 @@ class EventRecord {
       startsAt: parse('start'),
       endsAt: parse('end'),
       ownerId: null,
-      calendarId: null,
-      allDay: false,
+      calendarId: json['calendarId']?.toString(),
+      externalCalendarId: json['externalCalendarId']?.toString(),
+      calendarColor: json['calendarColor'] as String?,
+      allDay: json['allDay'] as bool? ?? false,
       status: 'scheduled',
       source: json['source'] as String? ?? 'native',
+      syncDirection: json['syncDirection'] as String?,
     );
   }
 
@@ -108,7 +127,8 @@ class EventRecord {
       calendarId: row['calendar_id']?.toString(),
       allDay: row['all_day'] as bool? ?? false,
       status: row['status'] as String? ?? 'scheduled',
-      source: 'native',
+      source: row['source'] as String? ?? 'native',
+      syncDirection: row['sync_direction'] as String?,
     );
   }
 

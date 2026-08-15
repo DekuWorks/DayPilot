@@ -5,24 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/api_session_sync_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/models/event_record.dart';
+import 'calendar_chip_color.dart';
 import 'calendar_error_view.dart';
 import 'calendar_providers.dart';
 
 bool _sameCalendarDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
-
-Color _chipColorForSource(String source) {
-  switch (source) {
-    case 'google':
-      return Colors.blue.withValues(alpha: 0.22);
-    case 'outlook':
-      return Colors.indigo.withValues(alpha: 0.22);
-    case 'apple':
-      return Colors.grey.withValues(alpha: 0.28);
-    default:
-      return DayPilotColors.teal.withValues(alpha: 0.2);
-  }
-}
 
 /// Month view: classic grid + event chips (replaces plain list).
 class MonthCalendarView extends ConsumerWidget {
@@ -90,48 +78,61 @@ class _MonthGrid extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 16),
+    final weekCount = totalCells ~/ 7;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 2, 6, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: List.generate(7, (i) {
-              final label = loc.narrowWeekdays[i];
-              return Expanded(
-                child: Center(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: DayPilotColors.bodyMuted,
-                      fontWeight: FontWeight.w600,
+          SizedBox(
+            height: 16,
+            child: Row(
+              children: List.generate(7, (i) {
+                final label = loc.narrowWeekdays[i];
+                return Expanded(
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: DayPilotScheme.of(context).textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
-          const SizedBox(height: 4),
-          for (int row = 0; row < totalCells ~/ 7; row++)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 2),
+          Expanded(
+            child: Column(
               children: [
-                for (int col = 0; col < 7; col++)
+                for (int row = 0; row < weekCount; row++)
                   Expanded(
-                    child: _DayCell(
-                      cellIndex: row * 7 + col,
-                      offset: offset,
-                      daysInMonth: daysInMonth,
-                      year: y,
-                      month: m,
-                      today: today,
-                      eventsForDay: (day) => _eventsForDay(day),
-                      onDayTap: onDayTap,
-                      onEventTap: onEventTap,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (int col = 0; col < 7; col++)
+                          Expanded(
+                            child: _DayCell(
+                              cellIndex: row * 7 + col,
+                              offset: offset,
+                              daysInMonth: daysInMonth,
+                              year: y,
+                              month: m,
+                              today: today,
+                              eventsForDay: (day) => _eventsForDay(day),
+                              onDayTap: onDayTap,
+                              onEventTap: onEventTap,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
               ],
             ),
+          ),
         ],
       ),
     );
@@ -166,90 +167,98 @@ class _DayCell extends StatelessWidget {
     final theme = Theme.of(context);
     final i = cellIndex - offset;
     if (i < 0 || i >= daysInMonth) {
-      return const AspectRatio(
-        aspectRatio: 1,
-        child: SizedBox.shrink(),
-      );
+      return const SizedBox.expand();
     }
     final day = i + 1;
     final date = DateTime(year, month, day);
     final isToday = _sameCalendarDay(date, today);
     final dayEvents = eventsForDay(date);
+    final colors = DayPilotScheme.of(context);
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Material(
-          color: isToday
-              ? DayPilotColors.teal.withValues(alpha: 0.12)
-              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(10),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onDayTap == null ? null : () => onDayTap!(date),
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    '$day',
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                      color: isToday ? DayPilotColors.teal : DayPilotColors.ink,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.all(1.5),
+      child: Material(
+        color: isToday
+            ? todayCellWash(context)
+            : colors.surfaceSecondary.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onDayTap == null ? null : () => onDayTap!(date),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(3, 2, 3, 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '$day',
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                    color: isToday ? colors.accent : colors.textPrimary,
+                    fontSize: 11,
                   ),
-                  Expanded(
-                    child: dayEvents.isEmpty
-                        ? const SizedBox.shrink()
-                        : ListView(
-                            padding: EdgeInsets.zero,
-                            physics: const ClampingScrollPhysics(),
-                            children: [
-                              for (final e in dayEvents.take(3))
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
-                                  child: Material(
-                                    color: _chipColorForSource(e.source),
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: InkWell(
-                                      onTap: () => onEventTap(e.id),
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 2,
-                                        ),
-                                        child: Text(
-                                          e.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: DayPilotColors.ink,
-                                            fontSize: 10,
+                ),
+                Expanded(
+                  child: dayEvents.isEmpty
+                      ? const SizedBox.shrink()
+                      : ListView(
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            for (final e in dayEvents.take(2))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 1),
+                                child: Builder(
+                                  builder: (context) {
+                                    final chip = calendarChipStyleForEvent(
+                                      e,
+                                      lightSurface:
+                                          Theme.of(context).brightness ==
+                                              Brightness.light,
+                                    );
+                                    return Material(
+                                      color: chip.fill,
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: InkWell(
+                                        onTap: () => onEventTap(e.id),
+                                        borderRadius: BorderRadius.circular(3),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                            vertical: 1,
+                                          ),
+                                          child: Text(
+                                            e.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                              color: chip.foreground,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-                              if (dayEvents.length > 3)
-                                Text(
-                                  '+${dayEvents.length - 3}',
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: DayPilotColors.bodyMuted,
-                                    fontSize: 10,
-                                  ),
+                              ),
+                            if (dayEvents.length > 2)
+                              Text(
+                                '+${dayEvents.length - 2}',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 9,
                                 ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
+                              ),
+                          ],
+                        ),
+                ),
+              ],
             ),
           ),
         ),

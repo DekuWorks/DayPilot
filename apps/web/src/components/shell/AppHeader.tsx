@@ -108,9 +108,9 @@ export function AppHeader({
         <div className="flex items-center gap-1 md:gap-2">
           <NotificationsMenu />
           <Link
-            href="/calendar"
+            href="/dashboard"
             className="rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
-            aria-label="Calendar"
+            aria-label="Home calendar"
           >
             <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
           </Link>
