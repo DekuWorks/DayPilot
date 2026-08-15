@@ -56,8 +56,8 @@ class HomeScreen extends ConsumerWidget {
     final firstName = display.split(' ').first;
     final initials = profileInitials(firstName);
     final avatarUrl = profile.maybeWhen(
-      data: profileAvatarUrl,
-      orElse: () => null,
+      data: (p) => resolveAvatarUrl(p, user),
+      orElse: () => authMetadataAvatarUrl(user),
     );
     final next = nextEvent.maybeWhen(
       data: (event) => event,

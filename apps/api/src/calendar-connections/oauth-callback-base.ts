@@ -8,7 +8,8 @@ export const RAILWAY_API_ORIGIN = 'https://api-production-6c2c.up.railway.app';
 /** @deprecated Use FIRST_PARTY_API_HOST + firstPartyApiHostReady() */
 export const DEAD_CUSTOM_API_HOSTS = new Set([FIRST_PARTY_API_HOST]);
 
-export const GRAPH_MICROSOFT_BASE = 'https://graph.microsoft.com/v1.0';
+export const GRAPH_MICROSOFT_ORIGIN = 'https://graph.microsoft.com';
+export const GRAPH_MICROSOFT_BASE = `${GRAPH_MICROSOFT_ORIGIN}/v1.0`;
 
 const MULTI_TENANT_AUTHORITIES = new Set([
   'common',

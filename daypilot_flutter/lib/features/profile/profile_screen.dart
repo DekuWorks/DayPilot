@@ -61,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       ProfileAvatar(
                         initials: profileInitials(display),
-                        imageUrl: profileAvatarUrl(p),
+                        imageUrl: resolveAvatarUrl(p, user),
                         radius: 28,
                         onTap: () => _pickAndUploadAvatar(context, ref),
                       ),
