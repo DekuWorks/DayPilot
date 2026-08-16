@@ -11,6 +11,7 @@ export type CalendarEvent = {
   calendarId?: string | null;
   externalCalendarId?: string | null;
   calendarColor?: string | null;
+  workspaceId?: string | null;
   allDay?: boolean;
   source?: string;
   syncDirection?: string;
@@ -23,6 +24,8 @@ type EventRow = {
   location: string | null;
   meeting_url?: string | null;
   calendar_id: string | null;
+  workspace_id?: string | null;
+  calendar_color?: string | null;
   all_day?: boolean | null;
   start?: string | null;
   end?: string | null;
@@ -40,9 +43,25 @@ function mapRow(row: EventRow): CalendarEvent {
     location: row.location,
     meetingUrl: row.meeting_url ?? null,
     calendarId: row.calendar_id,
+    workspaceId: row.workspace_id ?? null,
+    calendarColor: row.calendar_color ?? null,
     allDay: Boolean(row.all_day),
     source: "native",
   };
+}
+
+function eventSelect() {
+  return "id, title, description, location, meeting_url, calendar_id, workspace_id, all_day, start, end, start_time, end_time, workspaces(color), calendars(color)";
+}
+
+function mapJoinedRow(row: EventRow & {
+  workspaces?: { color?: string | null } | null;
+  calendars?: { color?: string | null } | null;
+}): CalendarEvent {
+  return mapRow({
+    ...row,
+    calendar_color: row.workspaces?.color ?? row.calendars?.color ?? null,
+  });
 }
 
 async function ensureDefaultCalendar(userId: string): Promise<string> {
@@ -90,9 +109,7 @@ export async function listEvents(params?: {
   const supabase = createClient();
   let query = supabase
     .from("events")
-    .select(
-      "id, title, description, location, meeting_url, calendar_id, all_day, start, end, start_time, end_time"
-    )
+    .select(eventSelect())
     .is("deleted_at", null)
     .order("start_time", { ascending: true });
 
@@ -108,12 +125,10 @@ export async function listEvents(params?: {
     // Fallback if deleted_at column filter fails on older rows
     const fallback = await supabase
       .from("events")
-      .select(
-        "id, title, description, location, meeting_url, calendar_id, all_day, start, end, start_time, end_time"
-      )
+      .select(eventSelect())
       .order("start_time", { ascending: true });
     if (fallback.error) throw new Error(fallback.error.message);
-    let rows = (fallback.data as EventRow[]) ?? [];
+    let rows = (fallback.data as unknown as EventRow[]) ?? [];
     if (params?.from) {
       rows = rows.filter(
         (r) => (r.start_time || r.start || "") >= params.from!
@@ -122,9 +137,9 @@ export async function listEvents(params?: {
     if (params?.to) {
       rows = rows.filter((r) => (r.start_time || r.start || "") <= params.to!);
     }
-    return rows.map(mapRow);
+    return rows.map((r) => mapJoinedRow(r));
   }
-  return ((data as EventRow[]) ?? []).map(mapRow);
+  return ((data as unknown as EventRow[]) ?? []).map((r) => mapJoinedRow(r));
 }
 
 export async function createEvent(
@@ -136,6 +151,8 @@ export async function createEvent(
     description?: string;
     location?: string;
     meetingUrl?: string;
+    workspaceId?: string;
+    calendarColor?: string;
   }
 ): Promise<CalendarEvent> {
   const supabase = createClient();
@@ -145,6 +162,7 @@ export async function createEvent(
     .insert({
       user_id: userId,
       calendar_id: calendarId,
+      workspace_id: data.workspaceId ?? null,
       title: data.title,
       description: data.description ?? null,
       location: data.location ?? null,
@@ -155,13 +173,11 @@ export async function createEvent(
       end_time: data.end,
       status: "scheduled",
     })
-    .select(
-      "id, title, description, location, meeting_url, calendar_id, all_day, start, end, start_time, end_time"
-    )
+    .select(eventSelect())
     .single();
 
   if (error || !row) throw new Error(error?.message ?? "Failed to create event");
-  return mapRow(row as EventRow);
+  return mapJoinedRow(row as unknown as EventRow);
 }
 
 export async function updateEvent(
@@ -173,6 +189,8 @@ export async function updateEvent(
     description?: string;
     location?: string;
     meetingUrl?: string | null;
+    workspaceId?: string;
+    calendarColor?: string;
   }
 ): Promise<CalendarEvent> {
   const supabase = createClient();
@@ -181,6 +199,7 @@ export async function updateEvent(
   if (data.description !== undefined) patch.description = data.description;
   if (data.location !== undefined) patch.location = data.location;
   if (data.meetingUrl !== undefined) patch.meeting_url = data.meetingUrl;
+  if (data.workspaceId !== undefined) patch.workspace_id = data.workspaceId;
   if (data.start !== undefined) {
     patch.start = data.start;
     patch.start_time = data.start;
@@ -194,13 +213,11 @@ export async function updateEvent(
     .from("events")
     .update(patch)
     .eq("id", id)
-    .select(
-      "id, title, description, location, meeting_url, calendar_id, all_day, start, end, start_time, end_time"
-    )
+    .select(eventSelect())
     .single();
 
   if (error || !row) throw new Error(error?.message ?? "Failed to update event");
-  return mapRow(row as EventRow);
+  return mapJoinedRow(row as unknown as EventRow);
 }
 
 export async function deleteEvent(id: string): Promise<void> {

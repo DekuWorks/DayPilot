@@ -36,6 +36,41 @@ String profileDisplayName(Map<String, dynamic>? p, String emailFallback) {
   return 'Pilot';
 }
 
+/// First name for greetings (“Good morning, Marcus”).
+///
+/// Same source as the web header: `profiles.first_name`, then first token of
+/// `display_name` / `name` / `full_name`, then auth metadata. Never the email
+/// local-part — fall back to “there”.
+String profileGreetingFirstName(
+  Map<String, dynamic>? p, [
+  Map<String, dynamic>? metadata,
+]) {
+  final fromProfile = _greetingNameToken(p?['first_name']) ??
+      _greetingNameToken(p?['display_name']) ??
+      _greetingNameToken(p?['name']) ??
+      _greetingNameToken(p?['full_name']);
+  if (fromProfile != null) return fromProfile;
+
+  if (metadata != null) {
+    final fromMeta = _greetingNameToken(metadata['first_name']) ??
+        _greetingNameToken(metadata['given_name']) ??
+        _greetingNameToken(metadata['full_name']) ??
+        _greetingNameToken(metadata['name']) ??
+        _greetingNameToken(metadata['display_name']);
+    if (fromMeta != null) return fromMeta;
+  }
+  return 'there';
+}
+
+String? _greetingNameToken(Object? raw) {
+  if (raw is! String) return null;
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty || trimmed.contains('@')) return null;
+  final token = trimmed.split(RegExp(r'\s+')).first;
+  if (token.isEmpty || token.contains('@')) return null;
+  return token;
+}
+
 String profileInitials(String display) {
   if (display.isEmpty) return 'D';
   return display.substring(0, 1).toUpperCase();

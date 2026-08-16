@@ -18,6 +18,8 @@ import {
   buildCalendarProviderRows,
   latestSyncAt,
   providerTitle,
+  shouldShowOauthCallbackError,
+  stripStaleOauthErrorFromUrl,
   syncAllHint,
   toneClass,
   type CalendarProviderUi,
@@ -81,6 +83,16 @@ export default function IntegrationsPage() {
     connections,
     eventKitStatus: eventKit,
   });
+  const showQueryError = !loading && shouldShowOauthCallbackError(err, rows);
+  const outlookTone = rows.find((r) => r.id === "outlook")?.tone;
+  const googleTone = rows.find((r) => r.id === "google")?.tone;
+
+  useEffect(() => {
+    if (loading) return;
+    stripStaleOauthErrorFromUrl(err, rows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, err, outlookTone, googleTone]);
+
   const hint = syncAllHint(rows);
   const latest = latestSyncAt(rows);
   const busy = !!actionLoading;
@@ -151,7 +163,7 @@ export default function IntegrationsPage() {
             "Outlook connected. Events are syncing to your calendar."}
         </div>
       )}
-      {err && (
+      {showQueryError && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
           {err === "missing_params" &&
             "Missing OAuth parameters. Try connecting again."}
@@ -159,7 +171,7 @@ export default function IntegrationsPage() {
           {err === "outlook_callback" &&
             "Outlook connection failed. Try again."}
           {!["missing_params", "google_callback", "outlook_callback"].includes(
-            err
+            err ?? ""
           ) && "Something went wrong. Try again."}
         </div>
       )}

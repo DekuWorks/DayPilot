@@ -7,6 +7,8 @@ import '../../data/repositories/event_repository.dart';
 import '../../data/repositories/nest_event_repository.dart';
 import '../../data/repositories/supabase_event_repository.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
+import '../../data/repositories/workspace_repository.dart';
+import '../../domain/models/workspace_record.dart';
 import '../../data/repositories/insights_repository.dart';
 import '../../data/repositories/local_cache_repository.dart';
 import '../../domain/models/event_record.dart';
@@ -30,6 +32,15 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
 final calendarConnectionsRepositoryProvider =
     Provider<CalendarConnectionsRepository>((ref) {
   return CalendarConnectionsRepository(ref.watch(nestApiSessionProvider));
+});
+
+final workspaceRepositoryProvider = Provider<WorkspaceRepository>((ref) {
+  return WorkspaceRepository(ref.watch(supabaseClientProvider));
+});
+
+final workspacesProvider = FutureProvider<List<WorkspaceRecord>>((ref) {
+  ref.watch(authStateChangeProvider);
+  return ref.watch(workspaceRepositoryProvider).listAndEnsure();
 });
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {

@@ -102,7 +102,7 @@ struct LockTimelineView: View {
                     .tracking(0.8)
                 Spacer()
                 Text("UP NEXT")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(WidgetTheme.blue)
                     .tracking(0.6)
             }
@@ -114,10 +114,10 @@ struct LockTimelineView: View {
                         .padding(.top, 3)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("\(event.timeLabel)  \(event.title)")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .lineLimit(1)
                         Text("\(event.durationLabel) · \(event.location ?? "DayPilot")")
-                            .font(.system(size: 9))
+                            .font(.system(size: 10))
                             .foregroundStyle(WidgetTheme.secondary)
                             .lineLimit(1)
                     }
@@ -125,10 +125,10 @@ struct LockTimelineView: View {
             }
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(WidgetTheme.blue)
                 Text(snapshot.focusLabel)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(WidgetTheme.blue)
                     .lineLimit(1)
             }
@@ -152,10 +152,10 @@ struct HomeMediumView: View {
                     .foregroundStyle(WidgetTheme.blue)
             }
             Text(snapshot.greeting)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .lineLimit(1)
             Text("Here's your day")
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .foregroundStyle(WidgetTheme.secondary)
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(snapshot.upcoming.prefix(4).enumerated()), id: \.element.id) { index, event in
@@ -164,11 +164,11 @@ struct HomeMediumView: View {
                             .fill(event.tint(index: index))
                             .frame(width: 6, height: 6)
                         Text(event.timeLabel)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(WidgetTheme.secondary)
-                            .frame(width: 58, alignment: .leading)
+                            .frame(width: 62, alignment: .leading)
                         Text(event.title)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .lineLimit(1)
                     }
                 }
@@ -176,10 +176,10 @@ struct HomeMediumView: View {
             Spacer(minLength: 0)
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(WidgetTheme.blue)
                 Text(snapshot.focusLabel)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(WidgetTheme.blue)
             }
         }
@@ -202,7 +202,7 @@ struct StandByView: View {
                         .foregroundStyle(.white.opacity(0.7))
                     Spacer()
                     Text("UP NEXT")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(WidgetTheme.blue)
                 }
                 ForEach(Array(snapshot.upcoming.prefix(3).enumerated()), id: \.element.id) { index, event in
@@ -213,10 +213,10 @@ struct StandByView: View {
                             .padding(.top, 4)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("\(event.timeLabel)  \(event.title)")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .lineLimit(1)
                             Text("\(event.durationLabel) · \(event.location ?? "DayPilot")")
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundStyle(WidgetTheme.secondary)
                                 .lineLimit(1)
                         }
@@ -227,7 +227,7 @@ struct StandByView: View {
                     Image(systemName: "bolt.fill")
                         .foregroundStyle(WidgetTheme.blue)
                     Text(snapshot.focusLabel)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(WidgetTheme.blue)
                 }
             }
@@ -258,7 +258,7 @@ struct LockTasksView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(WidgetTheme.green)
                 Text("\(snapshot.tasksDone) / \(snapshot.tasksTotal) Tasks Today")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
             }
             VStack(alignment: .leading, spacing: 2) {
@@ -268,7 +268,7 @@ struct LockTasksView: View {
                             .fill(task.tint(index: index))
                             .frame(width: 5, height: 5)
                         Text(task.title)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .lineLimit(1)
                     }
                 }
@@ -293,9 +293,9 @@ struct SmallTasksView: View {
                 .font(.system(size: 28))
                 .foregroundStyle(WidgetTheme.green)
             Text("\(snapshot.tasksDone) / \(snapshot.tasksTotal)")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 23, weight: .bold))
             Text("Tasks Today")
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(WidgetTheme.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -310,7 +310,7 @@ struct UpNextSmallView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("UP NEXT")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(WidgetTheme.blue)
                 .tracking(0.8)
             ForEach(Array(entry.snapshot.upcoming.prefix(2).enumerated()), id: \.element.id) { index, event in
@@ -320,10 +320,10 @@ struct UpNextSmallView: View {
                         .frame(width: 3, height: 32)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(event.title)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .lineLimit(1)
                         Text(event.rangeLabel)
-                            .font(.system(size: 10))
+                            .font(.system(size: 11))
                             .foregroundStyle(WidgetTheme.secondary)
                             .lineLimit(1)
                     }
@@ -352,12 +352,12 @@ struct MiniCalendarView: View {
                     .foregroundStyle(.white.opacity(0.55))
                 Spacer()
                 Text(month)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(WidgetTheme.blue)
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(weekday)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(WidgetTheme.blue)
                 Text("\(day)")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
@@ -370,12 +370,12 @@ struct MiniCalendarView: View {
                         .fill(next.tint(index: 0))
                         .frame(width: 3, height: 14)
                     Text(next.title)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .lineLimit(1)
                 }
             } else {
                 Text("Clear day")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(WidgetTheme.secondary)
             }
             Spacer(minLength: 0)
@@ -394,7 +394,7 @@ struct MiniCalendarPane: View {
             Text(now.formatted(date: .omitted, time: .shortened))
                 .font(.system(size: 36, weight: .bold, design: .rounded))
             Text(now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(WidgetTheme.secondary)
             WeekStrip(events: events)
             MonthDots(events: events)
@@ -417,10 +417,10 @@ struct WeekStrip: View {
                 let hasEvent = events.contains { cal.isDate($0.startsAt, inSameDayAs: day) }
                 VStack(spacing: 2) {
                     Text(day.formatted(.dateTime.weekday(.narrow)))
-                        .font(.system(size: 7, weight: .semibold))
+                        .font(.system(size: 8, weight: .semibold))
                         .foregroundStyle(isToday ? WidgetTheme.green : WidgetTheme.muted)
                     Text("\(cal.component(.day, from: day))")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .frame(width: 16, height: 16)
                         .background(isToday ? WidgetTheme.green : Color.clear)
                         .foregroundStyle(isToday ? WidgetTheme.charcoal : .white)

@@ -37,6 +37,42 @@ public struct LoadPilotBriefUseCase: Sendable {
     }
 }
 
+public struct LoadPilotBriefChatUseCase: Sendable {
+    private let repository: PilotBriefRepository
+
+    public init(repository: PilotBriefRepository) {
+        self.repository = repository
+    }
+
+    public func callAsFunction() async throws -> [PilotChatMessage] {
+        try await repository.todayChat()
+    }
+}
+
+public struct GeneratePilotBriefUseCase: Sendable {
+    private let repository: PilotBriefRepository
+
+    public init(repository: PilotBriefRepository) {
+        self.repository = repository
+    }
+
+    public func callAsFunction() async throws -> PilotBrief {
+        try await repository.generateToday()
+    }
+}
+
+public struct SendPilotBriefChatUseCase: Sendable {
+    private let repository: PilotBriefRepository
+
+    public init(repository: PilotBriefRepository) {
+        self.repository = repository
+    }
+
+    public func callAsFunction(_ message: String) async throws -> PilotChatResult {
+        try await repository.sendChat(message)
+    }
+}
+
 public struct LoadProfileUseCase: Sendable {
     private let repository: ProfileRepository
 

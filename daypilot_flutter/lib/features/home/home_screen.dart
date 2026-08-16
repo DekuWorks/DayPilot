@@ -49,11 +49,10 @@ class HomeScreen extends ConsumerWidget {
       GoRouterState.of(context).uri.queryParameters['view'],
     );
 
-    final display = profile.maybeWhen(
-      data: (p) => profileDisplayName(p, user?.email ?? ''),
-      orElse: () => 'there',
+    final firstName = profile.maybeWhen(
+      data: (p) => profileGreetingFirstName(p, user?.userMetadata),
+      orElse: () => profileGreetingFirstName(null, user?.userMetadata),
     );
-    final firstName = display.split(' ').first;
     final initials = profileInitials(firstName);
     final avatarUrl = profile.maybeWhen(
       data: (p) => resolveAvatarUrl(p, user),
@@ -86,6 +85,10 @@ class HomeScreen extends ConsumerWidget {
                         color: colors.textPrimary,
                       ),
                     ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/insights/brief'),
+                    child: const Text('Pilot Brief'),
                   ),
                   IconButton(
                     tooltip: 'Notifications',

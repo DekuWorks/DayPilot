@@ -15,6 +15,7 @@ export type Event = {
   externalCalendarId?: string;
   calendarId?: string;
   calendarColor?: string;
+  workspaceId?: string;
 };
 
 export async function listEvents(params?: { from?: string; to?: string }): Promise<Event[]> {
@@ -33,6 +34,8 @@ export async function createEvent(data: {
   end: string;
   description?: string;
   location?: string;
+  workspaceId?: string;
+  calendarColor?: string;
 }): Promise<Event> {
   const res = await fetch(`${getApiUrl()}/events`, {
     method: "POST",
@@ -48,7 +51,15 @@ export async function createEvent(data: {
 
 export async function updateEvent(
   id: string,
-  data: { title?: string; start?: string; end?: string; description?: string; location?: string }
+  data: {
+    title?: string;
+    start?: string;
+    end?: string;
+    description?: string;
+    location?: string;
+    workspaceId?: string;
+    calendarColor?: string;
+  }
 ): Promise<Event> {
   const res = await fetch(`${getApiUrl()}/events/${id}`, {
     method: "PATCH",

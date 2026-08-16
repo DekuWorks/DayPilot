@@ -11,6 +11,7 @@ class EventRecord {
     this.calendarId,
     this.externalCalendarId,
     this.calendarColor,
+    this.workspaceId,
     this.allDay = false,
     this.status = 'scheduled',
     this.source = 'native',
@@ -27,6 +28,7 @@ class EventRecord {
   final String? calendarId;
   final String? externalCalendarId;
   final String? calendarColor;
+  final String? workspaceId;
   final bool allDay;
   final String status;
   final String source;
@@ -58,6 +60,7 @@ class EventRecord {
     String? calendarId,
     String? externalCalendarId,
     String? calendarColor,
+    String? workspaceId,
     bool? allDay,
     String? status,
     String? source,
@@ -74,6 +77,7 @@ class EventRecord {
       calendarId: calendarId ?? this.calendarId,
       externalCalendarId: externalCalendarId ?? this.externalCalendarId,
       calendarColor: calendarColor ?? this.calendarColor,
+      workspaceId: workspaceId ?? this.workspaceId,
       allDay: allDay ?? this.allDay,
       status: status ?? this.status,
       source: source ?? this.source,
@@ -100,6 +104,7 @@ class EventRecord {
       calendarId: json['calendarId']?.toString(),
       externalCalendarId: json['externalCalendarId']?.toString(),
       calendarColor: json['calendarColor'] as String?,
+      workspaceId: json['workspaceId']?.toString(),
       allDay: json['allDay'] as bool? ?? false,
       status: 'scheduled',
       source: json['source'] as String? ?? 'native',
@@ -125,6 +130,8 @@ class EventRecord {
       endsAt: end,
       ownerId: row['user_id']?.toString(),
       calendarId: row['calendar_id']?.toString(),
+      workspaceId: row['workspace_id']?.toString(),
+      calendarColor: row['calendar_color'] as String?,
       allDay: row['all_day'] as bool? ?? false,
       status: row['status'] as String? ?? 'scheduled',
       source: row['source'] as String? ?? 'native',
@@ -138,6 +145,7 @@ class EventRecord {
   }) {
     return {
       'calendar_id': calendarId,
+      if (workspaceId != null) 'workspace_id': workspaceId,
       'user_id': userId,
       'title': title,
       'description': description,
@@ -158,6 +166,7 @@ class EventRecord {
       'end': endsAt.toUtc().toIso8601String(),
       'all_day': allDay,
       'status': status,
+      if (workspaceId != null) 'workspace_id': workspaceId,
     };
   }
 }

@@ -210,6 +210,7 @@ class ProfileScreen extends ConsumerWidget {
             NavTile(
               icon: Icons.notifications_outlined,
               title: 'Notifications',
+              subtitle: 'Turn DayPilot notifications on',
               onTap: () => context.push('/notifications'),
             ),
             const SizedBox(height: 8),

@@ -136,6 +136,29 @@ final class PilotBriefDecoderTests: XCTestCase {
     }
 }
 
+final class PilotChatDecoderTests: XCTestCase {
+    func testDecodesChatResult() {
+        let json: [String: Any] = [
+            "user_message": [
+                "id": "u1",
+                "role": "user",
+                "content": "What should I tackle first?",
+                "follow_ups": [],
+            ],
+            "reply": [
+                "id": "a1",
+                "role": "assistant",
+                "content": "Clear the overdue task.",
+                "follow_ups": ["Which focus window should I protect?"],
+            ],
+        ]
+        let result = PilotChatDecoder.decodeResult(json)
+        XCTAssertEqual(result?.userMessage.isUser, true)
+        XCTAssertEqual(result?.reply.content, "Clear the overdue task.")
+        XCTAssertEqual(result?.reply.followUps, ["Which focus window should I protect?"])
+    }
+}
+
 private struct FakeEvents: CalendarEventsRepository {
     let items: [CalendarEvent]
     init(_ items: [CalendarEvent]) { self.items = items }

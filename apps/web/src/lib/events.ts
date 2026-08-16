@@ -30,6 +30,7 @@ function mapNestToCalendar(e: nestEvents.Event): CalendarEvent {
     calendarId: e.calendarId ?? null,
     externalCalendarId: e.externalCalendarId ?? null,
     calendarColor: e.calendarColor ?? null,
+    workspaceId: e.workspaceId ?? null,
     allDay: false,
     source: e.source,
     syncDirection: e.syncDirection,
@@ -69,6 +70,8 @@ export async function createEvent(
     description?: string;
     location?: string;
     meetingUrl?: string;
+    workspaceId?: string;
+    calendarColor?: string;
   }
 ): Promise<CalendarEvent> {
   if (await preferNest()) {
@@ -79,6 +82,8 @@ export async function createEvent(
         end: data.end,
         description: data.description,
         location: data.location,
+        workspaceId: data.workspaceId,
+        calendarColor: data.calendarColor,
       });
       return mapNestToCalendar(created);
     } catch (e) {
@@ -98,6 +103,8 @@ export async function updateEvent(
     description?: string;
     location?: string;
     meetingUrl?: string | null;
+    workspaceId?: string;
+    calendarColor?: string;
   }
 ): Promise<CalendarEvent> {
   if (await preferNest()) {
@@ -107,6 +114,8 @@ export async function updateEvent(
       end: data.end,
       description: data.description,
       location: data.location,
+      workspaceId: data.workspaceId,
+      calendarColor: data.calendarColor,
     });
     return mapNestToCalendar(updated);
   }

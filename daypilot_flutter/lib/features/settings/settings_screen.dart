@@ -8,6 +8,7 @@ import '../../core/widgets/feature_scaffold.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../data/services/avatar_upload_service.dart';
 import '../profile/profile_providers.dart';
+import 'daypilot_notifications_toggle.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -162,6 +163,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: (v) =>
                       ref.read(themeModeProvider.notifier).setLight(v),
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'Notifications',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const DayPilotNotificationsToggle(),
                 const SizedBox(height: 16),
                 Text(
                   'Profile',

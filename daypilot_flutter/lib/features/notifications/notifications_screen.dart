@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
+import '../settings/daypilot_notifications_toggle.dart';
 
 final notificationsProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -55,103 +56,123 @@ class NotificationsScreen extends ConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => _markAll(ref),
-          child: Text('Mark all read'),
+          child: const Text('Mark all read'),
         ),
       ],
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-        data: (list) {
-          if (list.isEmpty) {
-            return Center(
-              child: Text(
-                'No notifications yet.',
-                style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
-              ),
-            );
-          }
-          return RefreshIndicator(
-            color: DayPilotColors.brand500,
-            onRefresh: () async => ref.invalidate(notificationsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final n = list[i];
-                final unread = n['read_at'] == null;
-                final created = DateTime.tryParse('${n['created_at']}');
-                return Material(
-                  color: unread
-                      ? DayPilotColors.brand500.withValues(alpha: 0.08)
-                      : DayPilotScheme.of(context).surfacePrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () async {
-                      if (unread) await _markRead(ref, n['id'] as String);
-                      if (context.mounted) _open(context, n);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              if (unread)
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: DayPilotColors.brand500,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              Expanded(
-                                child: Text(
-                                  '${n['title']}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              if (created != null)
-                                Text(
-                                  DateFormat.MMMd()
-                                      .add_jm()
-                                      .format(created.toLocal()),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: DayPilotScheme.of(context).textTertiary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if ((n['body'] as String?)?.isNotEmpty == true) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '${n['body']}',
-                              style: TextStyle(
-                                color: DayPilotScheme.of(context).textSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ],
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: DayPilotNotificationsToggle(),
+          ),
+          Expanded(
+            child: async.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('$e')),
+              data: (list) {
+                if (list.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No notifications yet.',
+                      style: TextStyle(
+                        color: DayPilotScheme.of(context).textSecondary,
                       ),
                     ),
+                  );
+                }
+                return RefreshIndicator(
+                  color: DayPilotColors.brand500,
+                  onRefresh: () async =>
+                      ref.invalidate(notificationsProvider),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: list.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final n = list[i];
+                      final unread = n['read_at'] == null;
+                      final created = DateTime.tryParse('${n['created_at']}');
+                      return Material(
+                        color: unread
+                            ? DayPilotColors.brand500.withValues(alpha: 0.08)
+                            : DayPilotScheme.of(context).surfacePrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () async {
+                            if (unread) {
+                              await _markRead(ref, n['id'] as String);
+                            }
+                            if (context.mounted) _open(context, n);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: DayPilotScheme.of(context).borderSubtle,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    if (unread)
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        margin: const EdgeInsets.only(right: 8),
+                                        decoration: const BoxDecoration(
+                                          color: DayPilotColors.brand500,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(
+                                        '${n['title']}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    if (created != null)
+                                      Text(
+                                        DateFormat.MMMd()
+                                            .add_jm()
+                                            .format(created.toLocal()),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: DayPilotScheme.of(context)
+                                              .textTertiary,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                if ((n['body'] as String?)?.isNotEmpty ==
+                                    true) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${n['body']}',
+                                    style: TextStyle(
+                                      color: DayPilotScheme.of(context)
+                                          .textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

@@ -213,6 +213,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DailyBriefScreen(),
       ),
       GoRoute(
+        path: '/pilot-brief',
+        builder: (context, state) => const DailyBriefScreen(),
+      ),
+      GoRoute(
         path: '/events/new',
         builder: (context, state) => const EventCreateScreen(),
       ),

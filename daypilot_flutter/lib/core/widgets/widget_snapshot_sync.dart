@@ -28,14 +28,9 @@ class WidgetSnapshotSync extends ConsumerWidget {
     final events = ref.read(calendarDayEventsFamily(day)).asData?.value;
     final tasks = ref.read(tasksListProvider).asData?.value;
     if (events == null || tasks == null) return;
-    final email =
-        ref.read(supabaseClientProvider).auth.currentUser?.email ?? '';
-    final name = ref.read(currentProfileProvider).maybeWhen(
-          data: (p) => profileDisplayName(p, email),
-          orElse: () => email.split('@').first.isEmpty
-              ? 'Pilot'
-              : email.split('@').first,
-        );
+    final user = ref.read(supabaseClientProvider).auth.currentUser;
+    final profile = ref.read(currentProfileProvider).asData?.value;
+    final name = profileGreetingFirstName(profile, user?.userMetadata);
     WidgetSnapshotWriter.publish(
       displayName: name,
       events: events,

@@ -35,7 +35,7 @@ class WidgetSnapshotWriter {
     }).toList();
 
     final payload = <String, Object?>{
-      'displayName': displayName,
+      'displayName': greetingDisplayName(displayName),
       'updatedAt': now.toUtc().toIso8601String(),
       'focusMinutes': focusMinutes(todayEvents, dayStart),
       'events': [
@@ -67,6 +67,15 @@ class WidgetSnapshotWriter {
     } on MissingPluginException {
       // Simulator/host without the method channel — widgets keep placeholder.
     } catch (_) {}
+  }
+
+  /// Persist a greeting first name only — never an email or email local-part.
+  static String greetingDisplayName(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || trimmed.contains('@')) return 'there';
+    final token = trimmed.split(RegExp(r'\s+')).first;
+    if (token.isEmpty || token.contains('@')) return 'there';
+    return token;
   }
 
   static int focusMinutes(List<EventRecord> events, DateTime dayStart) {

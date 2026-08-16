@@ -71,29 +71,37 @@ export default function InsightsPage() {
       setDayBars(bars.map((v) => Math.round(v)));
 
       if (isSupabaseConfigured()) {
-        const supabase = createClient();
-        const { data: tasks } = await supabase
-          .from("tasks")
-          .select("id, status");
-        const list = tasks ?? [];
-        setTasksCompleted(list.filter((t) => t.status === "completed").length);
-        setTasksOpen(
-          list.filter(
-            (t) => t.status !== "completed" && t.status !== "cancelled"
-          ).length
-        );
+        try {
+          const supabase = createClient();
+          const { data: tasks } = await supabase
+            .from("tasks")
+            .select("id, status");
+          const list = tasks ?? [];
+          setTasksCompleted(list.filter((t) => t.status === "completed").length);
+          setTasksOpen(
+            list.filter(
+              (t) => t.status !== "completed" && t.status !== "cancelled"
+            ).length
+          );
+        } catch {
+          setTasksCompleted(0);
+          setTasksOpen(0);
+        }
       }
 
-      const sessions = await focusApi.listFocusSessions({
-        from: weekStart.toISOString(),
-      });
-      const completedSecs = sessions
-        .filter((s) => s.status === "completed")
-        .reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
-      setFocusSeconds(completedSecs);
-
-      const active = await focusApi.getActiveFocusSession();
-      setActiveFocus(active);
+      try {
+        const sessions = await focusApi.listFocusSessions({
+          from: weekStart.toISOString(),
+        });
+        const completedSecs = sessions
+          .filter((s) => s.status === "completed")
+          .reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+        setFocusSeconds(completedSecs);
+        setActiveFocus(await focusApi.getActiveFocusSession());
+      } catch {
+        setFocusSeconds(0);
+        setActiveFocus(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load insights");
     } finally {
@@ -160,12 +168,20 @@ export default function InsightsPage() {
         <p className="text-sm text-[var(--text-secondary)]">
           This week’s meetings, tasks, and focus time.
         </p>
-        <a
-          href="/pilot-brief"
-          className="mt-2 inline-block text-sm font-medium text-[var(--brand-500)] hover:underline"
-        >
-          Open Pilot Brief
-        </a>
+        <div className="mt-2 flex gap-3 text-sm">
+          <a
+            href="/focus"
+            className="font-medium text-[var(--brand-500)] hover:underline"
+          >
+            Open Focus
+          </a>
+          <a
+            href="/pilot-brief"
+            className="font-medium text-[var(--brand-500)] hover:underline"
+          >
+            Open Pilot Brief
+          </a>
+        </div>
       </div>
 
       {error && <p className="text-sm text-[var(--error)]">{error}</p>}

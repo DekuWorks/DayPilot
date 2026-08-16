@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders } from "./api";
+import { getApiErrorMessage, getApiUrl, getAuthHeaders } from "./api";
 
 export type SuggestedEvent = {
   title: string;
@@ -15,7 +15,19 @@ export async function suggestSchedule(prompt: string): Promise<{ suggestions: Su
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to get suggestions");
+    throw new Error(getApiErrorMessage(err, "Could not get schedule suggestions"));
   }
   return res.json();
+}
+
+export function formatSuggestedSlot(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

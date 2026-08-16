@@ -94,10 +94,6 @@ class InsightsScreen extends ConsumerWidget {
       if (idx < 0 || idx > 6) continue;
       series[idx] += ((r['duration_seconds'] as int?) ?? 0) / 60.0;
     }
-    // Soft demo curve when empty so the UI matches the mockup
-    if (series.every((v) => v == 0)) {
-      return <double>[20, 35, 28, 48, 42, 55, 40];
-    }
     return series;
   }
 
@@ -116,7 +112,7 @@ class InsightsScreen extends ConsumerWidget {
     );
     final series = focus.maybeWhen(
       data: _weekSeries,
-      orElse: () => <double>[20, 35, 28, 48, 42, 55, 40],
+      orElse: () => List<double>.filled(7, 0),
     );
     final completedTasks = tasks.maybeWhen(
       data: (list) => list.where((t) => t.isDone).length,
@@ -171,7 +167,7 @@ class InsightsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    weekSeconds > 0 ? _formatFocus(weekSeconds) : '12h 45m',
+                    _formatFocus(weekSeconds),
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
@@ -210,24 +206,22 @@ class InsightsScreen extends ConsumerWidget {
                 title: 'Could not load insights',
               ),
               data: (insight) {
-                final meetings = insight?.metrics['upcoming_event_count'] ?? 8;
+                final meetings = insight?.metrics['upcoming_event_count'] ?? 0;
                 return Row(
                   children: [
                     Expanded(
                       child: _StatCard(
                         label: 'Meetings',
                         value: '$meetings',
-                        delta: '↓ 10%',
-                        deltaPositive: false,
+                        hint: 'next 7 days',
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _StatCard(
-                        label: 'Tasks Completed',
-                        value: completedTasks > 0 ? '$completedTasks' : '24',
-                        delta: '↑ 20%',
-                        deltaPositive: true,
+                        label: 'Tasks completed',
+                        value: '$completedTasks',
+                        hint: 'open list',
                       ),
                     ),
                   ],
@@ -308,14 +302,12 @@ class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.label,
     required this.value,
-    required this.delta,
-    required this.deltaPositive,
+    required this.hint,
   });
 
   final String label;
   final String value;
-  final String delta;
-  final bool deltaPositive;
+  final String hint;
 
   @override
   Widget build(BuildContext context) {
@@ -348,13 +340,11 @@ class _StatCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            delta,
+            hint,
             style: TextStyle(
-              color: deltaPositive
-                  ? DayPilotScheme.of(context).accent
-                  : DayPilotColors.error,
+              color: DayPilotScheme.of(context).textTertiary,
               fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

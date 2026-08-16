@@ -5,7 +5,7 @@
  *
  * Nav items live in nav-config (primary + secondary). Collapse state and the
  * mobile open flag are shared via useSidebarStore so the header hamburger and
- * this rail stay in sync. Workspaces are local placeholders until org APIs land.
+ * this rail stay in sync. Workspaces load from Supabase (unique colour per owner).
  */
 
 import { useEffect, type ComponentType } from "react";
@@ -20,11 +20,8 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { BrandLogo } from "@/components/BrandLogo";
-import {
-  defaultWorkspaces,
-  primaryNav,
-  secondaryNav,
-} from "./nav-config";
+import { primaryNav, secondaryNav } from "./nav-config";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 function NavLink({
   href,
@@ -75,6 +72,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { collapsed, mobileOpen, toggleCollapsed, setMobileOpen } =
     useSidebarStore();
+  const { workspaces } = useWorkspaces();
 
   const legalName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
@@ -156,7 +154,7 @@ export function AppSidebar() {
         )}
 
         <div className={`${collapsed ? "space-y-1" : "space-y-0.5"}`}>
-          {defaultWorkspaces.map((ws, index) => (
+          {workspaces.map((ws, index) => (
             <button
               key={ws.id}
               type="button"

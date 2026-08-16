@@ -108,6 +108,32 @@ public struct UserProfile: Equatable, Sendable {
     }
 }
 
+public struct PilotChatMessage: Equatable, Identifiable, Sendable {
+    public var id: String
+    public var role: String
+    public var content: String
+    public var followUps: [String]
+
+    public var isUser: Bool { role == "user" }
+
+    public init(id: String, role: String, content: String, followUps: [String] = []) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.followUps = followUps
+    }
+}
+
+public struct PilotChatResult: Equatable, Sendable {
+    public var userMessage: PilotChatMessage
+    public var reply: PilotChatMessage
+
+    public init(userMessage: PilotChatMessage, reply: PilotChatMessage) {
+        self.userMessage = userMessage
+        self.reply = reply
+    }
+}
+
 public struct PilotBrief: Equatable, Sendable {
     public var id: String
     public var briefDate: String

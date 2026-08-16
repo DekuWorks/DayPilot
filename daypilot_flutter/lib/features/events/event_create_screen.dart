@@ -5,11 +5,15 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/daypilot_page_shell.dart';
+import '../../core/workspace_colors.dart';
 import '../../data/services/apple_calendar_service.dart';
 import '../../domain/models/event_record.dart';
+import '../../domain/models/workspace_record.dart';
 import '../calendar/calendar_providers.dart';
 import '../insights/insights_providers.dart';
+import 'event_form_fields.dart';
 
 class EventCreateScreen extends ConsumerStatefulWidget {
   const EventCreateScreen({super.key});
@@ -29,6 +33,8 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
   /// null = DayPilot only; otherwise EventKit calendar id.
   String? _destinationCalendarId;
   List<({String id, String title})> _writableCalendars = [];
+  String? _workspaceId;
+  String _colorHex = kWorkspaceColorPalette.first.hex;
 
   @override
   void initState() {
@@ -55,6 +61,17 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
           .toList();
       if (mounted) setState(() => _writableCalendars = writable);
     } catch (_) {}
+  }
+
+  void _syncWorkspaceDefaults(List<WorkspaceRecord> workspaces) {
+    if (workspaces.isEmpty || _workspaceId != null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _workspaceId != null) return;
+      setState(() {
+        _workspaceId = workspaces.first.id;
+        _colorHex = workspaces.first.color;
+      });
+    });
   }
 
   String _formatStartEnd(BuildContext context, DateTime d) {
@@ -115,6 +132,29 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
     });
   }
 
+  Future<void> _onColorChanged(String hex, List<WorkspaceRecord> workspaces) async {
+    setState(() => _colorHex = hex);
+    final id = _workspaceId;
+    if (id == null) return;
+    try {
+      await ref.read(workspaceRepositoryProvider).updateColor(
+            workspaceId: id,
+            color: hex,
+            workspaces: workspaces,
+          );
+      ref.invalidate(workspacesProvider);
+    } catch (e) {
+      if (!mounted) return;
+      final current = workspaces.where((w) => w.id == id);
+      setState(() {
+        _colorHex = current.isEmpty ? hex : current.first.color;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_end.isAfter(_start)) {
@@ -165,8 +205,8 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
                   'title': title,
                   'startsAt': _start.toUtc().toIso8601String(),
                   'endsAt': _end.toUtc().toIso8601String(),
-                  if (description != null) 'description': description,
-                  if (location != null) 'location': location,
+                  'description': ?description,
+                  'location': ?location,
                   'allDay': _allDay,
                 },
               ],
@@ -191,6 +231,8 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
       startsAt: _start,
       endsAt: _end,
       allDay: _allDay,
+      workspaceId: _workspaceId,
+      calendarColor: _colorHex,
     );
     // Still create DayPilot native when destination is DayPilot.
     if (_destinationCalendarId == null) {
@@ -211,51 +253,86 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final workspacesAsync = ref.watch(workspacesProvider);
+    final workspaces =
+        workspacesAsync.asData?.value ?? const <WorkspaceRecord>[];
+    _syncWorkspaceDefaults(workspaces);
+    final colors = DayPilotScheme.of(context);
+
     return DayPilotPageShell(
       title: const Text('New event'),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             children: [
-              TextFormField(
-                controller: _title,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
+              EventLabeledField(
+                label: 'Title',
+                child: TextFormField(
+                  controller: _title,
+                  decoration: eventFieldDecoration(context, hint: 'Title'),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
               ),
-              TextFormField(
-                controller: _desc,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
+              EventLabeledField(
+                label: 'Description',
+                child: TextFormField(
+                  controller: _desc,
+                  decoration: eventFieldDecoration(
+                    context,
+                    hint: 'Optional notes',
+                  ),
+                  maxLines: 3,
+                ),
               ),
-              TextFormField(
-                controller: _location,
-                decoration: const InputDecoration(
-                  labelText: 'Location / meeting URL',
+              EventLabeledField(
+                label: 'Location / meeting URL',
+                child: TextFormField(
+                  controller: _location,
+                  decoration: eventFieldDecoration(
+                    context,
+                    hint: 'Location or link',
+                  ),
                 ),
               ),
               if (_writableCalendars.isNotEmpty)
-                DropdownButtonFormField<String?>(
-                  initialValue: _destinationCalendarId,
-                  decoration: const InputDecoration(
-                    labelText: 'Save to calendar',
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('DayPilot'),
-                    ),
-                    ..._writableCalendars.map(
-                      (c) => DropdownMenuItem<String?>(
-                        value: c.id,
-                        child: Text(c.title),
+                EventLabeledField(
+                  label: 'Save to calendar',
+                  child: DropdownButtonFormField<String?>(
+                    initialValue: _destinationCalendarId,
+                    decoration: eventFieldDecoration(context),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('DayPilot'),
                       ),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() => _destinationCalendarId = v),
+                      ..._writableCalendars.map(
+                        (c) => DropdownMenuItem<String?>(
+                          value: c.id,
+                          child: Text(c.title),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _destinationCalendarId = v),
+                  ),
                 ),
+              WorkspaceColorFields(
+                workspaces: workspaces,
+                workspaceId: _workspaceId,
+                colorHex: _colorHex,
+                loading: workspacesAsync.isLoading,
+                onWorkspaceChanged: (id) {
+                  final ws = workspaces.where((w) => w.id == id);
+                  setState(() {
+                    _workspaceId = id;
+                    if (ws.isNotEmpty) _colorHex = ws.first.color;
+                  });
+                },
+                onColorChanged: (hex) => _onColorChanged(hex, workspaces),
+              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('All day'),
@@ -276,13 +353,25 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Starts'),
+                title: Text(
+                  'Starts',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
                 subtitle: Text(_formatStartEnd(context, _start)),
                 onTap: _pickStart,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ends'),
+                title: Text(
+                  'Ends',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
                 subtitle: Text(_formatStartEnd(context, _end)),
                 onTap: _pickEnd,
               ),

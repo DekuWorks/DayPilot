@@ -17,6 +17,8 @@ import { MonthCalendarView } from "./MonthCalendarView";
 import { WeekCalendarView } from "./WeekCalendarView";
 import { DayTimeline } from "./DayTimeline";
 import { CreateEventModal, EventDetailModal } from "./EventModals";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { normalizeColorHex } from "@/lib/workspace-colors";
 
 const VIEW_OPTIONS: { id: CalendarViewMode; label: string }[] = [
   { id: "month", label: "Month" },
@@ -26,6 +28,7 @@ const VIEW_OPTIONS: { id: CalendarViewMode; label: string }[] = [
 
 export function CalendarApp() {
   const { user } = useAuth();
+  const { workspaces, setColor } = useWorkspaces();
   const [mode, setMode] = useState<CalendarViewMode>("month");
 
   useEffect(() => {
@@ -113,11 +116,24 @@ export function CalendarApp() {
     });
   }
 
+  const coloredEvents = useMemo(() => {
+    return events.map((event) => {
+      const ws = workspaces.find((w) => w.id === event.workspaceId);
+      const fromWorkspace = ws ? normalizeColorHex(ws.color) : null;
+      return {
+        ...event,
+        calendarColor: fromWorkspace ?? event.calendarColor ?? null,
+      };
+    });
+  }, [events, workspaces]);
+
   async function handleCreate(data: {
     title: string;
     start: string;
     end: string;
     description?: string;
+    workspaceId?: string;
+    calendarColor?: string;
   }) {
     if (!user) return;
     try {
@@ -220,7 +236,7 @@ export function CalendarApp() {
       {mode === "month" && (
         <MonthCalendarView
           viewDate={viewDate}
-          events={events}
+          events={coloredEvents}
           loading={loading}
           onSelectEvent={setSelectedEvent}
           onCreateOnDate={(date) => openCreate(date)}
@@ -233,7 +249,7 @@ export function CalendarApp() {
       {mode === "week" && (
         <WeekCalendarView
           viewDate={viewDate}
-          events={events}
+          events={coloredEvents}
           loading={loading}
           onSelectEvent={setSelectedEvent}
           onCreateAt={(date, hour) => openCreate(date, hour)}
@@ -246,7 +262,7 @@ export function CalendarApp() {
       {mode === "day" && (
         <DayTimeline
           day={viewDate}
-          events={events}
+          events={coloredEvents}
           loading={loading}
           onSelectEvent={setSelectedEvent}
           onCreateAt={(date, hour) => openCreate(date, hour)}
@@ -258,8 +274,12 @@ export function CalendarApp() {
           key={`${dateKey(createModal.date)}-${defaultStartTime}`}
           date={createModal.date}
           defaultStartTime={defaultStartTime}
+          workspaces={workspaces}
           onClose={() => setCreateModal(null)}
           onSubmit={handleCreate}
+          onWorkspaceColorChange={async (id, color) => {
+            await setColor(id, color);
+          }}
         />
       )}
       {selectedEvent && (

@@ -95,5 +95,9 @@
 		<string>DayPilot uses your photo library so you can set a profile picture.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>DayPilot can use the camera if you take a new profile photo.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 	</dict>
 </plist>

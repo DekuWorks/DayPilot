@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config/daypilot_env.dart';
 import 'core/providers/bootstrap_providers.dart';
+import 'core/providers/notification_preference_provider.dart';
 import 'core/services/local_notifications_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'firebase_options.dart';
@@ -39,21 +40,28 @@ Future<void> main() async {
     ),
   );
 
+  final localNotifications = LocalNotificationsService();
+  await localNotifications.init();
+
+  PushNotificationService? push;
   if (DayPilotEnv.hasFirebase) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    await PushNotificationService(FirebaseMessaging.instance)
-        .requestPermissionAndListen();
+    push = PushNotificationService(FirebaseMessaging.instance);
+    final optedIn = prefs.getBool(kNotificationsEnabledPrefsKey) ?? false;
+    if (optedIn && await localNotifications.hasPermission()) {
+      await push.listenWithoutRequesting();
+    }
   }
-
-  await LocalNotificationsService().init();
 
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        localNotificationsServiceProvider.overrideWithValue(localNotifications),
+        pushNotificationServiceProvider.overrideWithValue(push),
       ],
       child: const DayPilotApp(),
     ),

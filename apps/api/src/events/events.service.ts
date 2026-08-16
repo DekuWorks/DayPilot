@@ -8,8 +8,41 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditService } from '../audit/audit.service';
 import { CalendarConnectionsService } from '../calendar-connections/calendar-connections.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+
+function readEventMeta(metadata: unknown): {
+  workspaceId?: string;
+  calendarColor?: string;
+} {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return {};
+  }
+  const raw = metadata as Record<string, unknown>;
+  return {
+    workspaceId:
+      typeof raw.workspaceId === 'string' ? raw.workspaceId : undefined,
+    calendarColor:
+      typeof raw.calendarColor === 'string' ? raw.calendarColor : undefined,
+  };
+}
+
+function mergeEventMeta(
+  current: unknown,
+  patch: { workspaceId?: string; calendarColor?: string },
+): Record<string, unknown> {
+  const base = readEventMeta(current);
+  const next: Record<string, unknown> =
+    current && typeof current === 'object' && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>) }
+      : {};
+  if (patch.workspaceId !== undefined) next.workspaceId = patch.workspaceId;
+  else if (base.workspaceId) next.workspaceId = base.workspaceId;
+  if (patch.calendarColor !== undefined) next.calendarColor = patch.calendarColor;
+  else if (base.calendarColor) next.calendarColor = base.calendarColor;
+  return next;
+}
 
 function toEventPayload(e: {
   id: string;
@@ -24,6 +57,7 @@ function toEventPayload(e: {
   externalCalendarId?: string | null;
   calendarId?: string | null;
   calendarColor?: string | null;
+  workspaceId?: string | null;
   syncState?: string | null;
   syncDirection?: string | null;
   readOnly?: boolean;
@@ -43,6 +77,7 @@ function toEventPayload(e: {
     externalCalendarId: e.externalCalendarId ?? undefined,
     calendarId: e.calendarId ?? undefined,
     calendarColor: e.calendarColor ?? undefined,
+    workspaceId: e.workspaceId ?? undefined,
     syncState: e.syncState ?? undefined,
     syncDirection: e.syncDirection ?? undefined,
     readOnly: appleReadOnly || !canUserDeleteEvent(e),
@@ -105,17 +140,20 @@ export class EventsService {
       userId,
       events.map((e) => e.externalCalendarId),
     );
-    return events.map((e) =>
-      toEventPayload({
+    return events.map((e) => {
+      const meta = readEventMeta(e.metadata);
+      return toEventPayload({
         ...e,
+        workspaceId: meta.workspaceId ?? null,
         calendarColor:
           e.externalCalendar?.color ??
           (e.externalCalendarId
             ? colorByExternal.get(e.externalCalendarId)
             : undefined) ??
+          meta.calendarColor ??
           null,
-      }),
-    );
+      });
+    });
   }
 
   async findOne(userId: string, eventId: string) {
@@ -127,13 +165,16 @@ export class EventsService {
     const colorByExternal = await this.calendarColorsByExternal(userId, [
       event.externalCalendarId,
     ]);
+    const meta = readEventMeta(event.metadata);
     return toEventPayload({
       ...event,
+      workspaceId: meta.workspaceId ?? null,
       calendarColor:
         event.externalCalendar?.color ??
         (event.externalCalendarId
           ? colorByExternal.get(event.externalCalendarId)
           : undefined) ??
+        meta.calendarColor ??
         null,
     });
   }
@@ -158,6 +199,13 @@ export class EventsService {
   }
 
   async create(userId: string, dto: CreateEventDto) {
+    const metadata = mergeEventMeta(
+      {},
+      {
+        workspaceId: dto.workspaceId,
+        calendarColor: dto.calendarColor,
+      },
+    );
     const event = await this.prisma.event.create({
       data: {
         userId,
@@ -167,9 +215,15 @@ export class EventsService {
         description: dto.description ?? null,
         location: dto.location ?? null,
         source: 'native',
+        metadata: metadata as Prisma.InputJsonValue,
       },
     });
-    const payload = toEventPayload(event);
+    const meta = readEventMeta(event.metadata);
+    const payload = toEventPayload({
+      ...event,
+      workspaceId: meta.workspaceId ?? null,
+      calendarColor: meta.calendarColor ?? null,
+    });
     this.eventEmitter.emit('event.created', { userId, event: payload });
     await this.audit.log({
       action: 'event.created',
@@ -222,9 +276,20 @@ export class EventsService {
           description: dto.description ?? null,
         }),
         ...(dto.location !== undefined && { location: dto.location ?? null }),
+        ...((dto.workspaceId !== undefined || dto.calendarColor !== undefined) && {
+          metadata: mergeEventMeta(existing.metadata, {
+            workspaceId: dto.workspaceId,
+            calendarColor: dto.calendarColor,
+          }) as Prisma.InputJsonValue,
+        }),
       },
     });
-    const payload = toEventPayload(event);
+    const meta = readEventMeta(event.metadata);
+    const payload = toEventPayload({
+      ...event,
+      workspaceId: meta.workspaceId ?? null,
+      calendarColor: meta.calendarColor ?? null,
+    });
     this.eventEmitter.emit('event.updated', { userId, event: payload });
     return payload;
   }

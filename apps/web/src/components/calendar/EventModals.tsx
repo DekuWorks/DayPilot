@@ -1,25 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { canDeleteCalendarEvent, type CalendarEvent } from "@/lib/events";
+import type { Workspace } from "@/lib/workspaces-supabase";
 import { dateKey, formatTime } from "./calendar-utils";
+import {
+  ColorTagSelect,
+  WorkspaceSelect,
+  fieldClass,
+} from "./ColorTagSelect";
 
 export function CreateEventModal({
   date,
   defaultStartTime = "09:00",
+  workspaces,
   onClose,
   onSubmit,
+  onWorkspaceColorChange,
 }: {
   date: Date;
   defaultStartTime?: string;
+  workspaces: Workspace[];
   onClose: () => void;
   onSubmit: (data: {
     title: string;
     start: string;
     end: string;
     description?: string;
+    workspaceId?: string;
+    calendarColor?: string;
   }) => Promise<void>;
+  onWorkspaceColorChange?: (workspaceId: string, color: string) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(dateKey(date));
@@ -30,7 +42,36 @@ export function CreateEventModal({
     return `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   });
   const [description, setDescription] = useState("");
+  const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? "");
+  const [color, setColor] = useState(workspaces[0]?.color ?? "#3D9B6A");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (workspaces.length === 0) return;
+    const exists = workspaces.some((w) => w.id === workspaceId);
+    if (!exists) {
+      setWorkspaceId(workspaces[0].id);
+      setColor(workspaces[0].color);
+    }
+  }, [workspaces, workspaceId]);
+
+  function selectWorkspace(id: string) {
+    setWorkspaceId(id);
+    const ws = workspaces.find((w) => w.id === id);
+    if (ws) setColor(ws.color);
+  }
+
+  async function selectColor(hex: string) {
+    setColor(hex);
+    if (workspaceId && onWorkspaceColorChange) {
+      try {
+        await onWorkspaceColorChange(workspaceId, hex);
+      } catch {
+        const ws = workspaces.find((w) => w.id === workspaceId);
+        if (ws) setColor(ws.color);
+      }
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +84,8 @@ export function CreateEventModal({
         start,
         end,
         description: description || undefined,
+        workspaceId: workspaceId || undefined,
+        calendarColor: color || undefined,
       });
     } finally {
       setSaving(false);
@@ -51,24 +94,25 @@ export function CreateEventModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-[var(--surface-primary)] border border-[var(--border-subtle)] rounded-2xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+      <div className="bg-[var(--surface-primary)] border border-[var(--border-subtle)] rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-5">
           New event
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
               Title
             </label>
             <input
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+              placeholder="Event title"
+              className={fieldClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
               Date
             </label>
             <input
@@ -76,12 +120,12 @@ export function CreateEventModal({
               required
               value={day}
               onChange={(e) => setDay(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+              className={fieldClass}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
                 Start
               </label>
               <input
@@ -89,11 +133,11 @@ export function CreateEventModal({
                 required
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+                className={fieldClass}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
                 End
               </label>
               <input
@@ -101,22 +145,38 @@ export function CreateEventModal({
                 required
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+                className={fieldClass}
               />
             </div>
           </div>
+          {workspaces.length > 0 && (
+            <>
+              <WorkspaceSelect
+                workspaces={workspaces}
+                value={workspaceId}
+                onChange={selectWorkspace}
+              />
+              <ColorTagSelect
+                workspaces={workspaces}
+                workspaceId={workspaceId}
+                value={color}
+                onChange={(hex) => void selectColor(hex)}
+              />
+            </>
+          )}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)] resize-none"
+              rows={3}
+              placeholder="Optional notes"
+              className={`${fieldClass} resize-none`}
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>

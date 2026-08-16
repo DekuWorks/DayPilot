@@ -23,4 +23,12 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   location?: string;
+
+  @IsString()
+  @IsOptional()
+  workspaceId?: string;
+
+  @IsString()
+  @IsOptional()
+  calendarColor?: string;
 }

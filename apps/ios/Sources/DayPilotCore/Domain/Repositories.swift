@@ -22,6 +22,9 @@ public protocol ProfileRepository: Sendable {
 
 public protocol PilotBriefRepository: Sendable {
     func todayBrief() async throws -> PilotBrief?
+    func todayChat() async throws -> [PilotChatMessage]
+    func generateToday() async throws -> PilotBrief
+    func sendChat(_ message: String) async throws -> PilotChatResult
 }
 
 public protocol EventKitAccessing: Sendable {

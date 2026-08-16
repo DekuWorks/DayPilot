@@ -12,6 +12,9 @@ final class DependencyContainer: ObservableObject {
     let loadEvents: LoadCalendarEventsUseCase
     let loadSync: LoadSyncStatusUseCase
     let loadBrief: LoadPilotBriefUseCase
+    let loadBriefChat: LoadPilotBriefChatUseCase
+    let generateBrief: GeneratePilotBriefUseCase
+    let sendBriefChat: SendPilotBriefChatUseCase
     let loadProfile: LoadProfileUseCase
     let signInEmail: SignInWithEmailUseCase
     let signOut: SignOutUseCase
@@ -29,7 +32,11 @@ final class DependencyContainer: ObservableObject {
         self.eventKit = eventKitRepo
         self.loadEvents = LoadCalendarEventsUseCase(repository: NestCalendarEventsRepository(client: nest))
         self.loadSync = LoadSyncStatusUseCase(repository: NestCalendarConnectionsRepository(client: nest))
-        self.loadBrief = LoadPilotBriefUseCase(repository: SupabasePilotBriefRepository(config: config, http: http, store: store))
+        let briefRepo = SupabasePilotBriefRepository(config: config, http: http, store: store)
+        self.loadBrief = LoadPilotBriefUseCase(repository: briefRepo)
+        self.loadBriefChat = LoadPilotBriefChatUseCase(repository: briefRepo)
+        self.generateBrief = GeneratePilotBriefUseCase(repository: briefRepo)
+        self.sendBriefChat = SendPilotBriefChatUseCase(repository: briefRepo)
         self.loadProfile = LoadProfileUseCase(repository: SupabaseProfileRepository(config: config, http: http, store: store))
         self.signInEmail = SignInWithEmailUseCase(repository: authRepo)
         self.signOut = SignOutUseCase(repository: authRepo)

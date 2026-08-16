@@ -175,6 +175,44 @@ export function toneClass(tone: CalendarUiTone): string {
   }
 }
 
+/** Query errors from OAuth redirects. Do not show if that provider is already healthy. */
+export function oauthCallbackProvider(
+  err: string | null | undefined
+): "google" | "outlook" | null {
+  if (err === "outlook_callback") return "outlook";
+  if (err === "google_callback") return "google";
+  return null;
+}
+
+export function shouldShowOauthCallbackError(
+  err: string | null | undefined,
+  rows: CalendarProviderUi[]
+): boolean {
+  if (!err) return false;
+  const provider = oauthCallbackProvider(err);
+  if (!provider) return true;
+  const row = rows.find((r) => r.id === provider);
+  return !row || row.tone !== "healthy";
+}
+
+export function stripStaleOauthErrorFromUrl(
+  err: string | null | undefined,
+  rows: CalendarProviderUi[]
+): void {
+  if (typeof window === "undefined") return;
+  if (!oauthCallbackProvider(err)) return;
+  if (shouldShowOauthCallbackError(err, rows)) return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("error")) return;
+  url.searchParams.delete("error");
+  const qs = url.searchParams.toString();
+  window.history.replaceState(
+    null,
+    "",
+    `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`
+  );
+}
+
 export function providerTitle(id: CalendarProviderUi["id"]): string {
   switch (id) {
     case "google":

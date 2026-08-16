@@ -52,6 +52,8 @@ class NestEventRepository implements EventRepository {
         'description': draft.description,
       if (draft.location != null && draft.location!.isNotEmpty)
         'location': draft.location,
+      if (draft.workspaceId != null) 'workspaceId': draft.workspaceId,
+      if (draft.calendarColor != null) 'calendarColor': draft.calendarColor,
     };
     final res = await _session.post('/events', body: body);
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -69,6 +71,8 @@ class NestEventRepository implements EventRepository {
       'end': event.endsAt.toUtc().toIso8601String(),
       if (event.description != null) 'description': event.description,
       if (event.location != null) 'location': event.location,
+      if (event.workspaceId != null) 'workspaceId': event.workspaceId,
+      if (event.calendarColor != null) 'calendarColor': event.calendarColor,
     };
     final res = await _session.patch('/events/${event.id}', body: body);
     if (res.statusCode < 200 || res.statusCode >= 300) {

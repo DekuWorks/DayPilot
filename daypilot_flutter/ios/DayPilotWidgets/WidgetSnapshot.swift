@@ -54,7 +54,16 @@ struct WidgetSnapshot: Codable {
     var tasksTotal: Int
 
     var firstName: String {
-        displayName.split(separator: " ").first.map(String.init) ?? displayName
+        Self.greetingFirstName(from: displayName)
+    }
+
+    /// Greeting token only. Reject emails / empty values — never `dekuworks1@…`.
+    static func greetingFirstName(from displayName: String) -> String {
+        let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed.contains("@") { return "there" }
+        let token = trimmed.split(whereSeparator: { $0.isWhitespace }).first.map(String.init) ?? trimmed
+        if token.isEmpty || token.contains("@") { return "there" }
+        return token
     }
 
     var focusLabel: String {

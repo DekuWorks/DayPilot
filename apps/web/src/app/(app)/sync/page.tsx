@@ -18,6 +18,8 @@ import {
   buildCalendarProviderRows,
   latestSyncAt,
   providerTitle,
+  shouldShowOauthCallbackError,
+  stripStaleOauthErrorFromUrl,
   syncAllHint,
   toneClass,
   type CalendarProviderUi,
@@ -79,6 +81,17 @@ export default function SyncPage() {
     connections,
     eventKitStatus: eventKit,
   });
+  const showQueryError = !loading && shouldShowOauthCallbackError(err, rows);
+  const outlookTone = rows.find((r) => r.id === "outlook")?.tone;
+  const googleTone = rows.find((r) => r.id === "google")?.tone;
+
+  useEffect(() => {
+    if (loading) return;
+    stripStaleOauthErrorFromUrl(err, rows);
+    // rows is rebuilt each render; tones are the honest connection state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, err, outlookTone, googleTone]);
+
   const hint = syncAllHint(rows);
   const latest = latestSyncAt(rows);
   const busy = !!actionLoading;
@@ -149,7 +162,7 @@ export default function SyncPage() {
             "Outlook connected. Events are syncing."}
         </div>
       )}
-      {err && (
+      {showQueryError && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] text-[var(--error)]">
           {err === "missing_params" &&
             "Microsoft did not return a login code. Try Connect Outlook again."}
@@ -157,7 +170,7 @@ export default function SyncPage() {
             "Outlook connection failed. Try Connect Outlook again."}
           {err === "google_callback" && "Google connection failed. Try again."}
           {!["missing_params", "google_callback", "outlook_callback"].includes(
-            err
+            err ?? ""
           ) && "Something went wrong. Try again."}
         </div>
       )}

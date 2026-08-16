@@ -12,6 +12,7 @@ import {
   StickyNote,
   BarChart3,
   Sparkles,
+  Timer,
   Contact,
   UserRound,
   Settings,
@@ -32,6 +33,7 @@ export const primaryNav: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/insights", label: "Insights", icon: BarChart3 },
+  { href: "/focus", label: "Focus", icon: Timer },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/meetings", label: "Meetings", icon: Users },
@@ -55,8 +57,8 @@ export type WorkspaceItem = {
 };
 
 export const defaultWorkspaces: WorkspaceItem[] = [
-  { id: "personal", name: "Personal", color: "var(--calendar-personal)" },
-  { id: "work", name: "Work", color: "var(--calendar-work)" },
-  { id: "side", name: "Side Projects", color: "var(--projects)" },
-  { id: "school", name: "School", color: "var(--calendar-school)" },
+  { id: "personal", name: "Personal", color: "#F97316" },
+  { id: "work", name: "Work", color: "#3B82F6" },
+  { id: "side", name: "Side Projects", color: "#7C3AED" },
+  { id: "school", name: "School", color: "#C084FC" },
 ];

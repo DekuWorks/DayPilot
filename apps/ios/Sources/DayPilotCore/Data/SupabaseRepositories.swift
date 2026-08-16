@@ -181,6 +181,76 @@ public struct SupabasePilotBriefRepository: PilotBriefRepository {
         guard let row = rows.first else { return nil }
         return PilotBriefDecoder.decode(row)
     }
+
+    public func todayChat() async throws -> [PilotChatMessage] {
+        guard let session = store.load() else { throw DayPilotError.notSignedIn }
+        let today = PilotBriefDate.today()
+        var components = URLComponents(
+            url: config.supabaseURL.appending(path: "/rest/v1/pilot_brief_messages"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(
+                name: "select",
+                value: "id,brief_date,role,content,follow_ups,created_at"
+            ),
+            URLQueryItem(name: "brief_date", value: "eq.\(today)"),
+            URLQueryItem(name: "order", value: "created_at.asc"),
+        ]
+        guard let url = components?.url else { throw DayPilotError.message("Bad chat URL") }
+        var request = URLRequest(url: url)
+        applyUserHeaders(&request, token: session.supabaseAccessToken)
+        let (data, response) = try await http.data(for: request)
+        guard (200..<300).contains(response.statusCode) else {
+            throw DayPilotError.http(response.statusCode, String(data: data, encoding: .utf8) ?? "")
+        }
+        return try JSONValue.array(data).compactMap(PilotChatDecoder.decode)
+    }
+
+    public func generateToday() async throws -> PilotBrief {
+        let json = try await postPilotFunction(body: [:])
+        guard let row = json["brief"] as? [String: Any],
+              let brief = PilotBriefDecoder.decode(row)
+        else { throw DayPilotError.decoding }
+        return brief
+    }
+
+    public func sendChat(_ message: String) async throws -> PilotChatResult {
+        let json = try await postPilotFunction(body: [
+            "action": "chat",
+            "message": message,
+        ])
+        guard let result = PilotChatDecoder.decodeResult(json) else {
+            throw DayPilotError.decoding
+        }
+        return result
+    }
+
+    private func postPilotFunction(body: [String: Any]) async throws -> [String: Any] {
+        guard let session = store.load() else { throw DayPilotError.notSignedIn }
+        var request = URLRequest(
+            url: config.supabaseURL.appending(path: "/functions/v1/pilot-brief")
+        )
+        request.httpMethod = "POST"
+        applyUserHeaders(&request, token: session.supabaseAccessToken)
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await http.data(for: request)
+        guard (200..<300).contains(response.statusCode) else {
+            let raw = String(data: data, encoding: .utf8) ?? ""
+            if let object = try? JSONValue.object(data),
+               let error = object["error"] as? String {
+                throw DayPilotError.message(error)
+            }
+            throw DayPilotError.http(response.statusCode, raw)
+        }
+        return try JSONValue.object(data)
+    }
+
+    private func applyUserHeaders(_ request: inout URLRequest, token: String) {
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(config.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    }
 }
 
 enum PilotBriefDate {
@@ -191,6 +261,30 @@ enum PilotBriefDate {
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+}
+
+enum PilotChatDecoder {
+    static func decode(_ row: [String: Any]) -> PilotChatMessage? {
+        guard let id = row["id"] as? String,
+              let role = row["role"] as? String,
+              let content = row["content"] as? String
+        else { return nil }
+        return PilotChatMessage(
+            id: id,
+            role: role,
+            content: content,
+            followUps: row["follow_ups"] as? [String] ?? []
+        )
+    }
+
+    static func decodeResult(_ json: [String: Any]) -> PilotChatResult? {
+        guard let user = json["user_message"] as? [String: Any],
+              let reply = json["reply"] as? [String: Any],
+              let userMessage = decode(user),
+              let assistant = decode(reply)
+        else { return nil }
+        return PilotChatResult(userMessage: userMessage, reply: assistant)
     }
 }
 

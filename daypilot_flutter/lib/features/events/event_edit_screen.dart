@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/repository_providers.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/daypilot_page_shell.dart';
+import '../../core/workspace_colors.dart';
 import '../../domain/models/event_record.dart';
+import '../../domain/models/workspace_record.dart';
 import '../calendar/calendar_providers.dart';
 import '../insights/insights_providers.dart';
+import 'event_form_fields.dart';
 
 class EventEditScreen extends ConsumerStatefulWidget {
   const EventEditScreen({super.key, required this.eventId});
@@ -27,6 +31,8 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
   late DateTime _start;
   late DateTime _end;
   bool _allDay = false;
+  String? _workspaceId;
+  String _colorHex = kWorkspaceColorPalette.first.hex;
 
   @override
   void initState() {
@@ -43,6 +49,8 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
       _start = e.startsAt;
       _end = e.endsAt;
       _allDay = e.allDay;
+      _workspaceId = e.workspaceId;
+      _colorHex = e.calendarColor ?? kWorkspaceColorPalette.first.hex;
     }
     setState(() {
       _event = e;
@@ -129,6 +137,8 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
       endsAt: _end,
       ownerId: current.ownerId,
       calendarId: current.calendarId,
+      workspaceId: _workspaceId,
+      calendarColor: _colorHex,
       allDay: _allDay,
       status: current.status,
       source: current.source,
@@ -156,30 +166,73 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
         body: Center(child: Text('Event not found.')),
       );
     }
+    final workspacesAsync = ref.watch(workspacesProvider);
+    final workspaces =
+        workspacesAsync.asData?.value ?? const <WorkspaceRecord>[];
+    final colors = DayPilotScheme.of(context);
     return DayPilotPageShell(
       title: const Text('Edit event'),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             children: [
-              TextFormField(
-                controller: _title,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _desc,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              TextFormField(
-                controller: _location,
-                decoration: const InputDecoration(
-                  labelText: 'Location / meeting URL',
+              EventLabeledField(
+                label: 'Title',
+                child: TextFormField(
+                  controller: _title,
+                  decoration: eventFieldDecoration(context, hint: 'Title'),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
+              ),
+              EventLabeledField(
+                label: 'Description',
+                child: TextFormField(
+                  controller: _desc,
+                  decoration: eventFieldDecoration(
+                    context,
+                    hint: 'Optional notes',
+                  ),
+                  maxLines: 3,
+                ),
+              ),
+              EventLabeledField(
+                label: 'Location / meeting URL',
+                child: TextFormField(
+                  controller: _location,
+                  decoration: eventFieldDecoration(
+                    context,
+                    hint: 'Location or link',
+                  ),
+                ),
+              ),
+              WorkspaceColorFields(
+                workspaces: workspaces,
+                workspaceId: _workspaceId,
+                colorHex: _colorHex,
+                loading: workspacesAsync.isLoading,
+                onWorkspaceChanged: (id) {
+                  final ws = workspaces.where((w) => w.id == id);
+                  setState(() {
+                    _workspaceId = id;
+                    if (ws.isNotEmpty) _colorHex = ws.first.color;
+                  });
+                },
+                onColorChanged: (hex) async {
+                  setState(() => _colorHex = hex);
+                  final id = _workspaceId;
+                  if (id == null) return;
+                  try {
+                    await ref.read(workspaceRepositoryProvider).updateColor(
+                          workspaceId: id,
+                          color: hex,
+                          workspaces: workspaces,
+                        );
+                    ref.invalidate(workspacesProvider);
+                  } catch (_) {}
+                },
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -189,13 +242,25 @@ class _EventEditScreenState extends ConsumerState<EventEditScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Starts'),
+                title: Text(
+                  'Starts',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
                 subtitle: Text(_format(context, _start)),
                 onTap: _pickStart,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ends'),
+                title: Text(
+                  'Ends',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
                 subtitle: Text(_format(context, _end)),
                 onTap: _pickEnd,
               ),
