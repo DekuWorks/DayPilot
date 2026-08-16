@@ -1,0 +1,6 @@
+// Defaults. Config.local.xcconfig (gitignored) overrides the anon key and team.
+SUPABASE_URL = https:/$()/wmkytyrcxbzjqiykbauw.supabase.co
+DAYPILOT_API_URL = https:/$()/api-production-6c2c.up.railway.app
+SUPABASE_ANON_KEY =
+
+#include? "Config.local.xcconfig"

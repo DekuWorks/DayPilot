@@ -18,6 +18,9 @@ settings:
     SWIFT_VERSION: "5.9"
     TARGETED_DEVICE_FAMILY: 1
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+configFiles:
+  Debug: Config.xcconfig
+  Release: Config.xcconfig
 targets:
   DayPilot:
     type: application
@@ -32,9 +35,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        SUPABASE_URL: https://wmkytyrcxbzjqiykbauw.supabase.co
-        DAYPILOT_API_URL: https://api-production-6c2c.up.railway.app
-        SUPABASE_ANON_KEY: ""
+        DEVELOPMENT_TEAM: KR52VK4ZKR
     dependencies:
       - package: DayPilotCore
         product: DayPilotCore

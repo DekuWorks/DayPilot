@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		30E5FC219D2C2836A15BDD01 /* DayPilotWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4E1F90F9EF4E1C9F4B069D /* DayPilotWidgets.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		40C9B8E736E43B5C351BB8A7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1B2FE3DCEAA269CE6A9036F /* Assets.xcassets */; };
 		5FAEF873E1AC1C4418229763 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07430A99AB809BB7FD06D3EB /* Pods_Runner.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
@@ -17,6 +19,13 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		9D7C206B8FAD08B4119D18D7 /* WidgetTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC04A2CB2C2A14B505BC7D3 /* WidgetTheme.swift */; };
+		B0B93A73DDDE4CA2EDB20FD3 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88524291F2F94AAF8135025 /* WidgetSnapshot.swift */; };
+		D89A02E406CBCEA55EB33BB4 /* WidgetSnapshotBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F011B78429FC8F2CEB07ECF5 /* WidgetSnapshotBridge.swift */; };
+		DB9AC6F31FC6FAB6DFC60F80 /* DayPilotWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 2C9420AD386B1A722ED225A6 /* DayPilotWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		ECAF383DE158914C568B5A0C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98F060A8B7345FAB28ACE364 /* Foundation.framework */; };
+		F4A1B2C3D4E5F60718293A01 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4A1B2C3D4E5F60718293A02 /* WidgetKit.framework */; };
+		F4A1B2C3D4E5F60718293A03 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4A1B2C3D4E5F60718293A04 /* SwiftUI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +35,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		5348FBD093A74845985CE741 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C69D6762A92F73236075F1B6;
+			remoteInfo = DayPilotWidgets;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -40,17 +56,32 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AB4DFF72A09E87C7F2DE03A3 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DB9AC6F31FC6FAB6DFC60F80 /* DayPilotWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		07430A99AB809BB7FD06D3EB /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		07641F037DD083AFE52004F8 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		086456DE6E91A46C807F1F54 /* DayPilotWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DayPilotWidgets.entitlements; sourceTree = "<group>"; };
 		112FB6F64E760BAFF763D4EE /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		2C9420AD386B1A722ED225A6 /* DayPilotWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DayPilotWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A1DA381D661CA2D0300868D /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3E4E1F90F9EF4E1C9F4B069D /* DayPilotWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayPilotWidgets.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -64,13 +95,30 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		98F060A8B7345FAB28ACE364 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		F4A1B2C3D4E5F60718293A02 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		F4A1B2C3D4E5F60718293A04 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		A1B2C3D4E5F60718293A4B5C /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		A88524291F2F94AAF8135025 /* WidgetSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		B154B55FE657B4BA1F6E8DDF /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		CB31303C613C8565FFEEA2FE /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		E1B2FE3DCEAA269CE6A9036F /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EAF64CADBCCE56EAA4F780B3 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		F011B78429FC8F2CEB07ECF5 /* WidgetSnapshotBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotBridge.swift; sourceTree = "<group>"; };
+		FAC04A2CB2C2A14B505BC7D3 /* WidgetTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		033E9E00E1691AB44060122C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ECAF383DE158914C568B5A0C /* Foundation.framework in Frameworks */,
+				F4A1B2C3D4E5F60718293A01 /* WidgetKit.framework in Frameworks */,
+				F4A1B2C3D4E5F60718293A03 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -90,11 +138,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0CC2DF1CFCE1977F29ACEA6D /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				98F060A8B7345FAB28ACE364 /* Foundation.framework */,
+				F4A1B2C3D4E5F60718293A02 /* WidgetKit.framework */,
+				F4A1B2C3D4E5F60718293A04 /* SwiftUI.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		1D5B444BD03CC2AFB2D94CB0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				07430A99AB809BB7FD06D3EB /* Pods_Runner.framework */,
 				112FB6F64E760BAFF763D4EE /* Pods_RunnerTests.framework */,
+				0CC2DF1CFCE1977F29ACEA6D /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -141,6 +200,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				5AA33F672D94CD425A0981E4 /* Pods */,
 				1D5B444BD03CC2AFB2D94CB0 /* Frameworks */,
+				E9258F26633186DD3A1B3E3F /* DayPilotWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -149,6 +209,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				2C9420AD386B1A722ED225A6 /* DayPilotWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -166,8 +227,23 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				F011B78429FC8F2CEB07ECF5 /* WidgetSnapshotBridge.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		E9258F26633186DD3A1B3E3F /* DayPilotWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				3E4E1F90F9EF4E1C9F4B069D /* DayPilotWidgets.swift */,
+				A88524291F2F94AAF8135025 /* WidgetSnapshot.swift */,
+				FAC04A2CB2C2A14B505BC7D3 /* WidgetTheme.swift */,
+				E1B2FE3DCEAA269CE6A9036F /* Assets.xcassets */,
+				07641F037DD083AFE52004F8 /* Info.plist */,
+				086456DE6E91A46C807F1F54 /* DayPilotWidgets.entitlements */,
+			);
+			name = DayPilotWidgets;
+			path = DayPilotWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -202,6 +278,7 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				AB4DFF72A09E87C7F2DE03A3 /* Embed App Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				7A5F8CB89671FDC83F39CB2B /* [CP] Embed Pods Frameworks */,
 				D4685B580D490A1C8002284D /* [CP] Copy Pods Resources */,
@@ -209,11 +286,30 @@
 			buildRules = (
 			);
 			dependencies = (
+				A5EFA6EC03BD84798D930131 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C69D6762A92F73236075F1B6 /* DayPilotWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E63DAFCE280415597A8F34B9 /* Build configuration list for PBXNativeTarget "DayPilotWidgets" */;
+			buildPhases = (
+				F4A1B2C3D4E5F60718293A06 /* Strip xattrs (Desktop CodeSign fix) */,
+				3CFE9AE39033C78069D8BAFA /* Sources */,
+				033E9E00E1691AB44060122C /* Frameworks */,
+				8B12F00375733746E27116EB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DayPilotWidgets;
+			productName = DayPilotWidgets;
+			productReference = 2C9420AD386B1A722ED225A6 /* DayPilotWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -250,6 +346,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				C69D6762A92F73236075F1B6 /* DayPilotWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -259,6 +356,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B12F00375733746E27116EB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40C9B8E736E43B5C351BB8A7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,6 +381,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		F4A1B2C3D4E5F60718293A06 /* Strip xattrs (Desktop CodeSign fix) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Strip xattrs (Desktop CodeSign fix)";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -n \"${SRCROOT}\" ] && [ -d \"${SRCROOT}/DayPilotWidgets\" ]; then\n  xattr -cr \"${SRCROOT}/DayPilotWidgets\" 2>/dev/null || true\nfi\nif [ -n \"${CODESIGNING_FOLDER_PATH}\" ] && [ -e \"${CODESIGNING_FOLDER_PATH}\" ]; then\n  xattr -cr \"${CODESIGNING_FOLDER_PATH}\" 2>/dev/null || true\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -396,6 +517,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3CFE9AE39033C78069D8BAFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				30E5FC219D2C2836A15BDD01 /* DayPilotWidgets.swift in Sources */,
+				B0B93A73DDDE4CA2EDB20FD3 /* WidgetSnapshot.swift in Sources */,
+				9D7C206B8FAD08B4119D18D7 /* WidgetTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -403,6 +534,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				D89A02E406CBCEA55EB33BB4 /* WidgetSnapshotBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,6 +545,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		A5EFA6EC03BD84798D930131 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DayPilotWidgets;
+			target = C69D6762A92F73236075F1B6 /* DayPilotWidgets */;
+			targetProxy = 5348FBD093A74845985CE741 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -496,6 +634,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -503,7 +642,6 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot;
-				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -518,10 +656,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.RunnerTests;
-				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -537,10 +675,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.RunnerTests;
-				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -554,13 +692,44 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.RunnerTests;
-				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
+			};
+			name = Profile;
+		};
+		41BC9B82BDB31BDC4522B745 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DayPilotWidgets/DayPilotWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 12;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.widgets;
+				PRODUCT_NAME = DayPilotWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
 		};
@@ -682,7 +851,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -690,7 +861,6 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot;
-				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -726,6 +896,67 @@
 			};
 			name = Release;
 		};
+		C2F33688C2E6AD4A181F951A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DayPilotWidgets/DayPilotWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 12;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.widgets;
+				PRODUCT_NAME = DayPilotWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CF816E32FEF4E1C10EBBD646 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DayPilotWidgets/DayPilotWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 12;
+				DEVELOPMENT_TEAM = KR52VK4ZKR;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dekuworks.daypilot.widgets;
+				PRODUCT_NAME = DayPilotWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -755,6 +986,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E63DAFCE280415597A8F34B9 /* Build configuration list for PBXNativeTarget "DayPilotWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CF816E32FEF4E1C10EBBD646 /* Release */,
+				C2F33688C2E6AD4A181F951A /* Debug */,
+				41BC9B82BDB31BDC4522B745 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

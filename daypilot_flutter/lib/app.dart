@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'core/widgets/api_session_bootstrap.dart';
 import 'core/widgets/nest_events_socket_listener.dart';
+import 'core/widgets/widget_snapshot_sync.dart';
 
 /// Root widget: Nest session bootstrap + realtime listener wrap [MaterialApp.router].
 class DayPilotApp extends ConsumerWidget {
@@ -17,13 +18,15 @@ class DayPilotApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     return ApiSessionBootstrap(
       child: NestEventsSocketListener(
-        child: MaterialApp.router(
-          title: 'DayPilot',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: themeMode,
-          routerConfig: router,
+        child: WidgetSnapshotSync(
+          child: MaterialApp.router(
+            title: 'DayPilot',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: themeMode,
+            routerConfig: router,
+          ),
         ),
       ),
     );
