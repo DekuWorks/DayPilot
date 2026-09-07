@@ -8,39 +8,36 @@ DayPilot gives you **one calendar with everything**: your own events, connected 
 
 ---
 
-## Modern stack (in progress)
+## Live stack (September 2026)
 
-DayPilot is being rebuilt on a modern monorepo stack. **Decided direction (2026-07-21):**
+This is the running product, not the July 2026 Vite / Expo plan.
 
-| Layer      | Technology                    |
-|-----------|--------------------------------|
-| Frontend  | Next.js (App Router), TypeScript, Tailwind — dark + electric green brand |
-| Backend   | **Supabase** (Auth, Postgres, RLS, Storage, Realtime, Edge Functions) — primary |
-| Legacy API | NestJS + Prisma — frozen; migrating to Supabase ([docs/architecture/SUPABASE_MIGRATION.md](./docs/architecture/SUPABASE_MIGRATION.md)) |
-| Billing   | Stripe (via Edge Functions after cutover) |
-| AI / Pilot Brief | Edge Functions (server-side keys only) |
-| DevOps    | Docker, GitHub Actions, Vercel + Supabase |
-| Mobile    | **Flutter iOS** (`daypilot_flutter/`) — Android frozen this milestone |
+| Layer                 | Technology                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| Web                   | Next.js 16 App Router, React 19, Tailwind 4 (`apps/web`) — [daypilot.co](https://daypilot.co) |
+| Calendar / events API | NestJS 11 + Prisma Postgres (`apps/api`)                                                      |
+| Auth + product tables | Supabase Auth (Google / Apple / Microsoft), RLS, Storage, `pilot-brief`                       |
+| Mobile testers        | Flutter iOS (`daypilot_flutter/`)                                                             |
+| Mobile target         | SwiftUI (`apps/ios/`) — do not delete Flutter until this has daily calendar + sync + auth     |
+| Billing               | Stripe on Nest; App Store IAP on Flutter                                                      |
+| AI                    | Nest schedule suggestions + Edge Function `pilot-brief`                                       |
 
-See [docs/progress/DECISIONS.md](./docs/progress/DECISIONS.md), [docs/BRAND_GUIDELINES.md](./docs/BRAND_GUIDELINES.md), [docs/architecture/REPOSITORY_AUDIT.md](./docs/architecture/REPOSITORY_AUDIT.md).
+Engineering notes: [docs/engineering/](./docs/engineering/). Agent rules: [CLAUDE.md](./CLAUDE.md).
 
-### Monorepo structure (Phase 2 ✓)
+### Monorepo structure
 
 ```
 daypilot/
-├── apps/
-│   ├── web/          # Next.js frontend (Phase 3 ✓)
-│   └── api/          # NestJS backend (Phase 4 ✓)
-├── packages/
-│   ├── ui/           # Shared components
-│   └── lib/          # Shared utilities
-├── daypilot_flutter/ # Flutter mobile client (Milestone 1)
-├── prisma/           # Database schema (Phase 5 ✓)
-├── docker/           # Dockerfiles & compose (Phase 10)
-├── package.json      # Root scripts: pnpm dev, pnpm build, pnpm lint
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-├── turbo.json
+├── apps/web              # Next.js
+├── apps/api              # NestJS
+├── apps/ios              # SwiftUI rewrite
+├── packages/lib          # Shared calendar types
+├── packages/ui           # Stub
+├── daypilot_flutter      # Tester iOS app
+├── prisma                # Nest schema
+├── supabase              # Auth / RLS / Edge Functions
+├── archive/legacy-v1     # Old Vite + ASP.NET snapshot
+├── docs/engineering      # Current audits
 └── README.md
 ```
 

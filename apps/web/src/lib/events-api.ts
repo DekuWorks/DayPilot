@@ -16,9 +16,14 @@ export type Event = {
   calendarId?: string;
   calendarColor?: string;
   workspaceId?: string;
+  allDay?: boolean;
+  timezone?: string | null;
 };
 
-export async function listEvents(params?: { from?: string; to?: string }): Promise<Event[]> {
+export async function listEvents(params?: {
+  from?: string;
+  to?: string;
+}): Promise<Event[]> {
   const q = new URLSearchParams();
   if (params?.from) q.set("from", params.from);
   if (params?.to) q.set("to", params.to);
@@ -59,7 +64,7 @@ export async function updateEvent(
     location?: string;
     workspaceId?: string;
     calendarColor?: string;
-  }
+  },
 ): Promise<Event> {
   const res = await fetch(`${getApiUrl()}/events/${id}`, {
     method: "PATCH",

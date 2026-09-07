@@ -28,7 +28,7 @@ export type CalendarProviderUi = {
 
 export function connectionForProvider(
   connections: CalendarConnection[],
-  provider: string
+  provider: string,
 ): CalendarConnection | undefined {
   return connections.find((c) => c.provider === provider);
 }
@@ -84,9 +84,22 @@ export function mapOAuthProviderUi(args: {
   };
 }
 
+const EVENTKIT_BLOCKED_CALENDAR_STATUS = new Set([
+  "denied",
+  "restricted",
+  "permission_required",
+  "unavailable",
+  "error",
+]);
+
+function eventKitDeviceLabel(displayName: string | undefined): string {
+  const trimmed = displayName?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "iPhone";
+}
+
 /** Profile/Sync Apple row = EventKit, never Sign in with Apple. */
 export function mapAppleEventKitUi(
-  eventKitStatus: EventKitConnectionStatus | null | undefined
+  eventKitStatus: EventKitConnectionStatus | null | undefined,
 ): CalendarProviderUi {
   const connections = eventKitStatus?.connections ?? [];
   if (connections.length === 0) {
@@ -106,8 +119,32 @@ export function mapAppleEventKitUi(
 
   const conn = connections[0];
   const calendars = conn.calendars ?? [];
-  const displayName = conn.displayName?.trim();
-  const device = displayName && displayName.length > 0 ? displayName : "iPhone";
+  const device = eventKitDeviceLabel(conn.displayName);
+  const calendarStatus = (conn.calendarStatus ?? "").toLowerCase();
+  const syncStatus = (conn.syncStatus ?? "").toLowerCase();
+
+  if (
+    EVENTKIT_BLOCKED_CALENDAR_STATUS.has(calendarStatus) ||
+    syncStatus === "error"
+  ) {
+    return {
+      id: "apple",
+      name: "Apple",
+      tone: "needsAttention",
+      headline:
+        calendarStatus === "denied" || calendarStatus === "restricted"
+          ? "Calendar access denied"
+          : calendarStatus === "permission_required"
+            ? "Calendar permission required"
+            : "Needs attention on iPhone",
+      detail: `${device} · Allow Calendar access in iOS Settings. Sign in with Apple is not a calendar connection.`,
+      lastSynced: conn.lastSyncedAt,
+      connectionId: conn.id,
+      canReconnect: false,
+      canSync: false,
+      calendarCount: calendars.length,
+    };
+  }
 
   return {
     id: "apple",
@@ -177,7 +214,7 @@ export function toneClass(tone: CalendarUiTone): string {
 
 /** Query errors from OAuth redirects. Do not show if that provider is already healthy. */
 export function oauthCallbackProvider(
-  err: string | null | undefined
+  err: string | null | undefined,
 ): "google" | "outlook" | null {
   if (err === "outlook_callback") return "outlook";
   if (err === "google_callback") return "google";
@@ -186,7 +223,7 @@ export function oauthCallbackProvider(
 
 export function shouldShowOauthCallbackError(
   err: string | null | undefined,
-  rows: CalendarProviderUi[]
+  rows: CalendarProviderUi[],
 ): boolean {
   if (!err) return false;
   const provider = oauthCallbackProvider(err);
@@ -197,7 +234,7 @@ export function shouldShowOauthCallbackError(
 
 export function stripStaleOauthErrorFromUrl(
   err: string | null | undefined,
-  rows: CalendarProviderUi[]
+  rows: CalendarProviderUi[],
 ): void {
   if (typeof window === "undefined") return;
   if (!oauthCallbackProvider(err)) return;
@@ -209,7 +246,7 @@ export function stripStaleOauthErrorFromUrl(
   window.history.replaceState(
     null,
     "",
-    `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`
+    `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`,
   );
 }
 

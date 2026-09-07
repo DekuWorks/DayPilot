@@ -1,6 +1,22 @@
 import XCTest
 @testable import DayPilotCore
 
+final class StoredSessionTests: XCTestCase {
+    func testRoundTripsTokens() throws {
+        let session = AuthSession(
+            supabaseAccessToken: "sb",
+            supabaseRefreshToken: "sbr",
+            nestAccessToken: "nest",
+            userId: "user-1",
+            email: "a@b.com"
+        )
+        let data = try JSONEncoder().encode(StoredSession(session))
+        let decoded = try JSONDecoder().decode(StoredSession.self, from: data)
+        XCTAssertEqual(decoded.asSession.nestAccessToken, "nest")
+        XCTAssertEqual(decoded.asSession.userId, "user-1")
+    }
+}
+
 final class ResolveAvatarURLTests: XCTestCase {
     func testPrefersProfileColumnOverMetadata() {
         let url = ResolveAvatarURL.resolve(

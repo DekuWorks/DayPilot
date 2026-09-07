@@ -14,6 +14,7 @@ import * as jose from 'jose';
 import type { UserRole } from '../generated/prisma';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { decideSupabaseUserLink } from './supabase-user-link';
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -78,7 +79,7 @@ export class AuthService {
    *
    * If both are set, HS256 is tried first, then JWKS (helps during migration).
    */
-  async exchangeFromSupabaseAccessToken(accessToken: string) {
+  private async verifySupabaseAccessToken(accessToken: string) {
     const secret = this.config.get<string>('SUPABASE_JWT_SECRET');
     const supabaseUrl = this.config
       .get<string>('SUPABASE_URL')
@@ -119,21 +120,61 @@ export class AuthService {
       }
       throw new UnauthorizedException('Invalid Supabase access token');
     }
+    return payload;
+  }
+
+  async exchangeFromSupabaseAccessToken(accessToken: string) {
+    const payload = await this.verifySupabaseAccessToken(accessToken);
     const email = payload.email?.toLowerCase().trim();
     if (!email) {
       throw new UnauthorizedException('Token has no email claim');
     }
+    const supabaseUserId =
+      typeof payload.sub === 'string' ? payload.sub.trim() : '';
+    if (!supabaseUserId) {
+      throw new UnauthorizedException('Token has no subject');
+    }
 
-    let user = await this.prisma.user.findUnique({
-      where: { email },
+    const [bySub, byEmail] = await Promise.all([
+      this.prisma.user.findUnique({ where: { supabaseUserId } }),
+      this.prisma.user.findUnique({ where: { email } }),
+    ]);
+    const decision = decideSupabaseUserLink({
+      supabaseUserId,
+      email,
+      bySub,
+      byEmail,
     });
+
+    let user =
+      decision.action === 'use'
+        ? ((decision.userId === bySub?.id ? bySub : byEmail) ??
+          (await this.prisma.user.findUnique({
+            where: { id: decision.userId },
+          })))
+        : null;
+
+    if (decision.action === 'use' && user) {
+      if (decision.attachSupabaseId || decision.updateEmail) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            ...(decision.attachSupabaseId && {
+              supabaseUserId: decision.attachSupabaseId,
+            }),
+            ...(decision.updateEmail && { email: decision.updateEmail }),
+          },
+        });
+      }
+    }
 
     if (!user) {
       const meta = payload.user_metadata ?? {};
       let firstName =
         meta.first_name ??
         meta.given_name ??
-        (meta.full_name?.split(/\s+/).filter(Boolean)[0] ?? 'User');
+        meta.full_name?.split(/\s+/).filter(Boolean)[0] ??
+        'User';
       let lastName =
         meta.last_name ??
         meta.family_name ??
@@ -142,6 +183,7 @@ export class AuthService {
       user = await this.prisma.user.create({
         data: {
           email,
+          supabaseUserId,
           passwordHash: null,
           firstName: String(firstName).trim() || 'User',
           lastName: lastName.trim(),
@@ -322,5 +364,155 @@ export class AuthService {
       },
     });
     return updated;
+  }
+
+  /**
+   * Move calendar rows from a donor Nest user (proved by a second Supabase JWT)
+   * onto the signed-in survivor. Used when Hide My Email and Gmail created two users.
+   */
+  async mergeDuplicateFromDonorToken(
+    survivorUserId: string,
+    donorAccessToken: string,
+  ) {
+    const payload = await this.verifySupabaseAccessToken(donorAccessToken);
+    const email = payload.email?.toLowerCase().trim();
+    const supabaseUserId =
+      typeof payload.sub === 'string' ? payload.sub.trim() : '';
+    if (!email || !supabaseUserId) {
+      throw new UnauthorizedException(
+        'Donor token is missing email or subject',
+      );
+    }
+
+    const [bySub, byEmail] = await Promise.all([
+      this.prisma.user.findUnique({ where: { supabaseUserId } }),
+      this.prisma.user.findUnique({ where: { email } }),
+    ]);
+    const donor = bySub ?? byEmail;
+    if (!donor) {
+      return { ok: true, merged: false, reason: 'donor_not_found' as const };
+    }
+    if (donor.id === survivorUserId) {
+      return { ok: true, merged: false, reason: 'same_user' as const };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const donorEvents = await tx.event.findMany({
+        where: { userId: donor.id },
+      });
+      for (const event of donorEvents) {
+        if (event.externalId) {
+          const clash = await tx.event.findUnique({
+            where: {
+              userId_source_externalId: {
+                userId: survivorUserId,
+                source: event.source,
+                externalId: event.externalId,
+              },
+            },
+          });
+          if (clash) {
+            await tx.event.delete({ where: { id: event.id } });
+            continue;
+          }
+        }
+        await tx.event.update({
+          where: { id: event.id },
+          data: { userId: survivorUserId },
+        });
+      }
+
+      const donorCalendars = await tx.externalCalendar.findMany({
+        where: { userId: donor.id },
+      });
+      for (const cal of donorCalendars) {
+        const clash = await tx.externalCalendar.findUnique({
+          where: {
+            userId_provider_externalCalendarId_deviceId: {
+              userId: survivorUserId,
+              provider: cal.provider,
+              externalCalendarId: cal.externalCalendarId,
+              deviceId: cal.deviceId,
+            },
+          },
+        });
+        if (clash) {
+          await tx.event.updateMany({
+            where: { calendarId: cal.id },
+            data: { calendarId: clash.id },
+          });
+          await tx.externalCalendar.delete({ where: { id: cal.id } });
+          continue;
+        }
+        await tx.externalCalendar.update({
+          where: { id: cal.id },
+          data: { userId: survivorUserId },
+        });
+      }
+
+      const donorConnections = await tx.calendarConnection.findMany({
+        where: { userId: donor.id },
+      });
+      for (const conn of donorConnections) {
+        const clash = await tx.calendarConnection.findUnique({
+          where: {
+            userId_providerType_deviceId: {
+              userId: survivorUserId,
+              providerType: conn.providerType,
+              deviceId: conn.deviceId,
+            },
+          },
+        });
+        if (clash) {
+          await tx.externalCalendar.updateMany({
+            where: { connectionId: conn.id },
+            data: { connectionId: clash.id },
+          });
+          await tx.calendarConnection.delete({ where: { id: conn.id } });
+          continue;
+        }
+        await tx.calendarConnection.update({
+          where: { id: conn.id },
+          data: { userId: survivorUserId },
+        });
+      }
+
+      await tx.calendarSyncLog.updateMany({
+        where: { userId: donor.id },
+        data: { userId: survivorUserId },
+      });
+      await tx.auditLog.updateMany({
+        where: { userId: donor.id },
+        data: { userId: survivorUserId },
+      });
+      await tx.task.updateMany({
+        where: { userId: donor.id },
+        data: { userId: survivorUserId },
+      });
+      await tx.organization.updateMany({
+        where: { ownerId: donor.id },
+        data: { ownerId: survivorUserId },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: donor.id } });
+      await tx.subscription.deleteMany({ where: { userId: donor.id } });
+      await tx.user.update({
+        where: { id: donor.id },
+        data: { teams: { set: [] } },
+      });
+      await tx.user.delete({ where: { id: donor.id } });
+    });
+
+    await this.audit.log({
+      action: 'auth.merge_duplicate',
+      entityType: 'user',
+      entityId: survivorUserId,
+      userId: survivorUserId,
+    });
+
+    return {
+      ok: true,
+      merged: true,
+      donorEmail: donor.email,
+    };
   }
 }

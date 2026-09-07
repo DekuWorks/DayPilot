@@ -11,6 +11,14 @@ import { ensureNestSession, hasNestAccessToken } from "./supabase/auth";
 
 export type { CalendarEvent } from "./events-supabase";
 
+export type EventReadModel = "nest" | "supabase";
+
+let lastEventReadModel: EventReadModel = "supabase";
+
+export function getEventReadModel(): EventReadModel {
+  return lastEventReadModel;
+}
+
 async function preferNest(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   if (hasNestAccessToken()) return true;
@@ -31,7 +39,7 @@ function mapNestToCalendar(e: nestEvents.Event): CalendarEvent {
     externalCalendarId: e.externalCalendarId ?? null,
     calendarColor: e.calendarColor ?? null,
     workspaceId: e.workspaceId ?? null,
-    allDay: false,
+    allDay: e.allDay ?? false,
     source: e.source,
     syncDirection: e.syncDirection,
   };
@@ -53,11 +61,13 @@ export async function listEvents(params?: {
   if (await preferNest()) {
     try {
       const rows = await nestEvents.listEvents(params);
+      lastEventReadModel = "nest";
       return rows.map(mapNestToCalendar);
     } catch {
       // Nest down / expired — fall through to Supabase so the UI still loads.
     }
   }
+  lastEventReadModel = "supabase";
   return supabaseEvents.listEvents(params);
 }
 
@@ -72,7 +82,7 @@ export async function createEvent(
     meetingUrl?: string;
     workspaceId?: string;
     calendarColor?: string;
-  }
+  },
 ): Promise<CalendarEvent> {
   if (await preferNest()) {
     try {
@@ -105,7 +115,7 @@ export async function updateEvent(
     meetingUrl?: string | null;
     workspaceId?: string;
     calendarColor?: string;
-  }
+  },
 ): Promise<CalendarEvent> {
   if (await preferNest()) {
     const updated = await nestEvents.updateEvent(id, {

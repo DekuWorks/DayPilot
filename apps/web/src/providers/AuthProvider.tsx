@@ -49,10 +49,10 @@ type AuthContextValue = AuthState & {
     password: string,
     firstName: string,
     lastName: string,
-    username?: string
+    username?: string,
   ) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithMicrosoft: () => Promise<void>;
+  loginWithGoogle: (options?: { next?: string }) => Promise<void>;
+  loginWithMicrosoft: (options?: { next?: string }) => Promise<void>;
   /** Optional next path (e.g. `/sync`) after Apple SSO callback. */
   loginWithApple: (options?: { next?: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -61,7 +61,11 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       reject(new Error(`${label} timed out`));
@@ -74,7 +78,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
       (err) => {
         window.clearTimeout(timer);
         reject(err);
-      }
+      },
     );
   });
 }
@@ -106,12 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profileController = new AbortController();
     const profileTimer = window.setTimeout(
       () => profileController.abort(),
-      PROFILE_FETCH_TIMEOUT_MS
+      PROFILE_FETCH_TIMEOUT_MS,
     );
 
     const profilePromise = fetchProfile(
       session.user.id,
-      profileController.signal
+      profileController.signal,
     )
       .catch(() => null)
       .finally(() => window.clearTimeout(profileTimer));
@@ -123,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
     const profile = await persistSharedAvatarIfMissing(
       session.user,
-      fetchedProfile
+      fetchedProfile,
     );
     void maybeAutoConnectCalendars(session);
 
@@ -189,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setState({ user: null, isLoading: false, isAuthenticated: false });
       }
     },
-    [enrichSession]
+    [enrichSession],
   );
 
   useEffect(() => {
@@ -258,7 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Immediate UI unlock; Nest/profile enrich in background.
       await applySession(data.session);
     },
-    [supabase, applySession]
+    [supabase, applySession],
   );
 
   const loginWithMagicLink = useCallback(
@@ -277,7 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error) throw new Error(error.message);
     },
-    [supabase]
+    [supabase],
   );
 
   const signup = useCallback(
@@ -286,7 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string,
       firstName: string,
       lastName: string,
-      username?: string
+      username?: string,
     ) => {
       if (!supabase) throw new Error("Supabase is not configured");
       const handle = username ? normalizeUsername(username) : "";
@@ -315,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If email confirmation is required, session may be null
       if (!data.session) {
         throw new Error(
-          "Check your email to confirm your account, then sign in."
+          "Check your email to confirm your account, then sign in.",
         );
       }
 
@@ -336,42 +340,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await applySession(data.session);
     },
-    [supabase, applySession]
+    [supabase, applySession],
   );
 
-  const loginWithGoogle = useCallback(async () => {
-    if (!supabase) throw new Error("Supabase is not configured");
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: origin
-          ? `${origin}/auth/callback`
-          : "https://www.daypilot.co/auth/callback",
-      },
-    });
-    if (error) throw new Error(error.message);
-  }, [supabase]);
-
-  const loginWithMicrosoft = useCallback(async () => {
-    if (!supabase) throw new Error("Supabase is not configured");
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "azure",
-      options: {
-        scopes: "email openid profile offline_access Calendars.ReadWrite",
-        redirectTo: origin
-          ? `${origin}/auth/callback`
-          : "https://www.daypilot.co/auth/callback",
-      },
-    });
-    if (error) throw new Error(error.message);
-  }, [supabase]);
-
-  const loginWithApple = useCallback(
-    async (options?: { next?: string }) => {
+  const startOauth = useCallback(
+    async (
+      provider: "google" | "azure" | "apple",
+      options?: { next?: string; scopes?: string },
+    ) => {
       if (!supabase) throw new Error("Supabase is not configured");
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
@@ -391,12 +367,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? `${callbackBase}?next=${encodeURIComponent(next)}`
         : callbackBase;
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "apple",
-        options: { redirectTo },
+        provider,
+        options: {
+          redirectTo,
+          ...(options?.scopes ? { scopes: options.scopes } : {}),
+        },
       });
       if (error) throw new Error(error.message);
     },
-    [supabase]
+    [supabase],
+  );
+
+  const loginWithGoogle = useCallback(
+    async (options?: { next?: string }) => {
+      await startOauth("google", options);
+    },
+    [startOauth],
+  );
+
+  const loginWithMicrosoft = useCallback(
+    async (options?: { next?: string }) => {
+      await startOauth("azure", {
+        ...options,
+        scopes: "email openid profile offline_access Calendars.ReadWrite",
+      });
+    },
+    [startOauth],
+  );
+
+  const loginWithApple = useCallback(
+    async (options?: { next?: string }) => {
+      await startOauth("apple", options);
+    },
+    [startOauth],
   );
 
   const logout = useCallback(async () => {
@@ -426,9 +429,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refresh,
   };
 
-  return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

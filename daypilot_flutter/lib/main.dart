@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config/daypilot_env.dart';
+import 'core/config/nest_api_session.dart';
 import 'core/providers/bootstrap_providers.dart';
 import 'core/providers/notification_preference_provider.dart';
 import 'core/services/local_notifications_service.dart';
@@ -26,6 +27,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  final nestSession = NestApiSession(prefs: prefs);
+  await nestSession.hydrate();
 
   if (!DayPilotEnv.hasSupabase) {
     runApp(const MissingSupabaseConfigApp());
@@ -60,6 +63,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        nestApiSessionProvider.overrideWithValue(nestSession),
         localNotificationsServiceProvider.overrideWithValue(localNotifications),
         pushNotificationServiceProvider.overrideWithValue(push),
       ],
