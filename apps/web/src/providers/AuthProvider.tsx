@@ -84,11 +84,11 @@ function withTimeout<T>(
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    isLoading: true,
-    isAuthenticated: false,
-  });
+  const [state, setState] = useState<AuthState>(() =>
+    isSupabaseConfigured()
+      ? { user: null, isLoading: true, isAuthenticated: false }
+      : { user: null, isLoading: false, isAuthenticated: false },
+  );
   const mountedRef = useRef(true);
   const enrichGenRef = useRef(0);
   const appliedAccessTokenRef = useRef<string | null>(null);
@@ -200,7 +200,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mountedRef.current = true;
 
     if (!supabase) {
-      setState({ user: null, isLoading: false, isAuthenticated: false });
       return () => {
         mountedRef.current = false;
       };

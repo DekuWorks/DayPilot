@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
 import * as eventsApi from "@/lib/events";
@@ -26,17 +32,27 @@ const VIEW_OPTIONS: { id: CalendarViewMode; label: string }[] = [
   { id: "day", label: "Day" },
 ];
 
+function readViewMode(): CalendarViewMode {
+  const view = new URLSearchParams(window.location.search).get("view");
+  if (view === "week" || view === "day" || view === "month") return view;
+  return "month";
+}
+
+function subscribeViewMode(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
 export function CalendarApp() {
   const { user } = useAuth();
   const { workspaces, setColor } = useWorkspaces();
-  const [mode, setMode] = useState<CalendarViewMode>("month");
-
-  useEffect(() => {
-    const view = new URLSearchParams(window.location.search).get("view");
-    if (view === "week" || view === "day" || view === "month") {
-      setMode(view);
-    }
-  }, []);
+  const urlMode = useSyncExternalStore(
+    subscribeViewMode,
+    readViewMode,
+    () => "month",
+  );
+  const [modeOverride, setMode] = useState<CalendarViewMode | null>(null);
+  const mode = modeOverride ?? urlMode;
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [readModel, setReadModel] = useState<eventsApi.EventReadModel>("nest");

@@ -25,16 +25,13 @@ export function MarketingNav({
   ctaAsButton = true,
 }: MarketingNavProps) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  const [openForPath, setOpenForPath] = useState<string | null>(null);
+  const open = openForPath === pathname;
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setOpenForPath(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -72,7 +69,11 @@ export function MarketingNav({
           className="md:hidden p-2 text-[var(--text-primary)]"
           aria-label={open ? "Close menu" : "Menu"}
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() =>
+            setOpenForPath((current) =>
+              current === pathname ? null : pathname,
+            )
+          }
         >
           {open ? (
             <svg
@@ -114,13 +115,18 @@ export function MarketingNav({
             <Link
               key={l.href}
               href={l.href}
+              onClick={() => setOpenForPath(null)}
               className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(l.href)}`}
             >
               {l.label}
             </Link>
           ))}
           {ctaAsButton ? (
-            <Link href={ctaHref} className="mt-2 inline-block">
+            <Link
+              href={ctaHref}
+              onClick={() => setOpenForPath(null)}
+              className="mt-2 inline-block"
+            >
               <Button size="lg" className="w-full">
                 {ctaLabel}
               </Button>
@@ -128,6 +134,7 @@ export function MarketingNav({
           ) : (
             <Link
               href={ctaHref}
+              onClick={() => setOpenForPath(null)}
               className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(ctaHref)}`}
             >
               {ctaLabel}

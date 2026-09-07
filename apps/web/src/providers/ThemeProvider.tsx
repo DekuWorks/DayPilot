@@ -6,7 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuth } from "./AuthProvider";
@@ -37,25 +37,42 @@ function applyTheme(theme: DayPilotTheme) {
   document.documentElement.setAttribute("data-theme", theme);
 }
 
+const themeListeners = new Set<() => void>();
+
+function subscribeTheme(onStoreChange: () => void) {
+  themeListeners.add(onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    themeListeners.delete(onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function notifyTheme() {
+  themeListeners.forEach((listener) => listener());
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [theme, setThemeState] = useState<DayPilotTheme>("dark");
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    readStoredTheme,
+    () => "dark" as const,
+  );
 
   useEffect(() => {
-    const stored = readStoredTheme();
-    setThemeState(stored);
-    applyTheme(stored);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const persist = useCallback(
     async (next: DayPilotTheme) => {
-      setThemeState(next);
-      applyTheme(next);
       try {
         window.localStorage.setItem(THEME_STORAGE_KEY, next);
       } catch {
         // ignore quota / private mode
       }
+      applyTheme(next);
+      notifyTheme();
       if (!user || !isSupabaseConfigured()) return;
       try {
         const supabase = createClient();

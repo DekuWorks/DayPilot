@@ -133,9 +133,9 @@ export function sealPrismaConnectionArgs(args: {
   }
 }
 
-export function openPrismaConnectionResult<T>(result: T): T {
+export function openPrismaConnectionResult(result: unknown): unknown {
   if (Array.isArray(result)) {
-    return result.map((row) => openConnectionTokenFields(row)) as T;
+    return result.map((row: unknown) => openConnectionTokenFields(row));
   }
   return openConnectionTokenFields(result);
 }

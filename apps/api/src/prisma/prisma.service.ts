@@ -16,7 +16,7 @@ export class PrismaService
       if (params.model === 'CalendarConnection') {
         sealPrismaConnectionArgs(params.args);
       }
-      const result = await next(params);
+      const result: unknown = await next(params);
       if (params.model === 'CalendarConnection') {
         return openPrismaConnectionResult(result);
       }

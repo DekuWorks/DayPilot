@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/Button";
 import { MarketingNav } from "@/components/MarketingNav";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -17,7 +16,8 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
     try {
-      if (!isSupabaseConfigured()) throw new Error("Supabase is not configured");
+      if (!isSupabaseConfigured())
+        throw new Error("Supabase is not configured");
       const supabase = createClient();
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";

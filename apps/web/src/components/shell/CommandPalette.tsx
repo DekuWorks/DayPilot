@@ -111,8 +111,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               minute: "2-digit",
             }),
           })),
-          ...((tasksRes.data as { id: string; title: string; status: string }[]) ??
-            []
+          ...(
+            (tasksRes.data as {
+              id: string;
+              title: string;
+              status: string;
+            }[]) ?? []
           ).map((t) => ({
             id: `task-${t.id}`,
             label: t.title,
@@ -126,13 +130,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               label: n.title || "Untitled note",
               href: "/notes",
               group: "Notes",
-            })
+            }),
           ),
-          ...((contactsRes.data as {
-            id: string;
-            name: string;
-            email: string | null;
-          }[]) ?? []
+          ...(
+            (contactsRes.data as {
+              id: string;
+              name: string;
+              email: string | null;
+            }[]) ?? []
           ).map((c) => ({
             id: `contact-${c.id}`,
             label: c.name,
@@ -155,7 +160,6 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     if (!open || !isSupabaseConfigured()) return;
     const q = query.trim();
     if (q.length < 1) {
-      setPeopleItems([]);
       return;
     }
 
@@ -193,7 +197,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                 group: "People",
                 hint: u.username ? `@${u.username}` : undefined,
               };
-            })
+            }),
           );
         } catch {
           if (!cancelled) setPeopleItems([]);
@@ -211,14 +215,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     const q = query.trim().toLowerCase();
     const all = [...navActions, ...dynamicItems];
     if (!q) return navActions;
+    const people = q.length > 0 ? peopleItems : [];
     const filtered = all.filter(
       (a) =>
         a.label.toLowerCase().includes(q) ||
         a.group.toLowerCase().includes(q) ||
         a.hint?.toLowerCase().includes(q) ||
-        a.href.toLowerCase().includes(q)
+        a.href.toLowerCase().includes(q),
     );
-    return [...peopleItems, ...filtered];
+    return [...people, ...filtered];
   }, [query, dynamicItems, peopleItems]);
 
   function go(href: string) {

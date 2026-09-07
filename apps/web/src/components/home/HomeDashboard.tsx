@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/AuthProvider";
 import { CalendarApp } from "@/components/calendar/CalendarApp";
@@ -19,38 +19,39 @@ export function HomeDashboard() {
   const { user } = useAuth();
   const [nextEvent, setNextEvent] = useState<CalendarEvent | null>(null);
 
-  const loadNext = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     const now = new Date();
     const to = new Date(now);
     to.setDate(to.getDate() + 2);
-    try {
-      const events = await eventsApi.listEvents({
+    eventsApi
+      .listEvents({
         from: now.toISOString(),
         to: to.toISOString(),
+      })
+      .then((events) => {
+        if (cancelled) return;
+        const upcoming = events
+          .filter((e) => new Date(e.end) >= now)
+          .sort(
+            (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+          );
+        setNextEvent(upcoming[0] ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setNextEvent(null);
       });
-      const upcoming = events
-        .filter((e) => new Date(e.end) >= now)
-        .sort(
-          (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
-        );
-      setNextEvent(upcoming[0] ?? null);
-    } catch {
-      setNextEvent(null);
-    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    void loadNext();
-  }, [loadNext]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--text-secondary)]">
-            {user?.firstName
-              ? `Hello ${user.firstName}`
-              : "Your calendar"}
+            {user?.firstName ? `Hello ${user.firstName}` : "Your calendar"}
           </p>
           {nextEvent ? (
             <p className="mt-1 text-sm font-medium text-[var(--brand-500)]">
