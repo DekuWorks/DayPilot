@@ -32,6 +32,12 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Test API
+        run: pnpm --filter @daypilot/api test
+
+      - name: Test web helpers
+        run: pnpm --filter @daypilot/web test
+
       - name: Build
         run: pnpm run build
 

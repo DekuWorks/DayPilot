@@ -39,13 +39,14 @@ export function CalendarApp() {
   }, []);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [readModel, setReadModel] = useState<eventsApi.EventReadModel>("nest");
   const [loading, setLoading] = useState(true);
   const [createModal, setCreateModal] = useState<{
     date: Date;
     hour?: number;
   } | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
+    null,
   );
 
   const range = useMemo(() => {
@@ -62,7 +63,7 @@ export function CalendarApp() {
     const start = new Date(
       viewDate.getFullYear(),
       viewDate.getMonth(),
-      viewDate.getDate()
+      viewDate.getDate(),
     );
     return { from: start, to: addDays(start, 1) };
   }, [mode, viewDate]);
@@ -74,7 +75,10 @@ export function CalendarApp() {
         from: range.from.toISOString(),
         to: range.to.toISOString(),
       })
-      .then(setEvents)
+      .then((rows) => {
+        setEvents(rows);
+        setReadModel(eventsApi.getEventReadModel());
+      })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
@@ -232,6 +236,12 @@ export function CalendarApp() {
           </Button>
         </div>
       </div>
+      {readModel === "supabase" && (
+        <p className="mb-4 text-xs text-[var(--text-secondary)]">
+          Showing local DayPilot events only. Connected Google, Outlook, and
+          Apple calendars load after the sync API session is ready.
+        </p>
+      )}
 
       {mode === "month" && (
         <MonthCalendarView

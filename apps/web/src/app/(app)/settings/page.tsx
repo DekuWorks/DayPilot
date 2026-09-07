@@ -1,15 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
 import { Button } from "@/components/Button";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { normalizeUsername } from "@/lib/supabase/auth";
+import { ensureNestSession, normalizeUsername } from "@/lib/supabase/auth";
+import { mergeDuplicateAccount } from "@/lib/auth-api";
 import { uploadAvatarFile } from "@/lib/avatar-upload";
 
+const MERGE_DONOR_KEY = "daypilot_merge_donor";
+
 export default function SettingsPage() {
-  const { user, refresh } = useAuth();
+  const { user, refresh, loginWithGoogle, loginWithMicrosoft, loginWithApple } =
+    useAuth();
+  const searchParams = useSearchParams();
   const { theme, setLight } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -30,6 +36,59 @@ export default function SettingsPage() {
     setLastName(user.lastName || "");
     setUsername(user.username || "");
   }, [user]);
+
+  useEffect(() => {
+    if (searchParams.get("merge") !== "1") return;
+    let cancelled = false;
+    void (async () => {
+      const donor = sessionStorage.getItem(MERGE_DONOR_KEY);
+      sessionStorage.removeItem(MERGE_DONOR_KEY);
+      if (!donor) return;
+      const ready = await ensureNestSession({ timeoutMs: 8_000 });
+      if (!ready.ok || cancelled) return;
+      try {
+        const result = await mergeDuplicateAccount(donor);
+        if (cancelled) return;
+        if (result.merged) {
+          setMessage({
+            type: "success",
+            text: `Moved calendar data from ${result.donorEmail ?? "the other sign-in"} onto this account.`,
+          });
+        } else {
+          setMessage({
+            type: "success",
+            text: "No second Nest account to merge.",
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setMessage({
+            type: "error",
+            text: err instanceof Error ? err.message : "Merge failed",
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  async function startAccountLink(provider: "google" | "microsoft" | "apple") {
+    setMessage(null);
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      setMessage({ type: "error", text: "Sign in again, then retry." });
+      return;
+    }
+    sessionStorage.setItem(MERGE_DONOR_KEY, token);
+    const next = "/settings?merge=1";
+    if (provider === "google") await loginWithGoogle({ next });
+    else if (provider === "microsoft") await loginWithMicrosoft({ next });
+    else await loginWithApple({ next });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -267,6 +326,42 @@ export default function SettingsPage() {
             {saving ? "Saving…" : "Save"}
           </Button>
         </form>
+      </div>
+
+      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8 max-w-2xl space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            Link a second sign-in
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Sign in with Apple Hide My Email and Google can create two DayPilot
+            calendars. Sign in with the other method here. Events move onto the
+            account you land on.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void startAccountLink("google")}
+          >
+            Link Google
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void startAccountLink("microsoft")}
+          >
+            Link Microsoft
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void startAccountLink("apple")}
+          >
+            Link Apple
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8 max-w-2xl space-y-4">

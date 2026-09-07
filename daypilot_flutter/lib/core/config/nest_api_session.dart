@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,32 +11,72 @@ const _kAccess = 'nest_access_token';
 const _kRefresh = 'nest_refresh_token';
 
 /// Persists Nest JWTs (after Supabase exchange) and performs authenticated API calls.
+///
+/// Tokens live in the platform keychain / Keystore. SharedPreferences is only
+/// read once to migrate older installs.
 class NestApiSession {
-  NestApiSession(this._prefs);
+  NestApiSession({
+    FlutterSecureStorage? secureStorage,
+    SharedPreferences? prefs,
+  })  : _secure = secureStorage ?? const FlutterSecureStorage(),
+        _prefs = prefs;
 
-  final SharedPreferences _prefs;
+  final FlutterSecureStorage _secure;
+  final SharedPreferences? _prefs;
+
+  String? _access;
+  String? _refresh;
+  Future<void>? _hydrate;
 
   String get baseUrl => DayPilotEnv.daypilotApiUrl.replaceAll(RegExp(r'/$'), '');
-
-  String? get _access => _prefs.getString(_kAccess);
-  String? get _refresh => _prefs.getString(_kRefresh);
 
   bool get hasSession => _access != null && _access!.isNotEmpty;
 
   /// Nest access JWT (Option C WebSocket auth at `/ws`).
   String? get accessToken => _access;
 
+  Future<void> hydrate() {
+    return _hydrate ??= _readStoredTokens();
+  }
+
+  Future<void> _readStoredTokens() async {
+    var access = await _secure.read(key: _kAccess);
+    var refresh = await _secure.read(key: _kRefresh);
+    final prefs = _prefs;
+    if ((access == null || access.isEmpty) && prefs != null) {
+      access = prefs.getString(_kAccess);
+      refresh = prefs.getString(_kRefresh);
+      if (access != null && refresh != null) {
+        await _secure.write(key: _kAccess, value: access);
+        await _secure.write(key: _kRefresh, value: refresh);
+        await prefs.remove(_kAccess);
+        await prefs.remove(_kRefresh);
+      }
+    }
+    _access = access;
+    _refresh = refresh;
+  }
+
   Future<void> clear() async {
-    await _prefs.remove(_kAccess);
-    await _prefs.remove(_kRefresh);
+    await hydrate();
+    _access = null;
+    _refresh = null;
+    await _secure.delete(key: _kAccess);
+    await _secure.delete(key: _kRefresh);
+    await _prefs?.remove(_kAccess);
+    await _prefs?.remove(_kRefresh);
   }
 
   Future<void> _storeTokens({
     required String access,
     required String refresh,
   }) async {
-    await _prefs.setString(_kAccess, access);
-    await _prefs.setString(_kRefresh, refresh);
+    _access = access;
+    _refresh = refresh;
+    await _secure.write(key: _kAccess, value: access);
+    await _secure.write(key: _kRefresh, value: refresh);
+    await _prefs?.remove(_kAccess);
+    await _prefs?.remove(_kRefresh);
   }
 
   /// Call after Supabase sign-in / sign-up when [DayPilotEnv.hasDaypilotApi].
@@ -46,6 +87,7 @@ class NestApiSession {
   }
 
   Future<void> exchangeSupabaseAccessToken(String supabaseAccessToken) async {
+    await hydrate();
     final uri = Uri.parse('$baseUrl/auth/supabase-exchange');
     final res = await http.post(
       uri,
@@ -67,6 +109,7 @@ class NestApiSession {
   }
 
   Future<void> refreshTokens() async {
+    await hydrate();
     final rt = _refresh;
     if (rt == null) return;
     final uri = Uri.parse('$baseUrl/auth/refresh');
@@ -90,6 +133,7 @@ class NestApiSession {
   }
 
   Future<Map<String, String>> authHeaders() async {
+    await hydrate();
     var token = _access;
     if (token == null || token.isEmpty) {
       throw StateError('No Nest API session');

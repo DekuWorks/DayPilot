@@ -1,11 +1,28 @@
 // DayPilot Pilot Brief — grounded daily summary (AI optional, fallback always works)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const PILOT_BRIEF_ORIGINS = new Set([
+  "https://daypilot.co",
+  "https://www.daypilot.co",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+]);
+
+function corsHeadersFor(req: Request) {
+  const origin = req.headers.get("Origin") ?? "";
+  const allowed = PILOT_BRIEF_ORIGINS.has(origin)
+    ? origin
+    : "https://daypilot.co";
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+}
+
+let corsHeaders = corsHeadersFor(new Request("https://daypilot.co"));
 
 const NEST_API_URL = (
   Deno.env.get("NEST_API_URL") ??
@@ -468,6 +485,7 @@ async function loadNestEvents(
 }
 
 Deno.serve(async (req) => {
+  corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

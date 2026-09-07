@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --experimental-strip-types --test src/lib/*.spec.ts",
     "clean": "rm -rf .next"
   },
   "dependencies": {

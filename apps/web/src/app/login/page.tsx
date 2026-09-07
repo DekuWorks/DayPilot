@@ -215,7 +215,7 @@ export default function LoginPage() {
               setError("");
               setAppleLoading(true);
               try {
-                await loginWithApple();
+                await loginWithApple({ next: "/sync?apple=sso" });
               } catch (err) {
                 setError(
                   err instanceof Error ? err.message : "Apple sign-in failed"
