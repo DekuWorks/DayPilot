@@ -1,0 +1,7 @@
+// Copy to Config.local.xcconfig (gitignored) and fill the anon key.
+// Never put Google or Microsoft client secrets in this app.
+
+SUPABASE_URL = https:/$()/wmkytyrcxbzjqiykbauw.supabase.co
+SUPABASE_ANON_KEY =
+DAYPILOT_API_URL = https:/$()/api-production-6c2c.up.railway.app
+DEVELOPMENT_TEAM =

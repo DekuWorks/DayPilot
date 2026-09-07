@@ -1,0 +1,49 @@
+{
+  "" : {
+    "diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets-primary.dia",
+    "emit-module-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets-primary-emit-module.dia",
+    "pch" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets-primary.swiftdeps"
+  },
+  "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/DayPilotWidgets/DayPilotWidgets.swift" : {
+    "const-values" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.swiftconstvalues",
+    "dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.d",
+    "diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.dia",
+    "index-unit-output-path" : "/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.o",
+    "llvm-bc" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.bc",
+    "object" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.o",
+    "swift-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets.swiftdeps",
+    "swiftmodule" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/DayPilotWidgets~partial.swiftmodule"
+  },
+  "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/DayPilotWidgets/WidgetSnapshot.swift" : {
+    "const-values" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.swiftconstvalues",
+    "dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.d",
+    "diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.dia",
+    "index-unit-output-path" : "/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.o",
+    "llvm-bc" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.bc",
+    "object" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.o",
+    "swift-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot.swiftdeps",
+    "swiftmodule" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetSnapshot~partial.swiftmodule"
+  },
+  "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/DayPilotWidgets/WidgetTheme.swift" : {
+    "const-values" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.swiftconstvalues",
+    "dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.d",
+    "diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.dia",
+    "index-unit-output-path" : "/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.o",
+    "llvm-bc" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.bc",
+    "object" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.o",
+    "swift-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme.swiftdeps",
+    "swiftmodule" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/WidgetTheme~partial.swiftmodule"
+  },
+  "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/marcusbrown/Desktop/DayPilot/daypilot_flutter/ios/build/Runner.build/Debug-iphonesimulator/DayPilotWidgets.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}
