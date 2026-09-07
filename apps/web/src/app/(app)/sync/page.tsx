@@ -39,7 +39,7 @@ function formatWhen(iso: string | null | undefined): string {
 export default function SyncPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
   const [eventKit, setEventKit] = useState<EventKitConnectionStatus | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,6 +48,7 @@ export default function SyncPage() {
 
   const connected = searchParams.get("connected");
   const err = searchParams.get("error");
+  const appleSso = searchParams.get("apple") === "sso";
 
   const reload = useCallback(async () => {
     const [data, ek] = await Promise.all([
@@ -66,7 +67,9 @@ export default function SyncPage() {
       .catch((e) => {
         if (!cancelled) {
           setConnections([]);
-          setError(e instanceof Error ? e.message : "Failed to load sync status");
+          setError(
+            e instanceof Error ? e.message : "Failed to load sync status",
+          );
         }
       })
       .finally(() => {
@@ -154,12 +157,21 @@ export default function SyncPage() {
         app (EventKit) — manage it on iPhone.
       </p>
 
+      {appleSso && (
+        <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
+          You are signed in with Apple. That is your DayPilot account, not
+          calendar access. Allow Calendar on iPhone, then open{" "}
+          <a href={DEEP_LINK} className="underline">
+            Apple Calendar in the iOS app
+          </a>
+          .
+        </div>
+      )}
       {connected && !err && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
           {connected === "google" &&
             "Google Calendar connected. Events are syncing."}
-          {connected === "outlook" &&
-            "Outlook connected. Events are syncing."}
+          {connected === "outlook" && "Outlook connected. Events are syncing."}
         </div>
       )}
       {showQueryError && (
@@ -170,7 +182,7 @@ export default function SyncPage() {
             "Outlook connection failed. Try Connect Outlook again."}
           {err === "google_callback" && "Google connection failed. Try again."}
           {!["missing_params", "google_callback", "outlook_callback"].includes(
-            err ?? ""
+            err ?? "",
           ) && "Something went wrong. Try again."}
         </div>
       )}
@@ -209,7 +221,9 @@ export default function SyncPage() {
                 disconnecting={actionLoading === (row.connectionId ?? row.id)}
                 onConnect={() => void handleConnect(row.id)}
                 onReconnect={
-                  row.canReconnect ? () => void handleConnect(row.id) : undefined
+                  row.canReconnect
+                    ? () => void handleConnect(row.id)
+                    : undefined
                 }
                 onDisconnect={
                   row.id !== "apple" && row.connectionId
@@ -311,9 +325,7 @@ function ProviderCard({
               <SsoBrandButton
                 brand={ssoBrandForProvider(row.id)!}
                 label={
-                  connecting
-                    ? "Redirecting…"
-                    : ssoConnectLabel(row.id, false)
+                  connecting ? "Redirecting…" : ssoConnectLabel(row.id, false)
                 }
                 busy={connecting}
                 disabled={busy}

@@ -23,7 +23,7 @@ final class DependencyContainer: ObservableObject {
 
     init(config: AppConfig = .fromBundle()) {
         self.config = config
-        let store = UserDefaultsSessionStore()
+        let store = KeychainSessionStore()
         let http = URLSessionHTTPClient()
         let nest = NestAPIClient(config: config, http: http, store: store)
         let authRepo = SupabaseAuthRepository(config: config, http: http, store: store, nest: nest)

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-21  
 **Scope:** Full monorepo inspection prior to rebrand + web/iOS/backend rebuild  
-**Status:** Historical stub — live stack as of 2026-08-15 is in `docs/daypilot-architecture-audit.md`. ADR-002 is superseded by ADR-004.
+**Status:** Historical stub — live stack as of September 2026 is in `docs/engineering/`. ADR-002 is superseded by ADR-004. Do not treat the Vite / Expo columns below as current.
 
 ---
 

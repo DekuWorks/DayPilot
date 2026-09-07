@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { getApiUrl } from "@/lib/api";
+import { getNestAccessToken } from "@/lib/nest-session";
 
 /**
  * Subscribes to real-time event updates (created/updated/deleted) and calls onSync when any occur.
@@ -16,7 +17,7 @@ export function useEventsSocket(onSync: () => void) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("accessToken");
+    const token = getNestAccessToken();
     if (!token) return;
 
     const socket: Socket = io(getApiUrl(), {

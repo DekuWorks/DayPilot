@@ -36,6 +36,10 @@ import {
   graphGetPaged,
   withGraphRetry,
 } from './graph-client';
+import {
+  googleEventTimeFields,
+  outlookEventTimeFields,
+} from './provider-event-fields';
 
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 min
 /** Marker token for iOS EventKit imports (no CalDAV credentials). */
@@ -109,10 +113,7 @@ export class CalendarConnectionsService {
   }): 'valid' | 'expired' | 'needs_reconnect' | 'unknown' {
     if (!c.accessToken) return 'needs_reconnect';
     // iCloud CalDAV / EventKit use non-expiring device credentials
-    if (
-      c.providerType === 'apple' ||
-      c.providerType === 'apple_eventkit'
-    ) {
+    if (c.providerType === 'apple' || c.providerType === 'apple_eventkit') {
       return 'valid';
     }
     if (c.expiresAt == null) return 'unknown';
@@ -201,10 +202,8 @@ export class CalendarConnectionsService {
     let calendarUrls: string[];
     let workingPassword: string;
     try {
-      ({ calendarUrl, calendarUrls, workingPassword } = await verifyIcloudCalDav(
-        email,
-        password,
-      ));
+      ({ calendarUrl, calendarUrls, workingPassword } =
+        await verifyIcloudCalDav(email, password));
       this.logger.log(
         `iCloud CalDAV connected for user ${userId} (${calendarUrls.length} calendar(s); http ok)`,
       );
@@ -268,24 +267,25 @@ export class CalendarConnectionsService {
       'iPhone Calendar';
 
     const existing = await this.prisma.calendarConnection.findUnique({
-      where: { userId_providerType_deviceId: {
+      where: {
+        userId_providerType_deviceId: {
           userId,
           providerType: 'apple',
           deviceId: '',
-        } },
+        },
+      },
     });
     const keepCalDav =
-      !!existing?.accessToken &&
-      existing.accessToken !== DEVICE_EVENTKIT_TOKEN;
+      !!existing?.accessToken && existing.accessToken !== DEVICE_EVENTKIT_TOKEN;
 
     if (!keepCalDav) {
       await this.prisma.calendarConnection.upsert({
         where: {
           userId_providerType_deviceId: {
-          userId,
-          providerType: 'apple',
-          deviceId: '',
-        },
+            userId,
+            providerType: 'apple',
+            deviceId: '',
+          },
         },
         create: {
           userId,
@@ -413,10 +413,10 @@ export class CalendarConnectionsService {
       await this.prisma.calendarConnection.upsert({
         where: {
           userId_providerType_deviceId: {
-          userId,
-          providerType: 'google',
-          deviceId: '',
-        },
+            userId,
+            providerType: 'google',
+            deviceId: '',
+          },
         },
         create: {
           userId,
@@ -482,7 +482,9 @@ export class CalendarConnectionsService {
     },
   ) {
     if (!tokens.accessToken) {
-      throw new BadRequestException('Outlook token response missing access_token');
+      throw new BadRequestException(
+        'Outlook token response missing access_token',
+      );
     }
     let email = mailboxFromTokenResponse(tokens) ?? 'outlook';
     try {
@@ -581,10 +583,7 @@ export class CalendarConnectionsService {
       await this.syncGoogleCalendar(userId, conn, rangeStart, rangeEnd);
     } else if (provider === 'outlook') {
       await this.syncOutlookCalendar(userId, conn, rangeStart, rangeEnd);
-    } else if (
-      provider === 'apple' ||
-      provider === 'apple_eventkit'
-    ) {
+    } else if (provider === 'apple' || provider === 'apple_eventkit') {
       if (
         provider === 'apple_eventkit' ||
         conn.accessToken === DEVICE_EVENTKIT_TOKEN
@@ -948,8 +947,7 @@ export class CalendarConnectionsService {
     expiresAt: Date | null;
   }): Promise<string> {
     const expiresSoon =
-      conn.expiresAt != null &&
-      conn.expiresAt.getTime() < Date.now() + 60_000;
+      conn.expiresAt != null && conn.expiresAt.getTime() < Date.now() + 60_000;
     if (!expiresSoon && conn.accessToken) return conn.accessToken;
     if (!conn.refreshToken) return conn.accessToken;
     return this.refreshGoogleTokens(
@@ -987,7 +985,8 @@ export class CalendarConnectionsService {
 
     const data = await res.json();
     const accessToken = data.access_token as string;
-    const nextRefresh = (data.refresh_token as string | undefined) ?? refreshToken;
+    const nextRefresh =
+      (data.refresh_token as string | undefined) ?? refreshToken;
     const expiresIn = (data.expires_in as number) ?? 3600;
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
@@ -1010,8 +1009,7 @@ export class CalendarConnectionsService {
     expiresAt: Date | null;
   }): Promise<string> {
     const expiresSoon =
-      conn.expiresAt != null &&
-      conn.expiresAt.getTime() < Date.now() + 60_000;
+      conn.expiresAt != null && conn.expiresAt.getTime() < Date.now() + 60_000;
     if (!expiresSoon && conn.accessToken) return conn.accessToken;
     if (!conn.refreshToken) return conn.accessToken;
     return this.refreshOutlookTokens(conn.id, conn.refreshToken);
@@ -1078,6 +1076,7 @@ export class CalendarConnectionsService {
       const end = item.end.dateTime
         ? new Date(item.end.dateTime)
         : new Date(item.end.date!);
+      const timeFields = googleEventTimeFields(item);
       await this.prisma.event.upsert({
         where: {
           userId_source_externalId: {
@@ -1097,6 +1096,12 @@ export class CalendarConnectionsService {
           location: item.location ?? null,
           externalCalendarId: calId,
           calendarId: calendarRowId,
+          allDay: timeFields.allDay,
+          timezone: timeFields.timezone,
+          recurrenceRule: timeFields.recurrenceRule,
+          metadata: timeFields.seriesId
+            ? { seriesId: timeFields.seriesId }
+            : undefined,
         },
         update: {
           title: item.summary ?? 'Event',
@@ -1106,6 +1111,12 @@ export class CalendarConnectionsService {
           location: item.location ?? null,
           externalCalendarId: calId,
           calendarId: calendarRowId,
+          allDay: timeFields.allDay,
+          timezone: timeFields.timezone,
+          recurrenceRule: timeFields.recurrenceRule,
+          ...(timeFields.seriesId
+            ? { metadata: { seriesId: timeFields.seriesId } }
+            : {}),
         },
       });
     }
@@ -1159,6 +1170,9 @@ export class CalendarConnectionsService {
     const events = await graphGetPaged<{
       id: string;
       subject?: string;
+      isAllDay?: boolean;
+      seriesMasterId?: string;
+      recurrence?: { pattern?: { type?: string; interval?: number } };
       start?: { dateTime: string; timeZone?: string };
       end?: { dateTime: string; timeZone?: string };
       body?: { content?: string };
@@ -1172,6 +1186,7 @@ export class CalendarConnectionsService {
       if (!ev.id || !ev.start?.dateTime || !ev.end?.dateTime) continue;
       const start = new Date(ev.start.dateTime);
       const end = new Date(ev.end.dateTime);
+      const timeFields = outlookEventTimeFields(ev);
       await this.prisma.event.upsert({
         where: {
           userId_source_externalId: {
@@ -1191,6 +1206,12 @@ export class CalendarConnectionsService {
           location: ev.location?.displayName ?? null,
           externalCalendarId: outlookCalId,
           calendarId: calendarRowId,
+          allDay: timeFields.allDay,
+          timezone: timeFields.timezone,
+          recurrenceRule: timeFields.recurrenceRule,
+          metadata: timeFields.seriesId
+            ? { seriesId: timeFields.seriesId }
+            : undefined,
         },
         update: {
           title: ev.subject ?? 'Event',
@@ -1200,6 +1221,12 @@ export class CalendarConnectionsService {
           location: ev.location?.displayName ?? null,
           externalCalendarId: outlookCalId,
           calendarId: calendarRowId,
+          allDay: timeFields.allDay,
+          timezone: timeFields.timezone,
+          recurrenceRule: timeFields.recurrenceRule,
+          ...(timeFields.seriesId
+            ? { metadata: { seriesId: timeFields.seriesId } }
+            : {}),
         },
       });
     }
@@ -1461,10 +1488,7 @@ const OUTLOOK_PRESET: Record<string, string> = {
   maxColor: '#6366F1',
 };
 
-function outlookCalendarHex(
-  hexColor?: string,
-  preset?: string,
-): string | null {
+function outlookCalendarHex(hexColor?: string, preset?: string): string | null {
   if (hexColor && hexColor !== 'auto' && /^#?[0-9a-fA-F]{6}$/.test(hexColor)) {
     return hexColor.startsWith('#') ? hexColor : `#${hexColor}`;
   }

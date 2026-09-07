@@ -15,7 +15,7 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
 
 /// Nest JWT session (Option C). Used after Supabase → `/auth/supabase-exchange`.
 final nestApiSessionProvider = Provider<NestApiSession>((ref) {
-  return NestApiSession(ref.watch(sharedPreferencesProvider));
+  return NestApiSession(prefs: ref.watch(sharedPreferencesProvider));
 });
 
 /// Drives go_router redirects when auth session changes.

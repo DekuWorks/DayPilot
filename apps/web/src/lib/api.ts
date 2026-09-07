@@ -1,3 +1,5 @@
+import { getNestAccessToken } from "./nest-session";
+
 // Prefer 127.0.0.1 — macOS "localhost" can stall ~60s on IPv6 when API is down.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
 
@@ -18,7 +20,7 @@ export function getApiErrorMessage(body: unknown, fallback: string): string {
 
 export function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("accessToken");
+  const token = getNestAccessToken();
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
