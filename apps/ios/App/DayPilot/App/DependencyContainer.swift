@@ -18,6 +18,7 @@ final class DependencyContainer: ObservableObject {
     let loadProfile: LoadProfileUseCase
     let signInEmail: SignInWithEmailUseCase
     let signOut: SignOutUseCase
+    let deleteAccount: DeleteAccountUseCase
     let syncEventKit: SyncEventKitUseCase
     let eventKit: EventKitStoreRepository
 
@@ -40,6 +41,7 @@ final class DependencyContainer: ObservableObject {
         self.loadProfile = LoadProfileUseCase(repository: SupabaseProfileRepository(config: config, http: http, store: store))
         self.signInEmail = SignInWithEmailUseCase(repository: authRepo)
         self.signOut = SignOutUseCase(repository: authRepo)
+        self.deleteAccount = DeleteAccountUseCase(repository: authRepo)
         self.syncEventKit = SyncEventKitUseCase(
             eventKit: eventKitRepo,
             cloud: NestEventKitCloudSyncRepository(client: nest)

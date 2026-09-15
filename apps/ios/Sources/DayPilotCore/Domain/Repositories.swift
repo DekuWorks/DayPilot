@@ -6,6 +6,8 @@ public protocol AuthRepository: Sendable {
     func completeOAuth(callbackURL: URL) async throws -> AuthSession
     func googleAuthorizeURL() throws -> URL
     func signOut() async
+    /// Permanent Nest + Supabase account deletion (App Store 5.1.1(v)).
+    func deleteAccount() async throws
 }
 
 public protocol CalendarEventsRepository: Sendable {

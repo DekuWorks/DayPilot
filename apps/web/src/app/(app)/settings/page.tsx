@@ -13,8 +13,14 @@ import { uploadAvatarFile } from "@/lib/avatar-upload";
 const MERGE_DONOR_KEY = "daypilot_merge_donor";
 
 export default function SettingsPage() {
-  const { user, refresh, loginWithGoogle, loginWithMicrosoft, loginWithApple } =
-    useAuth();
+  const {
+    user,
+    refresh,
+    loginWithGoogle,
+    loginWithMicrosoft,
+    loginWithApple,
+    deleteAccount,
+  } = useAuth();
   const searchParams = useSearchParams();
   const { theme, setLight } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -24,6 +30,7 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -382,6 +389,48 @@ export default function SettingsPage() {
             Open Sync
           </a>
         </div>
+      </div>
+
+      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--error)]/40 bg-[var(--surface-primary)] p-6 md:p-8 max-w-2xl space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            Delete account
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Permanently delete your DayPilot account, profile, and calendar
+            connections. This cannot be undone.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={deleting || !user}
+          onClick={() => {
+            const ok = window.confirm(
+              "Delete your DayPilot account permanently? This cannot be undone.",
+            );
+            if (!ok) return;
+            setDeleting(true);
+            setMessage(null);
+            void (async () => {
+              try {
+                await deleteAccount();
+                window.location.href = "/login";
+              } catch (err) {
+                setMessage({
+                  type: "error",
+                  text:
+                    err instanceof Error
+                      ? err.message
+                      : "Could not delete account",
+                });
+                setDeleting(false);
+              }
+            })();
+          }}
+        >
+          {deleting ? "Deleting…" : "Delete account"}
+        </Button>
       </div>
     </div>
   );

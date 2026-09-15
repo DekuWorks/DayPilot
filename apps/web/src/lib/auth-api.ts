@@ -109,6 +109,22 @@ export async function mergeDuplicateAccount(donorAccessToken: string): Promise<{
   return res.json();
 }
 
+/** Permanent account deletion (Nest + Supabase). Requires Nest JWT. */
+export async function deleteAccount(): Promise<{ ok: boolean }> {
+  const { clearNestSessionMemory } = await import("./nest-session");
+  const res = await nestFetch(`${getApiUrl()}/auth/me`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm: "DELETE" }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getApiErrorMessage(err, "Could not delete account"));
+  }
+  clearNestSessionMemory();
+  return res.json();
+}
+
 export async function fetchMe(): Promise<User | null> {
   if (typeof window === "undefined") return null;
   const res = await nestFetch(`${getApiUrl()}/auth/me`);

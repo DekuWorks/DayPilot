@@ -76,6 +76,11 @@ public struct SupabaseAuthRepository: AuthRepository {
         store.clear()
     }
 
+    public func deleteAccount() async throws {
+        _ = try await nest.delete(path: "/auth/me", json: ["confirm": "DELETE"])
+        store.clear()
+    }
+
     private func persist(from data: Data) async throws -> AuthSession {
         let json = try JSONValue.object(data)
         guard let access = json["access_token"] as? String else {
