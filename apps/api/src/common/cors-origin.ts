@@ -80,6 +80,12 @@ export function socketCorsOrigin(
       raw !== undefined ? raw : process.env.CORS_ORIGIN,
       nodeEnv ?? process.env.NODE_ENV,
     );
+    // Narrow CorsOriginOption (boolean | string[] | CorsOriginCallback)
+    // before calling — `false` is not callable.
+    if (typeof option === 'function') {
+      option(origin, callback);
+      return;
+    }
     if (option === true) {
       callback(null, true);
       return;
@@ -88,6 +94,6 @@ export function socketCorsOrigin(
       callback(null, !origin || option.includes(origin));
       return;
     }
-    option(origin, callback);
+    callback(null, false);
   };
 }
