@@ -55,10 +55,12 @@ This is a **category error** if the UI implies Apple SSO “connected the calend
 
 | Client  | Auth                                                         | Persistence                                            |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------------ |
-| Flutter | Supabase + `POST /auth/supabase-exchange` (`NestApiSession`) | Nest JWTs in **SharedPreferences**, not secure storage |
-| SwiftUI | Same exchange via `NestAPIClient`                            | `InMemorySessionStore`; no Nest refresh-token rotation |
+| Flutter | Supabase + `POST /auth/supabase-exchange` (`NestApiSession`). Apple uses native SIWA; Google/Microsoft use in-app `ASWebAuthenticationSession` via `flutter_web_auth_2`. | Nest JWTs in **Keychain** (`flutter_secure_storage`) |
+| SwiftUI | Same exchange via `NestAPIClient`; Google via `ASWebAuthenticationSession` | `KeychainSessionStore`; Nest refresh-token rotation limited |
 
-Account linking: Nest resolves the user **by email** at `exchangeFromSupabaseAccessToken`. There is no Supabase `user.id` on Prisma `User`. Apple Hide My Email (`@privaterelay.appleid.com`) vs Gmail can create **two Nest users**. No link-accounts UI.
+Account linking: Nest resolves the user **by Supabase `sub` first**, then email, at `exchangeFromSupabaseAccessToken`. Apple Hide My Email (`@privaterelay.appleid.com`) vs Gmail can create **two Nest users**. Settings → “Link a second sign-in” / merge-duplicate covers that.
+
+Account deletion: `DELETE /auth/me` (Nest JWT + `{ confirm: "DELETE" }`) removes Nest rows and the Supabase Auth user. UI: Flutter/Web/SwiftUI **Settings → Delete account**. See `docs/APP_STORE_REVIEW_NOTES.md`.
 
 ---
 

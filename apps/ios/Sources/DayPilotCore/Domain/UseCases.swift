@@ -109,6 +109,18 @@ public struct SignOutUseCase: Sendable {
     }
 }
 
+public struct DeleteAccountUseCase: Sendable {
+    private let repository: AuthRepository
+
+    public init(repository: AuthRepository) {
+        self.repository = repository
+    }
+
+    public func callAsFunction() async throws {
+        try await repository.deleteAccount()
+    }
+}
+
 public struct SyncEventKitUseCase: Sendable {
     private let eventKit: EventKitAccessing
     private let cloud: EventKitCloudSyncing

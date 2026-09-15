@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
+import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../../core/widgets/feature_scaffold.dart';
@@ -25,6 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _uploading = false;
+  bool _deleting = false;
   String? _message;
   bool _error = false;
 
@@ -244,8 +246,75 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: _saving ? null : _save,
                   child: Text(_saving ? 'Saving…' : 'Save changes'),
                 ),
+                const SizedBox(height: 32),
+                Text(
+                  'Account',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Permanently delete your DayPilot account and associated data. This cannot be undone.',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _deleting ? null : _confirmDeleteAccount,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: DayPilotColors.error,
+                    side: const BorderSide(color: DayPilotColors.error),
+                  ),
+                  child: Text(
+                    _deleting ? 'Deleting…' : 'Delete account',
+                  ),
+                ),
               ],
             ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This permanently deletes your DayPilot account, calendar connections, and profile data. You cannot undo this.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: DayPilotColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _deleting = true;
+      _message = null;
+      _error = false;
+    });
+    try {
+      await ref.read(authRepositoryProvider).deleteAccount();
+      if (!mounted) return;
+      // Router redirects to login once the Supabase session is cleared.
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+        _message = e.toString();
+        _deleting = false;
+      });
+    }
   }
 }

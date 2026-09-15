@@ -1,6 +1,8 @@
 # Google sign-in (Supabase Auth / SSO)
 
-DayPilot web + Flutter call `signInWithOAuth({ provider: "google" })`.
+DayPilot web uses `signInWithOAuth({ provider: "google" })`. Flutter iOS/Android
+opens the same Supabase authorize URL inside an in-app auth session
+(`ASWebAuthenticationSession` / Custom Tabs) instead of the system browser.
 If you see `Unsupported provider: provider is not enabled`, Google is still off
 in Supabase Auth.
 
@@ -76,8 +78,10 @@ Add `--also-calendar` to write the same values into repo-root `.env` for Nest ca
 **iOS simulator / device**
 
 1. Open DayPilot → **Continue with Google**.
-2. Complete consent in Safari.
-3. App should reopen via the deep link and land on Home.
+2. Complete consent in the **in-app** auth session (`ASWebAuthenticationSession` / Custom Tabs — not Safari as the primary path).
+3. App should receive the callback and land on Home.
+
+See [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md) for the App Store Guideline 4 fix.
 
 ## Calendar sync vs Sign-in
 

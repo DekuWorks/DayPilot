@@ -27,12 +27,14 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   PROFILE_FETCH_TIMEOUT_MS,
   clearNestSession,
+  ensureNestSession,
   exchangeNestSession,
   fetchProfile,
   mapSupabaseUser,
   persistSharedAvatarIfMissing,
   normalizeUsername,
 } from "@/lib/supabase/auth";
+import { deleteAccount as deleteAccountApi } from "@/lib/auth-api";
 import { maybeAutoConnectCalendars } from "@/lib/calendar-auto-connect";
 
 type AuthState = {
@@ -56,6 +58,8 @@ type AuthContextValue = AuthState & {
   /** Optional next path (e.g. `/sync`) after Apple SSO callback. */
   loginWithApple: (options?: { next?: string }) => Promise<void>;
   logout: () => Promise<void>;
+  /** Permanent deletion via Nest DELETE /auth/me, then Supabase sign-out. */
+  deleteAccount: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
@@ -409,6 +413,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, isLoading: false, isAuthenticated: false });
   }, [supabase]);
 
+  const deleteAccount = useCallback(async () => {
+    const ready = await ensureNestSession({ timeoutMs: 8_000 });
+    if (!ready.ok) {
+      throw new Error(
+        ready.error ||
+          "Could not reach the account API. Try again in a moment.",
+      );
+    }
+    await deleteAccountApi();
+    enrichGenRef.current += 1;
+    appliedAccessTokenRef.current = null;
+    if (supabase) await supabase.auth.signOut();
+    clearNestSession();
+    setState({ user: null, isLoading: false, isAuthenticated: false });
+  }, [supabase]);
+
   const refresh = useCallback(async () => {
     if (!supabase) throw new Error("Supabase is not configured");
     const { data, error } = await supabase.auth.refreshSession();
@@ -425,6 +445,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithMicrosoft,
     loginWithApple,
     logout,
+    deleteAccount,
     refresh,
   };
 

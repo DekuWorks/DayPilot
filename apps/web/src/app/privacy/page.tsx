@@ -137,14 +137,26 @@ export default function PrivacyPage() {
               <li>Update or delete calendar events you created in DayPilot.</li>
               <li>Disconnect Google, Outlook, or Apple Calendar sync in the app.</li>
               <li>
-                Request account deletion or a copy of your data by emailing{" "}
+                Delete your account in the app under{" "}
+                <strong className="text-[var(--text-primary)]">
+                  Settings → Delete account
+                </strong>{" "}
+                (also available at{" "}
+                <a
+                  href="/settings"
+                  className="text-[var(--brand-500)] hover:underline"
+                >
+                  daypilot.co/settings
+                </a>
+                ). Deletion removes your DayPilot profile and associated data; it
+                is not a temporary deactivation. You can also email{" "}
                 <a
                   href="mailto:hello@daypilot.co?subject=Privacy%20request"
                   className="text-[var(--brand-500)] hover:underline"
                 >
                   hello@daypilot.co
-                </a>
-                .
+                </a>{" "}
+                to request a copy of your data.
               </li>
               <li>
                 For Sign in with Apple, you can also manage the app under Apple ID

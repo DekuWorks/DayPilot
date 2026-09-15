@@ -35,6 +35,10 @@ public struct NestAPIClient: Sendable {
         try await send(method: "POST", path: path, query: [:], body: json)
     }
 
+    public func delete(path: String, json: [String: Any]? = nil) async throws -> Data {
+        try await send(method: "DELETE", path: path, query: [:], body: json)
+    }
+
     private func send(
         method: String,
         path: String,

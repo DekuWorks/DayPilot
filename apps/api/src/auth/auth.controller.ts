@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -17,6 +18,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SupabaseExchangeDto } from './dto/supabase-exchange.dto';
 import { MergeDuplicateDto } from './dto/merge-duplicate.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
   REFRESH_COOKIE,
@@ -115,5 +117,21 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(req.user.id, dto);
+  }
+
+  /** App Store 5.1.1(v) — permanent account deletion (Nest + Supabase Auth). */
+  @UseGuards(JwtAuthGuard)
+  @Delete('me')
+  async deleteAccount(
+    @Req() req: { user: { id: string } },
+    @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.deleteAccount(
+      req.user.id,
+      dto.confirm,
+    );
+    clearAuthCookies(res);
+    return result;
   }
 }
