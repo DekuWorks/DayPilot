@@ -102,7 +102,8 @@ describe('summarizeMicrosoftOAuthError', () => {
       JSON.stringify({
         error: 'invalid_grant',
         error_codes: [70000],
-        error_description: 'AADSTS70000: The request was denied.\r\nTrace ID: abc',
+        error_description:
+          'AADSTS70000: The request was denied.\r\nTrace ID: abc',
       }),
     );
     expect(summary).toContain('invalid_grant');
@@ -119,7 +120,9 @@ describe('summarizeGraphError', () => {
         code: 'InvalidAuthenticationToken',
         message: 'Access token has expired.',
       }),
-    ).toBe('status=401 code=InvalidAuthenticationToken Access token has expired.');
+    ).toBe(
+      'status=401 code=InvalidAuthenticationToken Access token has expired.',
+    );
   });
 });
 

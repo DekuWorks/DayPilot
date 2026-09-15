@@ -14,9 +14,15 @@ export type { CalendarEvent } from "./events-supabase";
 export type EventReadModel = "nest" | "supabase";
 
 let lastEventReadModel: EventReadModel = "supabase";
+let lastEventFallbackReason: string | null = null;
 
 export function getEventReadModel(): EventReadModel {
   return lastEventReadModel;
+}
+
+/** Why the last listEvents call used Supabase despite a Nest session, if any. */
+export function getEventListFallbackReason(): string | null {
+  return lastEventFallbackReason;
 }
 
 async function preferNest(): Promise<boolean> {
@@ -34,6 +40,7 @@ function mapNestToCalendar(e: nestEvents.Event): CalendarEvent {
     end: e.end,
     description: e.description ?? null,
     location: e.location ?? null,
+    // Nest Event has no meetingUrl column yet — Supabase path still stores it.
     meetingUrl: null,
     calendarId: e.calendarId ?? null,
     externalCalendarId: e.externalCalendarId ?? null,
@@ -58,13 +65,21 @@ export async function listEvents(params?: {
   from?: string;
   to?: string;
 }): Promise<CalendarEvent[]> {
+  lastEventFallbackReason = null;
   if (await preferNest()) {
     try {
       const rows = await nestEvents.listEvents(params);
       lastEventReadModel = "nest";
       return rows.map(mapNestToCalendar);
-    } catch {
-      // Nest down / expired — fall through to Supabase so the UI still loads.
+    } catch (e) {
+      lastEventFallbackReason =
+        e instanceof Error ? e.message : "Nest events unavailable";
+      if (typeof console !== "undefined") {
+        console.warn(
+          "[events] Nest list failed; falling back to Supabase:",
+          lastEventFallbackReason,
+        );
+      }
     }
   }
   lastEventReadModel = "supabase";

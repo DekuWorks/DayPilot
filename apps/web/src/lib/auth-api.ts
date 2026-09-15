@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
+import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 
 export type User = {
   id: string;
@@ -14,9 +14,9 @@ export type User = {
 export async function updateProfile(data: {
   avatarUrl?: string | null;
 }): Promise<User> {
-  const res = await fetch(`${getApiUrl()}/auth/me`, {
+  const res = await nestFetch(`${getApiUrl()}/auth/me`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -97,15 +97,11 @@ export async function mergeDuplicateAccount(donorAccessToken: string): Promise<{
   reason?: string;
   donorEmail?: string;
 }> {
-  const { nestCredentialsInit } = await import("./nest-session");
-  const res = await fetch(
-    `${getApiUrl()}/auth/merge-duplicate`,
-    nestCredentialsInit({
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ donorAccessToken }),
-    }),
-  );
+  const res = await nestFetch(`${getApiUrl()}/auth/merge-duplicate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ donorAccessToken }),
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(getApiErrorMessage(err, "Could not merge accounts"));
@@ -114,9 +110,8 @@ export async function mergeDuplicateAccount(donorAccessToken: string): Promise<{
 }
 
 export async function fetchMe(): Promise<User | null> {
-  const headers = getAuthHeaders();
-  if (!headers.Authorization) return null;
-  const res = await fetch(`${getApiUrl()}/auth/me`, { headers });
+  if (typeof window === "undefined") return null;
+  const res = await nestFetch(`${getApiUrl()}/auth/me`);
   if (!res.ok) return null;
   return res.json();
 }

@@ -74,12 +74,14 @@ Handled on `fix/critical-audit-remediation` (this pass):
 Left on purpose (destabilising or product-sized):
 
 1. Dual production databases (Prisma events vs Supabase product tables).
-2. Empty `@daypilot/ui`; `@daypilot/lib` lint script is a no-op.
+2. Empty `@daypilot/ui`; `@daypilot/lib` / `@daypilot/ui` lint via `tsc --noEmit`.
 3. Two iOS codebases until SwiftUI reaches parity (do not delete Flutter).
 4. iCloud CalDAV dormant; no live ICS subscription provider.
 5. No Playwright/Cypress; no automated RLS tests.
 6. No explicit Google/Graph backoff module.
 7. Hide My Email vs Gmail: Settings → “Link a second sign-in” plus `POST /auth/merge-duplicate` (both Supabase JWTs required). Google/Outlook `singleEvents` / `calendarView` still expand instances; RRULE is stored when the provider sends it.
+
+Live register: `docs/engineering/TECHNICAL_DEBT.md`.
 
 ---
 
@@ -88,12 +90,14 @@ Left on purpose (destabilising or product-sized):
 | Severity | Finding                                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------- |
 | HIGH     | Prisma tokens: encrypt when `CALENDAR_TOKEN_ENCRYPTION_KEY` is set; leftover plaintext until next write |
-| HIGH     | Web Nest JWTs: moved off `localStorage` to memory + httpOnly cookies                                    |
-| HIGH     | Nest user now stores `supabase_user_id`; email-only leftovers still need a link UI                      |
+| HIGH     | Web Nest JWTs: memory + httpOnly cookies (Bearer + `credentials: include` on Nest fetches)              |
+| HIGH     | Nest user stores `supabase_user_id`; email-only leftovers still need a link UI                          |
 | MEDIUM   | Flutter Nest JWTs: Keychain via secure storage (migrates old prefs once)                                |
-| MEDIUM   | Dual auth identity (Supabase UUID vs Nest cuid) linked only by email                                    |
-| MEDIUM   | Pilot Brief Edge Function CORS is `*` (`supabase/functions/pilot-brief/index.ts`)                       |
+| MEDIUM   | Dual auth identity (Supabase UUID vs Nest cuid) linked by `supabase_user_id` (+ merge-duplicate)        |
+| MEDIUM   | Pilot Brief Edge Function CORS is origin-allowlisted (`supabase/functions/pilot-brief/index.ts`)        |
 | LOW      | `.env` exists locally and is gitignored — do not commit                                                 |
+
+Production API requires `CORS_ORIGIN` and a non-placeholder `JWT_SECRET`. See `docs/engineering/TECHNICAL_DEBT.md`.
 
 No client-side service-role key was found in application source. `.env.example` documents anon + Nest secrets only.
 

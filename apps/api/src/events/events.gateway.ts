@@ -4,16 +4,24 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { socketCorsOrigin } from '../common/cors-origin';
+import { resolveJwtSecret } from '../common/jwt-secret';
 
 const USER_ROOM_PREFIX = 'user:';
 
+type HandshakeAuth = { token?: string };
+type HandshakeQuery = { token?: string | string[] };
+
 @WebSocketGateway({
-  cors: { origin: true },
+  cors: {
+    origin: socketCorsOrigin(),
+    credentials: true,
+  },
   path: '/ws',
   transports: ['websocket', 'polling'],
 })
@@ -27,38 +35,42 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly config: ConfigService,
   ) {}
 
-  async handleConnection(client: {
-    handshake: any;
-    id: string;
-    join: (room: string) => void;
-    disconnect: () => void;
-  }) {
+  handleConnection(client: Socket) {
+    const auth = client.handshake?.auth as HandshakeAuth | undefined;
+    const query = client.handshake?.query as HandshakeQuery | undefined;
+    const queryToken = query?.token;
+    const headerAuth = client.handshake?.headers?.authorization;
     const token =
-      client.handshake?.auth?.token ??
-      client.handshake?.query?.token ??
-      client.handshake?.headers?.authorization?.replace?.('Bearer ', '');
+      auth?.token ??
+      (Array.isArray(queryToken) ? queryToken[0] : queryToken) ??
+      (typeof headerAuth === 'string'
+        ? headerAuth.replace(/^Bearer\s+/i, '')
+        : undefined);
     if (!token) {
       client.disconnect();
       return;
     }
     try {
-      const payload = this.jwtService.verify(token, {
-        secret:
-          this.config.get<string>('JWT_SECRET') || 'change-me-in-production',
+      const payload = this.jwtService.verify<{
+        type?: string;
+        sub?: string;
+      }>(token, {
+        secret: resolveJwtSecret(this.config.get<string>('JWT_SECRET')),
       });
       if (payload.type !== 'access' || !payload.sub) {
         client.disconnect();
         return;
       }
-      const userId = payload.sub as string;
-      (client as any).userId = userId;
-      client.join(USER_ROOM_PREFIX + userId);
+      const userId = payload.sub;
+      const data = client.data as { userId?: string };
+      data.userId = userId;
+      void client.join(USER_ROOM_PREFIX + userId);
     } catch {
       client.disconnect();
     }
   }
 
-  handleDisconnect(_client: any) {
+  handleDisconnect() {
     // optional: cleanup
   }
 

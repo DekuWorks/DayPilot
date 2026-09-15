@@ -6,6 +6,7 @@ import {
   hasNestAccessToken,
   nestAccessTokenTtlMs,
   setNestSession,
+  subscribeNestSession,
 } from "./nest-session.ts";
 
 function jwtWithExp(expSeconds: number) {
@@ -30,5 +31,25 @@ describe("nest-session memory store", () => {
     clearNestSessionMemory();
     assert.equal(getNestAccessToken(), null);
     assert.equal(hasNestAccessToken(), false);
+  });
+
+  it("notifies subscribers on set and clear", () => {
+    clearNestSessionMemory();
+    let calls = 0;
+    const unsub = subscribeNestSession(() => {
+      calls += 1;
+    });
+    setNestSession({
+      accessToken: jwtWithExp(Math.floor(Date.now() / 1000) + 600),
+      refreshToken: "refresh",
+    });
+    clearNestSessionMemory();
+    unsub();
+    setNestSession({
+      accessToken: jwtWithExp(Math.floor(Date.now() / 1000) + 600),
+      refreshToken: "refresh",
+    });
+    assert.equal(calls, 2);
+    clearNestSessionMemory();
   });
 });

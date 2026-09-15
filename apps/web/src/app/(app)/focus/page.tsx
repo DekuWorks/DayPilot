@@ -5,15 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
 import * as focusApi from "@/lib/focus-supabase";
-
-function formatDuration(seconds: number) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s.toString().padStart(2, "0")}s`;
-  return `${s}s`;
-}
+import { formatDuration } from "@/lib/format-duration";
 
 export default function FocusPage() {
   const { user } = useAuth();

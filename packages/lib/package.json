@@ -12,8 +12,10 @@
     }
   },
   "scripts": {
-    "lint": "echo 'ESLint when configured'",
+    "lint": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
 }

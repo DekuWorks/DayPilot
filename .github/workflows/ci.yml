@@ -38,6 +38,9 @@ jobs:
       - name: Test web helpers
         run: pnpm --filter @daypilot/web test
 
+      - name: Prettier check (API)
+        run: pnpm --filter @daypilot/api exec prettier --check "src/**/*.ts"
+
       - name: Build
         run: pnpm run build
 

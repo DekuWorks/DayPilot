@@ -39,7 +39,8 @@ function mergeEventMeta(
       : {};
   if (patch.workspaceId !== undefined) next.workspaceId = patch.workspaceId;
   else if (base.workspaceId) next.workspaceId = base.workspaceId;
-  if (patch.calendarColor !== undefined) next.calendarColor = patch.calendarColor;
+  if (patch.calendarColor !== undefined)
+    next.calendarColor = patch.calendarColor;
   else if (base.calendarColor) next.calendarColor = base.calendarColor;
   return next;
 }
@@ -62,8 +63,7 @@ function toEventPayload(e: {
   syncDirection?: string | null;
   readOnly?: boolean;
 }) {
-  const appleReadOnly =
-    e.source === 'apple_eventkit' || e.source === 'apple';
+  const appleReadOnly = e.source === 'apple_eventkit' || e.source === 'apple';
   return {
     id: e.id,
     title: e.title,
@@ -244,9 +244,11 @@ export class EventsService {
     const nextStart = dto.start != null ? new Date(dto.start) : existing.start;
     const nextEnd = dto.end != null ? new Date(dto.end) : existing.end;
     const nextDescription =
-      dto.description !== undefined ? dto.description ?? null : existing.description;
+      dto.description !== undefined
+        ? (dto.description ?? null)
+        : existing.description;
     const nextLocation =
-      dto.location !== undefined ? dto.location ?? null : existing.location;
+      dto.location !== undefined ? (dto.location ?? null) : existing.location;
 
     if (
       (existing.source === 'google' || existing.source === 'outlook') &&
@@ -276,7 +278,8 @@ export class EventsService {
           description: dto.description ?? null,
         }),
         ...(dto.location !== undefined && { location: dto.location ?? null }),
-        ...((dto.workspaceId !== undefined || dto.calendarColor !== undefined) && {
+        ...((dto.workspaceId !== undefined ||
+          dto.calendarColor !== undefined) && {
           metadata: mergeEventMeta(existing.metadata, {
             workspaceId: dto.workspaceId,
             calendarColor: dto.calendarColor,

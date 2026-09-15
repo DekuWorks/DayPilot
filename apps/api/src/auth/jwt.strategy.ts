@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
+import { resolveJwtSecret } from '../common/jwt-secret';
 import { AuthService } from './auth.service';
 import { ACCESS_COOKIE, readCookie } from './auth-cookies';
 
@@ -25,8 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         (req: Request) => readCookie(req?.headers?.cookie, ACCESS_COOKIE),
       ]),
       ignoreExpiration: false,
-      secretOrKey:
-        config.get<string>('JWT_SECRET') || 'change-me-in-production',
+      secretOrKey: resolveJwtSecret(config.get<string>('JWT_SECRET')),
     });
   }
 

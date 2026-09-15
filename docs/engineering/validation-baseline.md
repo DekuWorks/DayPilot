@@ -1,22 +1,22 @@
 # Validation baseline
 
-**Date:** 7 September 2026  
-Commands discovered from package.json and CI. Results recorded below after a local run. Failures are not suppressed.
+**Date:** 15 September 2026  
+Commands discovered from package.json and CI. Failures are not suppressed.
 
 ## Desired flow vs reality
 
 ```text
-Format        API Prettier only
+Format        API Prettier (`prettier --check` in CI)
  ↓
-Lint          turbo pnpm lint (web eslint, api eslint, lib stub)
+Lint          turbo pnpm lint (web eslint, api eslint, lib/ui tsc --noEmit)
  ↓
-Typecheck     no script — included in builds
+Typecheck     no root script — included in builds + package lint
  ↓
-Tests         API Jest only
+Tests         API Jest + web `*.spec.ts`
  ↓
 Web Build     next build
  ↓
-Mobile        flutter analyze / flutter test (not run in this pass unless noted)
+Mobile        flutter analyze / flutter test (Flutter workflow; not main ci.yml)
 ```
 
 ## Commands
@@ -26,21 +26,16 @@ pnpm --filter @daypilot/api run format          # writes
 pnpm --filter @daypilot/api exec prettier --check "src/**/*.ts"
 pnpm lint
 pnpm --filter @daypilot/api test
+pnpm --filter @daypilot/web test
 pnpm --filter @daypilot/api run build
 pnpm --filter @daypilot/web run lint
 pnpm --filter @daypilot/web run build
 ```
 
-CI (`.github/workflows/ci.yml`): `pnpm install --frozen-lockfile` → `pnpm db:generate` → **API Jest** → **web `*.spec.ts`** → `pnpm run build` → `pnpm run lint`.
+CI (`.github/workflows/ci.yml`): `pnpm install --frozen-lockfile` → `pnpm db:generate` → **API Jest** → **web `*.spec.ts`** → **Prettier check (API)** → `pnpm run build` → `pnpm run lint`.
 
-## Run log
+## Notes
 
-| Command                                | Result                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm --filter @daypilot/api test`     | **Pass** — 7 suites, 43 tests                                                                                            |
-| `pnpm --filter @daypilot/api run lint` | **Fail** — 2 errors, 91 warnings (existing). Script uses `--fix`; that rewrite was reverted and is not part of this work |
-| Root `pnpm lint` / web build           | Not treated as green until recorded separately                                                                           |
-| Web unit tests                         | **No script**                                                                                                            |
-| Flutter                                | `flutter test` exists (~15 files). Flutter CI runs it. Main `ci.yml` does not. Not re-run in this pass                   |
-
-Do not hide the API lint failures. They predate this audit.
+- `@daypilot/lib` / `@daypilot/ui` lint scripts typecheck with `tsc --noEmit` (no longer echo stubs).
+- Debt inventory: `docs/engineering/TECHNICAL_DEBT.md`.
+- Do not invent a root `typecheck` or `test` script; use the filters above.

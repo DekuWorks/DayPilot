@@ -1,9 +1,8 @@
 import Link from "next/link";
+import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
 
 /** Universal-link style handoff page for Apple Calendar setup on iPhone. */
 export default function AppleCalendarHandoffPage() {
-  const deepLink = "com.daypilot.daypilot://integrations/apple-calendar";
-
   return (
     <main className="min-h-screen bg-[var(--surface-primary)] text-[var(--text-primary)] px-6 py-16">
       <div className="max-w-lg mx-auto space-y-6">
@@ -20,7 +19,7 @@ export default function AppleCalendarHandoffPage() {
           <li>Return here — events appear on the web calendar (read-only).</li>
         </ol>
         <a
-          href={deepLink}
+          href={APPLE_CALENDAR_DEEP_LINK}
           className="inline-flex items-center justify-center rounded-xl bg-[var(--brand-500)] text-black font-semibold px-4 py-3"
         >
           Open DayPilot app

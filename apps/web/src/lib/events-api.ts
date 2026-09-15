@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders } from "./api";
+import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 
 export type EventSource = "native" | "google" | "outlook" | "apple" | "booking";
 
@@ -28,8 +28,11 @@ export async function listEvents(params?: {
   if (params?.from) q.set("from", params.from);
   if (params?.to) q.set("to", params.to);
   const url = `${getApiUrl()}/events${q.toString() ? `?${q}` : ""}`;
-  const res = await fetch(url, { headers: getAuthHeaders() });
-  if (!res.ok) throw new Error("Failed to load events");
+  const res = await nestFetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(getApiErrorMessage(err, "Failed to load events"));
+  }
   return res.json();
 }
 
@@ -42,14 +45,14 @@ export async function createEvent(data: {
   workspaceId?: string;
   calendarColor?: string;
 }): Promise<Event> {
-  const res = await fetch(`${getApiUrl()}/events`, {
+  const res = await nestFetch(`${getApiUrl()}/events`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to create event");
+    throw new Error(getApiErrorMessage(err, "Failed to create event"));
   }
   return res.json();
 }
@@ -66,30 +69,31 @@ export async function updateEvent(
     calendarColor?: string;
   },
 ): Promise<Event> {
-  const res = await fetch(`${getApiUrl()}/events/${id}`, {
+  const res = await nestFetch(`${getApiUrl()}/events/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to update event");
+    throw new Error(getApiErrorMessage(err, "Failed to update event"));
   }
   return res.json();
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  const res = await fetch(`${getApiUrl()}/events/${id}`, {
+  const res = await nestFetch(`${getApiUrl()}/events/${id}`, {
     method: "DELETE",
-    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(
-      err.message ??
-        (res.status === 403
+      getApiErrorMessage(
+        err,
+        res.status === 403
           ? "Imported calendar events cannot be deleted in DayPilot"
-          : "Failed to delete event"),
+          : "Failed to delete event",
+      ),
     );
   }
 }

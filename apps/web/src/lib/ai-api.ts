@@ -1,4 +1,4 @@
-import { getApiErrorMessage, getApiUrl, getAuthHeaders } from "./api";
+import { getApiErrorMessage, getApiUrl, nestFetch } from "./api";
 
 export type SuggestedEvent = {
   title: string;
@@ -8,9 +8,9 @@ export type SuggestedEvent = {
 };
 
 export async function suggestSchedule(prompt: string): Promise<{ suggestions: SuggestedEvent[] }> {
-  const res = await fetch(`${getApiUrl()}/ai/suggest-schedule`, {
+  const res = await nestFetch(`${getApiUrl()}/ai/suggest-schedule`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),
   });
   if (!res.ok) {

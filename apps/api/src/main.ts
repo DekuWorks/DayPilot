@@ -4,6 +4,10 @@ import express from 'express';
 import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
 import { SentryFilter } from './common/sentry.filter';
+import {
+  assertProductionCorsOrigin,
+  corsOriginOption,
+} from './common/cors-origin';
 
 const SENTRY_DSN = process.env.SENTRY_DSN;
 
@@ -15,52 +19,8 @@ if (SENTRY_DSN) {
   });
 }
 
-/** CORS: production uses CORS_ORIGIN only; dev also allows any http localhost / 127.0.0.1 port (Flutter web uses random ports). */
-function corsOriginOption(
-  raw: string | undefined,
-):
-  | boolean
-  | string[]
-  | ((
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => void) {
-  if (raw === undefined || raw === '') {
-    return true;
-  }
-  const list = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (process.env.NODE_ENV === 'production') {
-    return list;
-  }
-  return (origin, callback) => {
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-    if (list.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-    try {
-      const u = new URL(origin);
-      if (
-        u.protocol === 'http:' &&
-        (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
-      ) {
-        callback(null, true);
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    callback(null, false);
-  };
-}
-
 async function bootstrap() {
+  assertProductionCorsOrigin(process.env.CORS_ORIGIN);
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(
     express.json({
@@ -88,4 +48,4 @@ async function bootstrap() {
     console.log(`DayPilot API listening on port ${port}`);
   }
 }
-bootstrap();
+void bootstrap();

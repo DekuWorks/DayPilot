@@ -11,9 +11,11 @@ import {
 
 describe('graphNextLink', () => {
   it('reads @odata.nextLink', () => {
-    expect(graphNextLink({ '@odata.nextLink': 'https://graph.microsoft.com/v1.0/me/x' })).toBe(
-      'https://graph.microsoft.com/v1.0/me/x',
-    );
+    expect(
+      graphNextLink({
+        '@odata.nextLink': 'https://graph.microsoft.com/v1.0/me/x',
+      }),
+    ).toBe('https://graph.microsoft.com/v1.0/me/x');
     expect(graphNextLink({ value: [] })).toBeNull();
     expect(graphNextLink(null)).toBeNull();
   });

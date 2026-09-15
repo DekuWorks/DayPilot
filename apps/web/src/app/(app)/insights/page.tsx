@@ -6,19 +6,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import * as eventsApi from "@/lib/events";
 import * as focusApi from "@/lib/focus-supabase";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { formatDuration } from "@/lib/format-duration";
 
 function startOfWeek(d = new Date()) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   x.setDate(x.getDate() - x.getDay());
   return x;
-}
-
-function formatDuration(seconds: number) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
 }
 
 export default function InsightsPage() {
