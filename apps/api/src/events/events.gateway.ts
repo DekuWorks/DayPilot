@@ -19,6 +19,7 @@ type HandshakeQuery = { token?: string | string[] };
 
 @WebSocketGateway({
   cors: {
+    // Callback re-reads env per handshake (same localhost policy as HTTP CORS).
     origin: socketCorsOrigin(),
     credentials: true,
   },
