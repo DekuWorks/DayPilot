@@ -30,7 +30,8 @@ export class SentryFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : payloadTooLargeStatus(exception) ?? HttpStatus.INTERNAL_SERVER_ERROR;
+        : (payloadTooLargeStatus(exception) ??
+          HttpStatus.INTERNAL_SERVER_ERROR);
     const message =
       exception instanceof HttpException
         ? typeof exception.getResponse() === 'string'

@@ -310,7 +310,7 @@ export class CalendarConnectionsService {
       });
     } else {
       await this.prisma.calendarConnection.update({
-        where: { id: existing!.id },
+        where: { id: existing.id },
         data: { syncedAt: now, validatedAt: now },
       });
     }
@@ -496,7 +496,7 @@ export class CalendarConnectionsService {
         8_000,
         'Outlook Graph /me',
       )) as { mail?: string; userPrincipalName?: string };
-      email = (me.mail ?? me.userPrincipalName ?? email) as string;
+      email = me.mail ?? me.userPrincipalName ?? email;
       this.logger.log(
         `Outlook Graph /me ok user=${userId} host=graph.microsoft.com`,
       );

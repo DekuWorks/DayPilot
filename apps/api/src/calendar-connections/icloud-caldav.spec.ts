@@ -15,9 +15,9 @@ describe('icloud-caldav helpers', () => {
     expect(normalizeAppSpecificPassword('abcd-efgh-ijkl-mnop')).toBe(
       'abcd-efgh-ijkl-mnop',
     );
-    expect(normalizeAppSpecificPassword('abcd\u00A0efgh\u00A0ijkl\u00A0mnop')).toBe(
-      'abcdefghijklmnop',
-    );
+    expect(
+      normalizeAppSpecificPassword('abcd\u00A0efgh\u00A0ijkl\u00A0mnop'),
+    ).toBe('abcdefghijklmnop');
   });
 
   it('builds hyphenated and bare password variants', () => {
@@ -40,10 +40,9 @@ describe('icloud-caldav helpers', () => {
 
   it('encodes and decodes calendar id lists', () => {
     expect(encodeCalendarIds(['https://a/'])).toBe('https://a/');
-    expect(JSON.parse(encodeCalendarIds(['https://a/', 'https://b/']))).toEqual([
-      'https://a/',
-      'https://b/',
-    ]);
+    expect(JSON.parse(encodeCalendarIds(['https://a/', 'https://b/']))).toEqual(
+      ['https://a/', 'https://b/'],
+    );
     expect(decodeCalendarIds('https://a/')).toEqual(['https://a/']);
     expect(decodeCalendarIds('["https://a/","https://b/"]')).toEqual([
       'https://a/',

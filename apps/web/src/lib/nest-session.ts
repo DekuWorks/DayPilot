@@ -12,7 +12,10 @@ type NestSession = {
   user?: User;
 };
 
+type NestSessionListener = () => void;
+
 let memory: NestSession | null = null;
+const listeners = new Set<NestSessionListener>();
 
 if (typeof window !== "undefined") {
   wipeLegacyLocalStorage();
@@ -29,6 +32,24 @@ function wipeLegacyLocalStorage() {
   }
 }
 
+function notifyNestSessionListeners() {
+  for (const listener of listeners) {
+    try {
+      listener();
+    } catch {
+      // ignore listener errors
+    }
+  }
+}
+
+/** Subscribe to Nest session set/clear (used by realtime socket hook). */
+export function subscribeNestSession(listener: NestSessionListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export function getNestAccessToken(): string | null {
   return memory?.accessToken ?? null;
 }
@@ -40,11 +61,13 @@ export function getNestRefreshToken(): string | null {
 export function setNestSession(session: NestSession) {
   memory = session;
   wipeLegacyLocalStorage();
+  notifyNestSessionListeners();
 }
 
 export function clearNestSessionMemory() {
   memory = null;
   wipeLegacyLocalStorage();
+  notifyNestSessionListeners();
 }
 
 /** Remaining lifetime of the in-memory Nest access JWT, or null. */
@@ -69,6 +92,7 @@ export function hasNestAccessToken(): boolean {
   return ttl != null && ttl > 30_000;
 }
 
+/** Include httpOnly Nest cookies on cross-origin API calls (Bearer still preferred). */
 export function nestCredentialsInit(init?: RequestInit): RequestInit {
   return {
     ...init,

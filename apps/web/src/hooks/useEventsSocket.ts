@@ -1,19 +1,29 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { getApiUrl } from "@/lib/api";
-import { getNestAccessToken } from "@/lib/nest-session";
+import {
+  getNestAccessToken,
+  subscribeNestSession,
+} from "@/lib/nest-session";
 
 /**
  * Subscribes to real-time event updates (created/updated/deleted) and calls onSync when any occur.
- * Use from the calendar (or any events list) to refetch when another tab or device changes events.
+ * Reconnects when the Nest session appears or rotates after background enrich.
  */
 export function useEventsSocket(onSync: () => void) {
   const onSyncRef = useRef(onSync);
   useEffect(() => {
     onSyncRef.current = onSync;
   }, [onSync]);
+
+  const [tokenEpoch, setTokenEpoch] = useState(0);
+  useEffect(() => {
+    return subscribeNestSession(() => {
+      setTokenEpoch((n) => n + 1);
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -24,6 +34,7 @@ export function useEventsSocket(onSync: () => void) {
       path: "/ws",
       auth: { token },
       transports: ["websocket", "polling"],
+      withCredentials: true,
     });
 
     const handleSync = () => {
@@ -46,5 +57,5 @@ export function useEventsSocket(onSync: () => void) {
       socket.off("connect_error");
       socket.disconnect();
     };
-  }, []);
+  }, [tokenEpoch]);
 }

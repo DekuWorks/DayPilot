@@ -170,7 +170,7 @@ export class AuthService {
 
     if (!user) {
       const meta = payload.user_metadata ?? {};
-      let firstName =
+      const firstName =
         meta.first_name ??
         meta.given_name ??
         meta.full_name?.split(/\s+/).filter(Boolean)[0] ??

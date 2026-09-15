@@ -14,8 +14,7 @@ const ICLOUD_CALDAV_ROOTS = [
   'https://caldav.icloud.com/.well-known/caldav',
 ] as const;
 
-const CALDAV_USER_AGENT =
-  'DayPilot/1.0 (CalDAV; +https://www.daypilot.co)';
+const CALDAV_USER_AGENT = 'DayPilot/1.0 (CalDAV; +https://www.daypilot.co)';
 
 export type CalDavEvent = {
   uid: string;
@@ -29,12 +28,7 @@ export type CalDavEvent = {
 export class CalDavError extends Error {
   constructor(
     message: string,
-    readonly code:
-      | 'auth'
-      | 'forbidden'
-      | 'discovery'
-      | 'sync'
-      | 'network',
+    readonly code: 'auth' | 'forbidden' | 'discovery' | 'sync' | 'network',
     readonly httpStatus?: number,
   ) {
     super(message);
@@ -207,17 +201,13 @@ function parseIcsDate(raw: string, params: string): Date | null {
     const d = Number(value.slice(6, 8));
     return new Date(Date.UTC(y, mo, d));
   }
-  const m = value.match(
-    /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/,
-  );
+  const m = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
   if (!m) return null;
   const [, ys, mos, ds, hs, mis, ss, z] = m;
   if (z) {
-    return new Date(
-      Date.UTC(+ys!, +mos! - 1, +ds!, +hs!, +mis!, +ss!),
-    );
+    return new Date(Date.UTC(+ys, +mos - 1, +ds, +hs, +mis, +ss));
   }
-  return new Date(Date.UTC(+ys!, +mos! - 1, +ds!, +hs!, +mis!, +ss!));
+  return new Date(Date.UTC(+ys, +mos - 1, +ds, +hs, +mis, +ss));
 }
 
 function unfoldIcs(ics: string): string {
@@ -277,8 +267,13 @@ type ResponseCollection = {
   supportsVevent: boolean;
 };
 
-function parseCalendarResponses(xml: string, homeUrl: string): ResponseCollection[] {
-  const chunks = xml.split(/<(?:[a-zA-Z0-9_]+:)?response(?:\s[^>]*)?>/i).slice(1);
+function parseCalendarResponses(
+  xml: string,
+  homeUrl: string,
+): ResponseCollection[] {
+  const chunks = xml
+    .split(/<(?:[a-zA-Z0-9_]+:)?response(?:\s[^>]*)?>/i)
+    .slice(1);
   const out: ResponseCollection[] = [];
   for (const chunk of chunks) {
     const hrefMatch = chunk.match(
@@ -287,9 +282,11 @@ function parseCalendarResponses(xml: string, homeUrl: string): ResponseCollectio
     if (!hrefMatch?.[1]) continue;
     const href = resolveUrl(homeUrl, hrefMatch[1].trim());
     const display =
-      chunk.match(
-        /<(?:[a-zA-Z0-9_]+:)?displayname[^>]*>([^<]*)<\/(?:[a-zA-Z0-9_]+:)?displayname>/i,
-      )?.[1]?.trim() ?? '';
+      chunk
+        .match(
+          /<(?:[a-zA-Z0-9_]+:)?displayname[^>]*>([^<]*)<\/(?:[a-zA-Z0-9_]+:)?displayname>/i,
+        )?.[1]
+        ?.trim() ?? '';
     const resourceType = (
       chunk.match(
         /<(?:[a-zA-Z0-9_]+:)?resourcetype[^>]*>([\s\S]*?)<\/(?:[a-zA-Z0-9_]+:)?resourcetype>/i,
@@ -474,7 +471,7 @@ async function discoverWithCredentials(
 
     return {
       calendarUrls,
-      primaryCalendarUrl: calendarUrls[0]!,
+      primaryCalendarUrl: calendarUrls[0],
     };
   }
 
@@ -504,10 +501,7 @@ export async function verifyIcloudCalDav(
 
   const variants = appSpecificPasswordVariants(appSpecificPassword);
   if (variants.length === 0) {
-    throw new CalDavError(
-      'App-specific password is required.',
-      'auth',
-    );
+    throw new CalDavError('App-specific password is required.', 'auth');
   }
 
   let lastError: unknown;

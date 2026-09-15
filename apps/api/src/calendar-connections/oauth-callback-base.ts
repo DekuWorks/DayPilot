@@ -151,12 +151,16 @@ export function summarizeMicrosoftOAuthError(body: string): string {
     const codes = Array.isArray(parsed.error_codes)
       ? parsed.error_codes.join(',')
       : '';
-    const desc = (parsed.error_description ?? '').split('\r\n')[0].slice(0, 160);
+    const desc = (parsed.error_description ?? '')
+      .split('\r\n')[0]
+      .slice(0, 160);
     return [parsed.error, codes && `codes=${codes}`, desc]
       .filter(Boolean)
       .join(' ');
   } catch {
-    return body.replace(/client_secret=[^&\s]+/gi, 'client_secret=[redacted]').slice(0, 160);
+    return body
+      .replace(/client_secret=[^&\s]+/gi, 'client_secret=[redacted]')
+      .slice(0, 160);
   }
 }
 

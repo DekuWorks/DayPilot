@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
+import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 import { clearNestSession, ensureNestSession } from "./supabase/auth";
 
 export type CalendarProvider =
@@ -60,9 +60,7 @@ async function withNestAuth<T>(fn: () => Promise<T>): Promise<T> {
 
 export async function listConnections(): Promise<CalendarConnection[]> {
   return withNestAuth(async () => {
-    const res = await fetch(`${getApiUrl()}/calendar-connections`, {
-      headers: getAuthHeaders(),
-    });
+    const res = await nestFetch(`${getApiUrl()}/calendar-connections`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(getApiErrorMessage(err, "Failed to load connections"));
@@ -84,13 +82,13 @@ export async function importOutlookProviderToken(args: {
   expiresIn?: number;
 }): Promise<{ ok: boolean; email?: string }> {
   return withNestAuth(async () => {
-    const res = await fetch(
+    const res = await nestFetch(
       `${getApiUrl()}/calendar-connections/outlook/from-token`,
       {
         method: "POST",
-        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(args),
-      }
+      },
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -104,11 +102,8 @@ export async function getConnectUrl(
   provider: CalendarProvider
 ): Promise<ConnectUrlResult> {
   return withNestAuth(async () => {
-    const res = await fetch(
+    const res = await nestFetch(
       `${getApiUrl()}/calendar-connections/${provider}/connect`,
-      {
-        headers: getAuthHeaders(),
-      }
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -149,9 +144,8 @@ export type EventKitConnectionStatus = {
 /** Apple EventKit connection status (synced from iOS). */
 export async function getEventKitStatus(): Promise<EventKitConnectionStatus> {
   return withNestAuth(async () => {
-    const res = await fetch(
+    const res = await nestFetch(
       `${getApiUrl()}/calendar-connections/apple/eventkit`,
-      { headers: getAuthHeaders() }
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -167,9 +161,8 @@ export async function disconnectConnection(
   id: string
 ): Promise<{ ok: boolean }> {
   return withNestAuth(async () => {
-    const res = await fetch(`${getApiUrl()}/calendar-connections/${id}`, {
+    const res = await nestFetch(`${getApiUrl()}/calendar-connections/${id}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -181,9 +174,9 @@ export async function disconnectConnection(
 
 export async function syncConnection(id: string): Promise<{ ok: boolean }> {
   return withNestAuth(async () => {
-    const res = await fetch(`${getApiUrl()}/calendar-connections/${id}/sync`, {
-      headers: getAuthHeaders(),
-    });
+    const res = await nestFetch(
+      `${getApiUrl()}/calendar-connections/${id}/sync`,
+    );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(getApiErrorMessage(err, "Failed to sync"));
@@ -196,11 +189,8 @@ export async function validateConnection(
   id: string
 ): Promise<ValidateConnectionResult> {
   return withNestAuth(async () => {
-    const res = await fetch(
+    const res = await nestFetch(
       `${getApiUrl()}/calendar-connections/${id}/validate`,
-      {
-        headers: getAuthHeaders(),
-      }
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

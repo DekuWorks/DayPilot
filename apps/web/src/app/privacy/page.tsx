@@ -52,7 +52,7 @@ export default function PrivacyPage() {
                 <strong className="text-[var(--text-primary)]">Calendar data</strong>{" "}
                 — event titles, times, locations, descriptions, and calendar
                 metadata you sync or create in DayPilot (for example via Google
-                Calendar OAuth or iCloud CalDAV).
+                Calendar OAuth or Apple EventKit ingest from iOS).
               </li>
               <li>
                 <strong className="text-[var(--text-primary)]">App usage</strong>{" "}
@@ -104,10 +104,10 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="text-[var(--text-primary)]">Apple</strong>{" "}
-                — Sign in with Apple (optional). iCloud Calendar sync uses CalDAV
-                with an Apple ID and an app-specific password that you enter in
-                DayPilot; that credential is used to access your calendars and is
-                not shared with third parties for marketing.
+                — Sign in with Apple (optional). Apple Calendar sync uses on-device
+                EventKit on iOS, which uploads a cloud copy to DayPilot so web can
+                show those events. DayPilot does not use your Apple ID password for
+                calendar access on the live product path.
               </li>
               <li>
                 Hosting and infrastructure providers that process data solely to
@@ -127,15 +127,15 @@ export default function PrivacyPage() {
               for a limited period afterwards if needed for backups, security, or
               legal obligations. We use industry-standard transport security
               (HTTPS) and access controls. No method of transmission or storage is
-              perfectly secure; please use a strong password and protect any
-              app-specific passwords you create for iCloud.
+              perfectly secure; please use a strong password and protect your
+              account sign-in methods.
             </p>
           </Section>
 
           <Section title="Your choices">
             <ul className="list-disc pl-5 space-y-2">
               <li>Update or delete calendar events you created in DayPilot.</li>
-              <li>Disconnect Google Calendar or iCloud CalDAV sync in the app.</li>
+              <li>Disconnect Google, Outlook, or Apple Calendar sync in the app.</li>
               <li>
                 Request account deletion or a copy of your data by emailing{" "}
                 <a

@@ -57,7 +57,7 @@ Prerequisites: Node.js 20+, pnpm.
 
 ```bash
 pnpm install
-pnpm dev                    # Run all apps (web: Next.js; api: placeholder)
+pnpm dev                    # Run all apps (web: Next.js; api: NestJS)
 pnpm build                  # Build all
 pnpm lint                   # Lint all
 pnpm dev --filter @daypilot/web   # Dev server for frontend only (port 3000)

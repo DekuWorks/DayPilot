@@ -7,7 +7,7 @@
  * rather than offering broken checkout.
  */
 
-import { getApiUrl, getAuthHeaders } from "./api";
+import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 
 export type SubscriptionTier = "Free" | "Personal" | "Business" | "Enterprise";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
@@ -34,17 +34,13 @@ export type BillingPlansResponse = {
 };
 
 export async function getSubscription(): Promise<Subscription> {
-  const res = await fetch(`${getApiUrl()}/billing/subscription`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await nestFetch(`${getApiUrl()}/billing/subscription`);
   if (!res.ok) throw new Error("Failed to load subscription");
   return res.json();
 }
 
 export async function getPlans(): Promise<BillingPlansResponse> {
-  const res = await fetch(`${getApiUrl()}/billing/plans`, {
-    headers: getAuthHeaders(),
-  });
+  const res = await nestFetch(`${getApiUrl()}/billing/plans`);
   if (!res.ok) {
     return { configured: false, plans: [] };
   }
@@ -52,26 +48,25 @@ export async function getPlans(): Promise<BillingPlansResponse> {
 }
 
 export async function createCheckoutSession(priceId: string): Promise<{ url: string }> {
-  const res = await fetch(`${getApiUrl()}/billing/checkout-session`, {
+  const res = await nestFetch(`${getApiUrl()}/billing/checkout-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ priceId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to create checkout session");
+    throw new Error(getApiErrorMessage(err, "Failed to create checkout session"));
   }
   return res.json();
 }
 
 export async function createPortalSession(): Promise<{ url: string }> {
-  const res = await fetch(`${getApiUrl()}/billing/portal-session`, {
+  const res = await nestFetch(`${getApiUrl()}/billing/portal-session`, {
     method: "POST",
-    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Failed to open billing portal");
+    throw new Error(getApiErrorMessage(err, "Failed to open billing portal"));
   }
   return res.json();
 }

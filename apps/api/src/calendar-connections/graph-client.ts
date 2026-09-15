@@ -28,9 +28,7 @@ export function graphRetryAfterHeader(err: unknown): string | undefined {
   const headers = (err as { headers?: Record<string, unknown> }).headers;
   if (!headers) return undefined;
   const raw =
-    headers['Retry-After'] ??
-    headers['retry-after'] ??
-    headers['Retry-after'];
+    headers['Retry-After'] ?? headers['retry-after'] ?? headers['Retry-after'];
   return typeof raw === 'string' ? raw : undefined;
 }
 
@@ -112,7 +110,9 @@ export async function graphGetPaged<T>(
   )) as GraphPagedResponse<T>;
 
   return collectGraphPageValues(first, (nextLink) =>
-    withGraphRetry(() => client.api(nextLink).get() as Promise<GraphPagedResponse<T>>),
+    withGraphRetry(
+      () => client.api(nextLink).get() as Promise<GraphPagedResponse<T>>,
+    ),
   );
 }
 

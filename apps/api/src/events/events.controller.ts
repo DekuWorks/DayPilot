@@ -30,10 +30,7 @@ export class EventsController {
   }
 
   @Get(':id')
-  async getOne(
-    @Req() req: { user: { id: string } },
-    @Param('id') id: string,
-  ) {
+  async getOne(@Req() req: { user: { id: string } }, @Param('id') id: string) {
     return this.eventsService.findOne(req.user.id, id);
   }
 

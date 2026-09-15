@@ -24,17 +24,8 @@ import {
   toneClass,
   type CalendarProviderUi,
 } from "@/lib/calendar-connection-ui";
-
-const DEEP_LINK = "com.daypilot.daypilot://integrations/apple-calendar";
-
-function formatWhen(iso: string | null | undefined): string {
-  if (!iso) return "Never";
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return "Never";
-  }
-}
+import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
+import { formatWhen } from "@/lib/format-when";
 
 export default function IntegrationsPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
@@ -261,7 +252,7 @@ export default function IntegrationsPage() {
                   ) : null}
                   {row.id === "apple" && row.tone === "healthy" ? (
                     <a
-                      href={DEEP_LINK}
+                      href={APPLE_CALENDAR_DEEP_LINK}
                       className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
                     >
                       Manage on iPhone

@@ -161,9 +161,7 @@ export class EventKitSyncService {
         hasGoogleConnection: hasGoogle,
         hasMicrosoftConnection: hasMicrosoft,
       });
-      const selected = dup.isDuplicate
-        ? false
-        : cal.isSelected !== false;
+      const selected = dup.isDuplicate ? false : cal.isSelected !== false;
 
       const row = await this.prisma.externalCalendar.upsert({
         where: {
@@ -285,10 +283,11 @@ export class EventKitSyncService {
         continue;
       }
 
-      const externalId = `ek:${deviceId}:${raw.externalCalendarId}:${raw.externalEventId}`.slice(
-        0,
-        512,
-      );
+      const externalId =
+        `ek:${deviceId}:${raw.externalCalendarId}:${raw.externalEventId}`.slice(
+          0,
+          512,
+        );
       seenExternalIds.add(externalId);
       const calendarRowId =
         calendarIdByExternal.get(raw.externalCalendarId) ?? null;
