@@ -22,13 +22,24 @@ export function assertProductionCorsOrigin(
   }
 }
 
-export type CorsOriginOption =
-  | boolean
-  | string[]
-  | ((
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => void);
+export type CorsOriginCallback = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+) => void;
+
+export type CorsOriginOption = boolean | string[] | CorsOriginCallback;
+
+function isDevLocalHttpOrigin(origin: string): boolean {
+  try {
+    const u = new URL(origin);
+    return (
+      u.protocol === 'http:' &&
+      (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
+    );
+  } catch {
+    return false;
+  }
+}
 
 /** CORS: production uses CORS_ORIGIN only; dev also allows http localhost / 127.0.0.1. */
 export function corsOriginOption(
@@ -47,37 +58,36 @@ export function corsOriginOption(
       callback(null, true);
       return;
     }
-    if (list.includes(origin)) {
+    if (list.includes(origin) || isDevLocalHttpOrigin(origin)) {
       callback(null, true);
       return;
-    }
-    try {
-      const u = new URL(origin);
-      if (
-        u.protocol === 'http:' &&
-        (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
-      ) {
-        callback(null, true);
-        return;
-      }
-    } catch {
-      // ignore
     }
     callback(null, false);
   };
 }
 
-/** Socket.IO-friendly origin setting (same policy as HTTP). */
+/**
+ * Socket.IO origin policy — same rules as HTTP CORS.
+ * Returns a callback that re-reads CORS_ORIGIN / NODE_ENV on each handshake so
+ * decorator evaluation at import time does not freeze a stale allowlist.
+ */
 export function socketCorsOrigin(
-  raw: string | undefined = process.env.CORS_ORIGIN,
-  nodeEnv = process.env.NODE_ENV,
-): boolean | string[] {
-  const list = parseCorsOriginList(raw);
-  if (nodeEnv === 'production') {
-    return list;
-  }
-  if (list.length === 0) {
-    return true;
-  }
-  return list;
+  raw?: string | undefined,
+  nodeEnv?: string,
+): CorsOriginCallback {
+  return (origin, callback) => {
+    const option = corsOriginOption(
+      raw !== undefined ? raw : process.env.CORS_ORIGIN,
+      nodeEnv ?? process.env.NODE_ENV,
+    );
+    if (option === true) {
+      callback(null, true);
+      return;
+    }
+    if (Array.isArray(option)) {
+      callback(null, !origin || option.includes(origin));
+      return;
+    }
+    option(origin, callback);
+  };
 }
