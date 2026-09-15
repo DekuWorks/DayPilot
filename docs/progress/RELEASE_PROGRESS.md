@@ -7,7 +7,7 @@
 | Production web deploy | [~] | — | — | — | daypilot.co, Pages workflow | — | Live on old brand | Rebrand | — |
 | API production | [~] | — | — | — | deploy-api.yml | — | Env-dependent | Secrets | Verify |
 | Privacy / Terms pages | [ ] | — | — | — | — | — | Required for store | — | Publish |
-| Account deletion | [ ] | — | — | — | — | — | App Store required | — | Implement |
+| Account deletion | [x] | agent | 2026-09-15 | 2026-09-15 | DELETE /auth/me, Settings UI | API unit | App Store 5.1.1(v) | — | Resubmit with recording |
 | App Store metadata | [ ] | — | — | — | — | — | — | iOS stack | Draft checklist |
 | TestFlight | [ ] | — | — | — | Flutter release docs | — | — | ADR-002 + QA | — |
 | Monitoring (Sentry) | [~] | — | — | — | optional DSNs | — | Code present | DSN setup | Enable prod |

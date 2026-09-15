@@ -1,6 +1,8 @@
 # Sign in with Apple (Supabase Auth / SSO)
 
-DayPilot web + Flutter call `signInWithOAuth({ provider: "apple" })`.
+DayPilot web + Flutter call Supabase Apple Auth. On iOS/macOS Flutter uses
+native Sign in with Apple (`signInWithIdToken`); web still uses
+`signInWithOAuth({ provider: "apple" })`.
 If you see `Unsupported provider: provider is not enabled`, Apple is still off
 in Supabase Auth.
 
@@ -106,10 +108,12 @@ client ID in the dashboard or via the Management API.
 **iOS simulator / device**
 
 1. Open DayPilot → **Continue with Apple**.
-2. Complete consent in the system / Safari sheet.
-3. App should reopen via the deep link and land on Home.
+2. On iOS/macOS the app uses **native Sign in with Apple** (no Safari handoff). Other platforms use an in-app auth session.
+3. After success, the app lands on Home.
 
 Simulator note: Sign in with Apple often needs a real Apple ID signed into the simulator Settings, or a physical device.
+
+See [APP_STORE_REVIEW_NOTES.md](./APP_STORE_REVIEW_NOTES.md) for the App Store Guideline 4 / 5.1.1(v) fixes.
 
 ### Quick API check
 
