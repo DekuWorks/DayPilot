@@ -51,6 +51,7 @@ This register is the honest inventory after a debt paydown pass. Prefer this fil
 | Nest `meetingUrl` absent | Prisma `Event` has no column; Supabase path still stores meeting URLs — schema change deferred |
 | Android product expansion frozen | Toolchain may exist; do not expand scope |
 | Root + API both depend on `@prisma/client` | Historical monorepo layout; changing it risks generate/deploy scripts |
+| `@daypilot/lib` tsconfig keeps `outDir: dist` + CommonJS emit | `apps/api/Dockerfile` compiles the package then rewrites `package.json` to `./dist/index.js`. Dropping `outDir` / setting emit-off-only configs breaks the production API image (`Cannot find module '@daypilot/lib'`). Lint still uses `tsc --noEmit`. |
 
 ---
 
