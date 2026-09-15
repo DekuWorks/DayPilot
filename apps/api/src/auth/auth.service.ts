@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -15,6 +16,11 @@ import type { UserRole } from '../generated/prisma';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { decideSupabaseUserLink } from './supabase-user-link';
+import {
+  assertDeleteAccountConfirm,
+  assertSupabaseAdminEnv,
+  requireUserForDeletion,
+} from './delete-account';
 
 const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -364,6 +370,75 @@ export class AuthService {
       },
     });
     return updated;
+  }
+
+  /**
+   * Permanent account deletion for App Store Guideline 5.1.1(v).
+   * Removes Nest calendar/user rows, then deletes the Supabase Auth user
+   * (profiles and related Supabase rows cascade from auth.users).
+   */
+  async deleteAccount(userId: string, confirm: string) {
+    assertDeleteAccountConfirm(confirm);
+    const user = requireUserForDeletion(
+      await this.prisma.user.findUnique({ where: { id: userId } }),
+    );
+
+    const supabaseUserId = user.supabaseUserId;
+
+    // Fail closed before wiping Nest rows when a Supabase identity must also go.
+    if (supabaseUserId) {
+      assertSupabaseAdminEnv({
+        supabaseUrl: this.config.get<string>('SUPABASE_URL'),
+        serviceRoleKey: this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
+      });
+    }
+
+    await this.audit.log({
+      action: 'auth.account_deleted',
+      entityType: 'user',
+      entityId: userId,
+      userId,
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { teams: { set: [] } },
+      });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    if (supabaseUserId) {
+      await this.deleteSupabaseAuthUser(supabaseUserId);
+    }
+
+    return { ok: true as const };
+  }
+
+  /** Admin API delete — requires SUPABASE_SERVICE_ROLE_KEY on the API host. */
+  private async deleteSupabaseAuthUser(supabaseUserId: string) {
+    const { supabaseUrl, serviceRoleKey } = assertSupabaseAdminEnv({
+      supabaseUrl: this.config.get<string>('SUPABASE_URL'),
+      serviceRoleKey: this.config.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
+    });
+
+    const res = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(supabaseUserId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: serviceRoleKey,
+        },
+      },
+    );
+    if (res.ok || res.status === 404) {
+      return;
+    }
+    const text = await res.text().catch(() => '');
+    throw new BadRequestException(
+      `Failed to delete Supabase auth user (${res.status}): ${text || res.statusText}`,
+    );
   }
 
   /**
