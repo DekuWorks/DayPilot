@@ -245,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     try {
                       await ref.read(authRepositoryProvider).signInWithGoogle();
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Google sign-in failed: $e')),
                         );
@@ -265,7 +265,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     try {
                       await ref.read(authRepositoryProvider).signInWithApple();
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Apple sign-in failed: $e')),
                         );
@@ -287,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           .read(authRepositoryProvider)
                           .signInWithMicrosoft();
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Microsoft sign-in failed: $e'),

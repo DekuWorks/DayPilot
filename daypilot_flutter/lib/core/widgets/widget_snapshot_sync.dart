@@ -17,9 +17,9 @@ class WidgetSnapshotSync extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final day = DateTime(now.year, now.month, now.day);
-    ref.listen(calendarDayEventsFamily(day), (_, __) => _publish(ref, day));
-    ref.listen(tasksListProvider, (_, __) => _publish(ref, day));
-    ref.listen(currentProfileProvider, (_, __) => _publish(ref, day));
+    ref.listen(calendarDayEventsFamily(day), (_, _) => _publish(ref, day));
+    ref.listen(tasksListProvider, (_, _) => _publish(ref, day));
+    ref.listen(currentProfileProvider, (_, _) => _publish(ref, day));
     WidgetsBinding.instance.addPostFrameCallback((_) => _publish(ref, day));
     return child;
   }
