@@ -202,8 +202,8 @@ class AuthRepository {
         await _client.auth.updateUser(
           UserAttributes(
             data: {
-              if (given != null) 'given_name': given,
-              if (family != null) 'family_name': family,
+              'given_name': ?given,
+              'family_name': ?family,
               'full_name': [given, family]
                   .whereType<String>()
                   .where((s) => s.isNotEmpty)
