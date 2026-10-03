@@ -18,6 +18,7 @@ export type Event = {
   workspaceId?: string;
   allDay?: boolean;
   timezone?: string | null;
+  copyWarning?: string;
 };
 
 export async function listEvents(params?: {

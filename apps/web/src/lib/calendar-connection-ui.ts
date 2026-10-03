@@ -24,6 +24,8 @@ export type CalendarProviderUi = {
   canReconnect: boolean;
   canSync: boolean;
   calendarCount: number;
+  /** iCloud on the web can be disconnected here. EventKit stays on the phone. */
+  canDisconnect?: boolean;
 };
 
 export function connectionForProvider(
@@ -175,8 +177,38 @@ export function buildCalendarProviderRows(args: {
       name: "Outlook",
       connection: connectionForProvider(args.connections, "outlook"),
     }),
-    mapAppleEventKitUi(args.eventKitStatus),
+    mapAppleProviderUi({
+      eventKitStatus: args.eventKitStatus,
+      icloud: connectionForProvider(args.connections, "apple"),
+    }),
   ];
+}
+
+/** iPhone EventKit wins when it is connected. Otherwise iCloud on the web. */
+export function mapAppleProviderUi(args: {
+  eventKitStatus: EventKitConnectionStatus | null | undefined;
+  icloud?: CalendarConnection;
+}): CalendarProviderUi {
+  const ek = mapAppleEventKitUi(args.eventKitStatus);
+  if (ek.tone !== "notConnected") {
+    return { ...ek, canDisconnect: false };
+  }
+  const icloud = args.icloud;
+  if (!icloud) return { ...ek, canDisconnect: false };
+  const needs = icloud.status === "needs_reconnect";
+  return {
+    id: "apple",
+    name: "Apple",
+    tone: needs ? "needsAttention" : "healthy",
+    headline: needs ? "Needs reconnect" : "Connected",
+    detail: icloud.email ? `iCloud · ${icloud.email}` : "iCloud",
+    lastSynced: icloud.syncedAt,
+    connectionId: icloud.id,
+    canReconnect: false,
+    canSync: !needs,
+    calendarCount: 0,
+    canDisconnect: true,
+  };
 }
 
 export function latestSyncAt(rows: CalendarProviderUi[]): string | null {

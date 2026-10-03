@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   mapAppleEventKitUi,
+  mapAppleProviderUi,
   type CalendarProviderUi,
 } from "./calendar-connection-ui.ts";
 
@@ -55,4 +56,29 @@ test("healthy EventKit row stays connected", () => {
   assert.equal(ui.tone, "healthy");
   assert.equal(ui.canSync, true);
   assert.equal(ui.headline, "Connected");
+});
+
+test("iCloud connects on the web when the phone has not", () => {
+  const ui = mapAppleProviderUi({
+    eventKitStatus: {
+      authSeparate: true,
+      hasGoogleConnection: false,
+      hasMicrosoftConnection: false,
+      connections: [],
+    },
+    icloud: {
+      id: "icloud-1",
+      provider: "apple",
+      email: "person@icloud.com",
+      syncedAt: null,
+      validatedAt: null,
+      expiresAt: null,
+      connectedAt: "2026-10-02T00:00:00.000Z",
+      status: "valid",
+      connected: true,
+    },
+  });
+  assert.equal(ui.tone, "healthy");
+  assert.equal(ui.canDisconnect, true);
+  assert.match(ui.detail, /iCloud/);
 });
