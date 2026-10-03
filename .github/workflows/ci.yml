@@ -32,6 +32,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Build shared library
+        run: pnpm --filter @daypilot/lib exec tsc -p tsconfig.json
+
       - name: Test API
         run: pnpm --filter @daypilot/api test
 
