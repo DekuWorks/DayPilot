@@ -5,11 +5,7 @@ import { Button } from "@/components/Button";
 import { canDeleteCalendarEvent, type CalendarEvent } from "@/lib/events";
 import type { Workspace } from "@/lib/workspaces-supabase";
 import { dateKey, formatTime } from "./calendar-utils";
-import {
-  ColorTagSelect,
-  WorkspaceSelect,
-  fieldClass,
-} from "./ColorTagSelect";
+import { ColorTagSelect, WorkspaceSelect, fieldClass } from "./ColorTagSelect";
 
 export function CreateEventModal({
   date,
@@ -31,7 +27,10 @@ export function CreateEventModal({
     workspaceId?: string;
     calendarColor?: string;
   }) => Promise<void>;
-  onWorkspaceColorChange?: (workspaceId: string, color: string) => Promise<void>;
+  onWorkspaceColorChange?: (
+    workspaceId: string,
+    color: string,
+  ) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(dateKey(date));
@@ -216,7 +215,9 @@ export function EventDetailModal({
                 ? "Google Calendar"
                 : event.source === "outlook"
                   ? "Microsoft Outlook"
-                  : "Calendar"}
+                  : event.source === "booking"
+                    ? "Booking link"
+                    : "Calendar"}
           </p>
         )}
         {event.description && (

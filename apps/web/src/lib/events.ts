@@ -7,6 +7,9 @@ import { getApiUrl, getAuthHeaders, getApiErrorMessage } from "./api";
 import * as nestEvents from "./events-api";
 import * as supabaseEvents from "./events-supabase";
 import type { CalendarEvent } from "./events-supabase";
+import { mergeBookingEvents } from "./booking-calendar";
+import { listConfirmedBookingsForCalendar } from "./booking-supabase";
+import { createClient } from "./supabase/client";
 import { ensureNestSession, hasNestAccessToken } from "./supabase/auth";
 
 export type { CalendarEvent } from "./events-supabase";
@@ -61,6 +64,23 @@ export function canDeleteCalendarEvent(event: {
   return (event.source ?? "native") === "native";
 }
 
+async function withHostBookings(
+  events: CalendarEvent[],
+  params?: { from?: string; to?: string },
+): Promise<CalendarEvent[]> {
+  if (typeof window === "undefined") return events;
+  try {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId) return events;
+    const bookings = await listConfirmedBookingsForCalendar(userId, params);
+    return mergeBookingEvents(events, bookings);
+  } catch {
+    return events;
+  }
+}
+
 export async function listEvents(params?: {
   from?: string;
   to?: string;
@@ -70,7 +90,7 @@ export async function listEvents(params?: {
     try {
       const rows = await nestEvents.listEvents(params);
       lastEventReadModel = "nest";
-      return rows.map(mapNestToCalendar);
+      return withHostBookings(rows.map(mapNestToCalendar), params);
     } catch (e) {
       lastEventFallbackReason =
         e instanceof Error ? e.message : "Nest events unavailable";
@@ -83,7 +103,7 @@ export async function listEvents(params?: {
     }
   }
   lastEventReadModel = "supabase";
-  return supabaseEvents.listEvents(params);
+  return withHostBookings(await supabaseEvents.listEvents(params), params);
 }
 
 export async function createEvent(

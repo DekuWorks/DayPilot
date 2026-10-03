@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Button } from "@/components/Button";
+import { MarketingFooter } from "@/components/MarketingFooter";
 import { MarketingNav } from "@/components/MarketingNav";
 
 const plans = [
@@ -32,7 +32,7 @@ const plans = [
       "Priority support",
       "Custom branding",
     ],
-    cta: "Start Free Trial",
+    cta: "Get started",
     href: "/signup",
     highlight: true,
   },
@@ -82,7 +82,8 @@ export default function PricingPage() {
             Simple, Transparent <span className="gradient-text">Pricing</span>
           </h1>
           <p className="text-base md:text-lg lg:text-xl text-[var(--text-secondary)] leading-relaxed px-4">
-            Choose the plan that works for you. All plans include a free trial.
+            Choose a plan. Free stays free. Paid plans are billed after you sign
+            in.
           </p>
         </div>
       </section>
@@ -92,40 +93,65 @@ export default function PricingPage() {
             <div
               key={index}
               className={`glass-effect rounded-2xl p-6 md:p-8 flex flex-col ${
-                plan.highlight ? "border-2 border-[var(--brand-500)] shadow-xl scale-105 md:scale-110 relative" : "border border-[var(--border-subtle)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                plan.highlight
+                  ? "border-2 border-[var(--brand-500)] shadow-xl scale-105 md:scale-110 relative"
+                  : "border border-[var(--border-subtle)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
               }`}
             >
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-[var(--brand-400)] to-[var(--brand-500)] text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">POPULAR</span>
+                  <span className="bg-gradient-to-r from-[var(--brand-400)] to-[var(--brand-500)] text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">
+                    POPULAR
+                  </span>
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-2">{plan.name}</h3>
+                <h3 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-2">
+                  {plan.name}
+                </h3>
                 <div className="mb-2">
-                  <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{plan.price}</span>
-                  {plan.period && <span className="text-[var(--text-secondary)] ml-2 text-base md:text-lg">/{plan.period}</span>}
+                  <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+                    {plan.price}
+                  </span>
+                  {plan.period && (
+                    <span className="text-[var(--text-secondary)] ml-2 text-base md:text-lg">
+                      /{plan.period}
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm text-[var(--text-secondary)] mb-6">{plan.description}</p>
+                <p className="text-sm text-[var(--text-secondary)] mb-6">
+                  {plan.description}
+                </p>
                 <ul className="space-y-2.5 md:space-y-3 mb-8">
                   {plan.features.map((f, i) => (
                     <li key={i} className="flex items-start">
-                      <span className="text-[var(--brand-500)] mr-2 mt-0.5 font-bold">✓</span>
-                      <span className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">{f}</span>
+                      <span className="text-[var(--brand-500)] mr-2 mt-0.5 font-bold">
+                        ✓
+                      </span>
+                      <span className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
+                        {f}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <Link href={plan.href} className="block mt-auto">
-                <Button variant={plan.highlight ? "primary" : "outline"} className="w-full">{plan.cta}</Button>
-              </Link>
+              <Button
+                href={plan.href}
+                variant={plan.highlight ? "primary" : "outline"}
+                className="mt-auto w-full"
+              >
+                {plan.cta}
+              </Button>
             </div>
           ))}
         </div>
       </section>
       <section className="container-width section-padding pb-16 md:pb-24 lg:pb-32 text-center">
         <div className="max-w-2xl mx-auto space-y-3 md:space-y-4 px-4">
-          <p className="text-base md:text-lg text-[var(--text-secondary)]">All plans include a 14-day free trial. No credit card required.</p>
+          <p className="text-base md:text-lg text-[var(--text-secondary)]">
+            Prices are shown in US dollars. A paid plan starts when you choose
+            it after sign-in. There is no separate 14-day trial.
+          </p>
           <p className="text-sm text-[var(--text-secondary)]">
             Questions?{" "}
             <a
@@ -137,6 +163,7 @@ export default function PricingPage() {
           </p>
         </div>
       </section>
+      <MarketingFooter />
     </div>
   );
 }

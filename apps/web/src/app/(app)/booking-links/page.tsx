@@ -15,6 +15,7 @@ export default function BookingLinksPage() {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("Book time with me");
   const [creating, setCreating] = useState(false);
+  const [copiedSlug, setCopiedSlug] = useState("");
   const slugPlaceholder = "your-slug";
 
   const load = useCallback(async () => {
@@ -36,15 +37,18 @@ export default function BookingLinksPage() {
 
   useEffect(() => {
     if (!user?.username) return;
-    setSlug((prev) =>
-      prev || user.username!.toLowerCase().replace(/[^a-z0-9-]/g, "")
+    setSlug(
+      (prev) => prev || user.username!.toLowerCase().replace(/[^a-z0-9-]/g, ""),
     );
   }, [user?.username]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    const clean = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const clean = slug
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "");
     if (clean.length < 3) {
       setError("Slug must be at least 3 characters (a-z, 0-9, -)");
       return;
@@ -71,17 +75,22 @@ export default function BookingLinksPage() {
       await bookingApi.setBookingLinkActive(link.id, !link.isActive);
       setLinks((prev) =>
         prev.map((l) =>
-          l.id === link.id ? { ...l, isActive: !l.isActive } : l
-        )
+          l.id === link.id ? { ...l, isActive: !l.isActive } : l,
+        ),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update");
     }
   }
 
-  function copyLink(s: string) {
+  async function copyLink(s: string) {
     const url = `${window.location.origin}/book/${s}`;
-    void navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedSlug(s);
+    } catch {
+      setError("Couldn't copy the link. Select it from the Open page instead.");
+    }
   }
 
   return (
@@ -91,7 +100,12 @@ export default function BookingLinksPage() {
           Booking links
         </h1>
         <p className="text-sm text-[var(--text-secondary)]">
-          Share a link so others can book time on your calendar.
+          Share a link. It opens in the browser, so they do not need the
+          DayPilot app. They pick a time from the hours you set, in your
+          timezone. Confirmed bookings show on your DayPilot calendar. The guest
+          can save a calendar file, and DayPilot emails that file as a
+          confirmation. You can pause the link. New links use weekdays,
+          09:00–17:00, until you change them.
         </p>
       </div>
 
@@ -132,8 +146,9 @@ export default function BookingLinksPage() {
         {loading ? (
           <li className="text-sm text-[var(--text-secondary)]">Loading…</li>
         ) : links.length === 0 ? (
-          <li className="text-sm text-[var(--text-secondary)]">
-            No booking links yet.
+          <li className="rounded-[var(--radius-lg)] border border-dashed border-[var(--border-subtle)] px-4 py-6 text-sm text-[var(--text-secondary)]">
+            No booking links yet. Create one above, copy it, and send it to the
+            person who needs a time with you.
           </li>
         ) : (
           links.map((link) => (
@@ -154,9 +169,10 @@ export default function BookingLinksPage() {
                 size="sm"
                 variant="outline"
                 type="button"
-                onClick={() => copyLink(link.slug)}
+                onClick={() => void copyLink(link.slug)}
+                aria-live="polite"
               >
-                Copy
+                {copiedSlug === link.slug ? "Copied" : "Copy"}
               </Button>
               <Link
                 href={`/book/${link.slug}`}

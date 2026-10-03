@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/config/daypilot_env.dart';
+import '../../core/providers/api_session_sync_provider.dart';
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
-import '../../core/providers/repository_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../domain/models/event_record.dart';
 import '../calendar/calendar_panel.dart';
+import '../calendar/calendar_providers.dart';
 import '../calendar/calendar_view_mode.dart';
+import '../calendar/empty_schedule_hint.dart';
 import '../profile/profile_providers.dart';
 
 final _homeNextEventProvider =
@@ -19,9 +22,7 @@ final _homeNextEventProvider =
   final now = DateTime.now();
   final start = DateTime(now.year, now.month, now.day);
   final end = start.add(const Duration(days: 2));
-  final events = await ref
-      .watch(eventRepositoryProvider)
-      .listForRange(from: start, to: end);
+  final events = await loadEventsForRange(ref, from: start, to: end);
   final upcoming = events.where((e) => !e.endsAt.isBefore(now)).toList()
     ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
   if (upcoming.isEmpty) return null;
@@ -43,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.dp;
     final profile = ref.watch(currentProfileProvider);
-    final nextEvent = ref.watch(_homeNextEventProvider);
+    final nextAsync = ref.watch(_homeNextEventProvider);
     final user = ref.watch(supabaseClientProvider).auth.currentUser;
     final view = parseCalendarViewMode(
       GoRouterState.of(context).uri.queryParameters['view'],
@@ -58,10 +59,15 @@ class HomeScreen extends ConsumerWidget {
       data: (p) => resolveAvatarUrl(p, user),
       orElse: () => authMetadataAvatarUrl(user),
     );
-    final next = nextEvent.maybeWhen(
+    final next = nextAsync.maybeWhen(
       data: (event) => event,
       orElse: () => null,
     );
+    final upcomingEmpty = nextAsync.maybeWhen(
+      data: (event) => event == null,
+      orElse: () => false,
+    );
+    final sync = ref.watch(apiSessionSyncProvider);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -140,12 +146,92 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            if (DayPilotEnv.hasDaypilotApi && sync.showDashboardBanner)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Calendar sync is not ready yet.',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      'Your events will load after DayPilot accepts this sign-in. You can retry.',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () => ref
+                            .read(apiSessionSyncProvider.notifier)
+                            .sync(),
+                        child: const Text('Retry'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (upcomingEmpty && user != null)
+              _TodayPlanPrompt(userId: user.id),
             Expanded(
               child: CalendarPanel(initialView: view),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TodayPlanPrompt extends ConsumerStatefulWidget {
+  const _TodayPlanPrompt({required this.userId});
+
+  final String userId;
+
+  @override
+  ConsumerState<_TodayPlanPrompt> createState() => _TodayPlanPromptState();
+}
+
+class _TodayPlanPromptState extends ConsumerState<_TodayPlanPrompt> {
+  static String _key(String userId) => 'today_plan_prompt_dismissed_$userId';
+
+  late bool _hidden;
+
+  @override
+  void initState() {
+    super.initState();
+    _hidden =
+        ref.read(sharedPreferencesProvider).getBool(_key(widget.userId)) ==
+            true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hidden) return const SizedBox.shrink();
+    return EmptyScheduleHint(
+      compact: true,
+      title: 'Nothing in the next two days.',
+      body:
+          'Add a task you still need to do, or connect a calendar when you want the plan to include commitments you already have.',
+      primaryLabel: 'Add a task',
+      onPrimary: () => context.go('/tasks'),
+      secondaryLabel: 'Connect a calendar',
+      onSecondary: () => context.push('/sync'),
+      dismissLabel: 'Not now',
+      onDismiss: () async {
+        await ref
+            .read(sharedPreferencesProvider)
+            .setBool(_key(widget.userId), true);
+        if (mounted) setState(() => _hidden = true);
+      },
     );
   }
 }

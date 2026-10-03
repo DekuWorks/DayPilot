@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/attendee_repository.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/booking_overlay_event_repository.dart';
 import '../../data/repositories/booking_repository.dart';
 import '../../data/repositories/event_repository.dart';
 import '../../data/repositories/nest_event_repository.dart';
@@ -23,10 +24,14 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  final EventRepository inner;
   if (DayPilotEnv.hasDaypilotApi) {
-    return NestEventRepository(ref.watch(nestApiSessionProvider));
+    inner = NestEventRepository(ref.watch(nestApiSessionProvider));
+  } else {
+    inner = SupabaseEventRepository(client);
   }
-  return SupabaseEventRepository(ref.watch(supabaseClientProvider));
+  return BookingOverlayEventRepository(inner: inner, client: client);
 });
 
 final calendarConnectionsRepositoryProvider =

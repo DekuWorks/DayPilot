@@ -1,4 +1,5 @@
-/// Home calendar segmented control. Month is first (default).
+/// Home calendar segmented control. Day is the default so a new session
+/// opens on today. Month stays the first tab.
 enum CalendarViewMode { month, week, day }
 
 const kCalendarViewLabels = ['Month', 'Week', 'Day'];
@@ -10,7 +11,7 @@ CalendarViewMode parseCalendarViewMode(String? raw) {
     case 'day':
       return CalendarViewMode.day;
     default:
-      return CalendarViewMode.month;
+      return CalendarViewMode.day;
   }
 }
 

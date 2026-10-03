@@ -162,16 +162,67 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Couldn\'t load booking links.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: DayPilotScheme.of(context).textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: DayPilotScheme.of(context).textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => ref.invalidate(myBookingLinksProvider),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (list) {
           if (list.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Create a booking link so others can book time with you.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Share a time you have already set aside.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: DayPilotScheme.of(context).textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'People with your link pick a slot from the hours you set. Confirmed bookings show on your DayPilot calendar. They can save a calendar file, and DayPilot emails that file as a confirmation. New links start on weekdays, 09:00–17:00, in Eastern Time (America/New_York). You can pause the link.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: DayPilotScheme.of(context).textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _create,
+                      child: const Text('Create a booking link'),
+                    ),
+                  ],
                 ),
               ),
             );

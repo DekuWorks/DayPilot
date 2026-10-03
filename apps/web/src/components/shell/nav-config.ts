@@ -32,6 +32,7 @@ export type NavItem = {
 export const primaryNav: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/booking-links", label: "Booking links", icon: Link2 },
   { href: "/insights", label: "Insights", icon: BarChart3 },
   { href: "/focus", label: "Focus", icon: Timer },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -45,7 +46,6 @@ export const primaryNav: NavItem[] = [
 ];
 
 export const secondaryNav: NavItem[] = [
-  { href: "/booking-links", label: "Booking links", icon: Link2 },
   { href: "/integrations", label: "Integrations", icon: Plug },
   { href: "/billing", label: "Billing", icon: CreditCard },
 ];

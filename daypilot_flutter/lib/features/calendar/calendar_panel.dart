@@ -16,7 +16,7 @@ import 'week_view.dart';
 class CalendarPanel extends ConsumerStatefulWidget {
   const CalendarPanel({
     super.key,
-    this.initialView = CalendarViewMode.month,
+    this.initialView = CalendarViewMode.day,
   });
 
   final CalendarViewMode initialView;
