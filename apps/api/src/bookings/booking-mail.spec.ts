@@ -3,6 +3,7 @@ import { BookingConfirmationService } from './booking-confirmation.service';
 import {
   bookingIcsFor,
   buildGuestMail,
+  buildHostMail,
   hostNeedsOwnCopy,
   sameInstant,
 } from './booking-mail';
@@ -69,6 +70,41 @@ describe('booking calendar file', () => {
         bookerEmail: 'ada@example.com',
       }),
     ).resolves.toEqual({ sent: false, reason: 'not_configured' });
+  });
+
+  it('includes a host-provided link and does not invent a provider meeting', () => {
+    const mail = buildGuestMail({
+      ...booking,
+      meetingMethod: 'link',
+      meetingJoinUrl: 'https://example.com/join',
+    });
+    expect(mail.text).toContain('https://example.com/join');
+    expect(mail.text).not.toContain('Zoom');
+    expect(mail.ics).toContain('https://example.com/join');
+  });
+
+  it('sends the host number only in the confirmed phone message', () => {
+    const phoneBooking = {
+      ...booking,
+      meetingMethod: 'phone',
+      hostPhone: '+1 202 555 0143',
+      guestPhone: '+44 20 7946 0958',
+    };
+    const guest = buildGuestMail(phoneBooking);
+    const host = buildHostMail(phoneBooking, 'host@example.com');
+    expect(guest.text).toContain('The host will call you at +1 202 555 0143');
+    expect(guest.text).not.toContain('https://');
+    expect(host.text).toContain('Callback number: +44 20 7946 0958');
+  });
+
+  it('does not claim a meeting link when none was stored', () => {
+    const mail = buildGuestMail({
+      ...booking,
+      meetingMethod: 'slack',
+      meetingJoinUrl: null,
+    });
+    expect(mail.text).toContain('not ready');
+    expect(mail.text).not.toContain('http');
   });
 
   it('guest file uid is the booking id', () => {

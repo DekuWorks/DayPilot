@@ -2,6 +2,13 @@ import { createClient } from "@/lib/supabase/client";
 import { getApiUrl } from "@/lib/api";
 import type { CalendarBooking } from "@/lib/booking-calendar";
 import { buildPublicSlots } from "@/lib/booking-slots";
+import {
+  normalizeCallbackNumber,
+  normalizeHttpUrl,
+  type ConfiguredMethod,
+  type HostMeetingDraft,
+  type PublicMeetingChoice,
+} from "@/lib/meeting-choice";
 
 export type BookingLink = {
   id: string;
@@ -257,12 +264,108 @@ export async function listConfirmedBookingsForCalendar(
 
 export type BookingEmailStatus = "sent" | "not_sent";
 
+export async function listPublicMeetingChoices(
+  bookingLinkId: string,
+): Promise<PublicMeetingChoice[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("public_meeting_choices", {
+    link_id: bookingLinkId,
+  });
+  if (error) {
+    if (/public_meeting_choices|PGRST202|schema cache/i.test(error.message)) {
+      return [];
+    }
+    throw new Error(error.message);
+  }
+  return ((data as PublicMeetingChoice[]) ?? []).filter((choice) =>
+    ["link", "phone", "slack", "discord"].includes(choice.id),
+  );
+}
+
+export async function getMeetingSetup(
+  bookingLinkId: string,
+): Promise<HostMeetingDraft> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("booking_link_meetings")
+    .select(
+      "methods, host_meeting_url, host_phone, host_slack_url, host_discord_url",
+    )
+    .eq("booking_link_id", bookingLinkId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const row = data as {
+    methods?: string[] | null;
+    host_meeting_url?: string | null;
+    host_phone?: string | null;
+    host_slack_url?: string | null;
+    host_discord_url?: string | null;
+  } | null;
+  const methods = new Set(row?.methods ?? []);
+  return {
+    link: methods.has("link"),
+    linkUrl: row?.host_meeting_url ?? "",
+    phone: methods.has("phone"),
+    phoneNumber: row?.host_phone ?? "",
+    slack: methods.has("slack"),
+    slackUrl: row?.host_slack_url ?? "",
+    discord: methods.has("discord"),
+    discordUrl: row?.host_discord_url ?? "",
+  };
+}
+
+export async function saveMeetingSetup(
+  bookingLinkId: string,
+  draft: HostMeetingDraft,
+): Promise<void> {
+  const methods: ConfiguredMethod[] = [];
+  const linkUrl = draft.link ? normalizeHttpUrl(draft.linkUrl) : null;
+  const phoneNumber = draft.phone
+    ? normalizeCallbackNumber(draft.phoneNumber)
+    : null;
+  const slackUrl = draft.slack ? normalizeHttpUrl(draft.slackUrl) : null;
+  const discordUrl = draft.discord ? normalizeHttpUrl(draft.discordUrl) : null;
+  if (draft.link && !linkUrl) {
+    throw new Error("Add an http or https meeting link before enabling it.");
+  }
+  if (draft.phone && !phoneNumber) {
+    throw new Error("Add a phone number before enabling phone calls.");
+  }
+  if (draft.slack && !slackUrl) {
+    throw new Error("Add an http or https Slack link before enabling it.");
+  }
+  if (draft.discord && !discordUrl) {
+    throw new Error("Add an http or https Discord link before enabling it.");
+  }
+  if (linkUrl) methods.push("link");
+  if (phoneNumber) methods.push("phone");
+  if (slackUrl) methods.push("slack");
+  if (discordUrl) methods.push("discord");
+
+  const supabase = createClient();
+  const { error } = await supabase.from("booking_link_meetings").upsert(
+    {
+      booking_link_id: bookingLinkId,
+      methods,
+      host_meeting_url: linkUrl,
+      host_phone: phoneNumber,
+      host_slack_url: slackUrl,
+      host_discord_url: discordUrl,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "booking_link_id" },
+  );
+  if (error) throw new Error(error.message);
+}
+
 export async function confirmPublicBooking(input: {
   bookingLinkId: string;
   start: string;
   end: string;
   bookerName: string;
   bookerEmail: string;
+  meetingMethod?: ConfiguredMethod | null;
+  guestPhone?: string | null;
 }): Promise<{ email: BookingEmailStatus }> {
   const supabase = createClient();
   const { data: link } = await supabase
@@ -275,12 +378,19 @@ export async function confirmPublicBooking(input: {
     booking_link_id: input.bookingLinkId,
     booker_name: input.bookerName.trim() || "Guest",
     booker_email: input.bookerEmail.trim(),
+    booker_phone: input.guestPhone ?? null,
     start_time: input.start,
     end_time: input.end,
     timezone: tz,
     status: "confirmed",
+    meeting_method: input.meetingMethod ?? null,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (/duplicate|bookings_one_confirmed_slot|23505/i.test(error.message)) {
+      return { email: await requestBookingEmail(input) };
+    }
+    throw new Error(error.message);
+  }
   return { email: await requestBookingEmail(input) };
 }
 
