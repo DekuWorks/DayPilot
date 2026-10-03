@@ -4,6 +4,11 @@ import Stripe from 'stripe';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SubscriptionTier, SubscriptionStatus } from '../generated/prisma';
+import {
+  type AppleTransaction,
+  AppleTransactionError,
+  verifyAppleSignedTransaction,
+} from './apple-signed-transaction';
 
 const STRIPE_STATUS_MAP: Record<string, SubscriptionStatus> = {
   active: 'active',
@@ -50,11 +55,25 @@ export class BillingService {
         data: { userId },
       });
     }
+    const source = sub.stripeSubscriptionId?.startsWith('apple:')
+      ? 'apple'
+      : sub.stripeCustomerId
+        ? 'stripe'
+        : null;
+    let status = sub.status ?? 'active';
+    if (
+      source === 'apple' &&
+      sub.currentPeriodEnd &&
+      sub.currentPeriodEnd.getTime() < Date.now()
+    ) {
+      status = 'canceled';
+    }
     return {
       tier: sub.tier,
-      status: sub.status ?? 'active',
+      status,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       stripeCustomerId: sub.stripeCustomerId ?? null,
+      source,
       configured: Boolean(this.stripe),
     };
   }
@@ -101,50 +120,47 @@ export class BillingService {
   }
 
   /**
-   * Confirm an App Store / Play Store purchase and map product → tier.
-   * Full App Store Server API verification can be enabled later via
-   * APPLE_IAP_ISSUER_ID / APPLE_IAP_KEY_ID / APPLE_IAP_PRIVATE_KEY.
-   * When APPLE_IAP_SKIP_VERIFY=1 (local/StoreKit testing), we trust the client.
+   * Confirm a StoreKit 2 purchase. Production requires the signed transaction
+   * from the device and checks it against Apple Root CA - G3.
+   * APPLE_IAP_SKIP_VERIFY=1 is local Xcode StoreKit only, and is ignored in production.
    */
   async confirmApplePurchase(
     userId: string,
-    input: { productId: string; transactionId: string },
+    input: {
+      productId: string;
+      transactionId: string;
+      signedTransaction?: string;
+    },
   ) {
-    const tier = this.appleProductIdToTier(input.productId);
-    if (!tier) {
+    const verified = this.readApplePurchase(input);
+    const appleId = `apple:${verified.originalTransactionId}`;
+    const linked = await this.prisma.subscription.findFirst({
+      where: { stripeSubscriptionId: appleId },
+    });
+    if (linked && linked.userId !== userId) {
       throw new BadRequestException(
-        `Unknown App Store product: ${input.productId}`,
+        'This App Store subscription is already linked to another DayPilot account.',
       );
     }
-    const skip =
-      this.config.get<string>('APPLE_IAP_SKIP_VERIFY') === '1' ||
-      this.config.get<string>('NODE_ENV') !== 'production';
-    if (!skip) {
-      // Production path: require a verified transaction id at minimum.
-      // Hook App Store Server API here when keys are configured.
-      if (!input.transactionId?.trim()) {
-        throw new BadRequestException('Missing transactionId');
-      }
-      const hasAppleKeys =
-        Boolean(this.config.get<string>('APPLE_IAP_ISSUER_ID')) &&
-        Boolean(this.config.get<string>('APPLE_IAP_KEY_ID'));
-      if (!hasAppleKeys) {
-        throw new BadRequestException(
-          'Apple IAP verification is not configured. Set APPLE_IAP_* or APPLE_IAP_SKIP_VERIFY=1 for StoreKit testing.',
-        );
-      }
-    }
-
     const existing = await this.prisma.subscription.findFirst({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
     });
+    if (
+      existing?.stripeSubscriptionId &&
+      !existing.stripeSubscriptionId.startsWith('apple:') &&
+      existing.status === 'active' &&
+      existing.tier !== 'Free'
+    ) {
+      throw new BadRequestException(
+        'This account already has a subscription billed on the website.',
+      );
+    }
     const data = {
-      tier,
+      tier: verified.tier,
       status: 'active' as SubscriptionStatus,
-      // Store Apple transaction id in stripeSubscriptionId slot until a dedicated column exists
-      stripeSubscriptionId: `apple:${input.transactionId}`,
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      stripeSubscriptionId: appleId,
+      currentPeriodEnd: verified.currentPeriodEnd,
     };
     if (existing) {
       await this.prisma.subscription.update({
@@ -161,12 +177,98 @@ export class BillingService {
       entityType: 'subscription',
       userId,
       metadata: {
-        productId: input.productId,
-        transactionId: input.transactionId,
-        tier,
+        productId: verified.productId,
+        transactionId: verified.originalTransactionId,
+        tier: verified.tier,
       },
     });
     return this.getSubscription(userId);
+  }
+
+  private readApplePurchase(input: {
+    productId: string;
+    transactionId: string;
+    signedTransaction?: string;
+  }): {
+    tier: SubscriptionTier;
+    productId: string;
+    originalTransactionId: string;
+    currentPeriodEnd: Date;
+  } {
+    const skip =
+      this.config.get<string>('APPLE_IAP_SKIP_VERIFY') === '1' &&
+      this.config.get<string>('NODE_ENV') !== 'production';
+    if (skip && !input.signedTransaction?.trim()) {
+      const tier = this.appleProductIdToTier(input.productId);
+      if (!tier) {
+        throw new BadRequestException(
+          `Unknown App Store product: ${input.productId}`,
+        );
+      }
+      if (!input.transactionId?.trim()) {
+        throw new BadRequestException('Missing transactionId');
+      }
+      return {
+        tier,
+        productId: input.productId,
+        originalTransactionId: input.transactionId.trim(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      };
+    }
+    if (!input.signedTransaction?.trim()) {
+      throw new BadRequestException('Missing App Store signed transaction');
+    }
+    let transaction: AppleTransaction;
+    try {
+      transaction = verifyAppleSignedTransaction(
+        input.signedTransaction.trim(),
+      );
+    } catch (error) {
+      if (error instanceof AppleTransactionError) {
+        throw new BadRequestException(
+          'App Store purchase could not be verified',
+        );
+      }
+      throw error;
+    }
+    const bundleId =
+      this.config.get<string>('APPLE_BUNDLE_ID') ?? 'com.dekuworks.daypilot';
+    if (
+      transaction.bundleId !== bundleId ||
+      transaction.productId !== input.productId
+    ) {
+      throw new BadRequestException('App Store purchase could not be verified');
+    }
+    const tier = this.appleProductIdToTier(transaction.productId);
+    if (!tier) {
+      throw new BadRequestException(
+        `Unknown App Store product: ${transaction.productId}`,
+      );
+    }
+    if (transaction.revocationDate) {
+      throw new BadRequestException('This App Store purchase was revoked');
+    }
+    if (transaction.environment !== 'Production') {
+      const sandbox =
+        transaction.environment === 'Sandbox' &&
+        this.config.get<string>('APPLE_IAP_ACCEPT_SANDBOX') === '1';
+      if (!sandbox) {
+        throw new BadRequestException(
+          'Sandbox App Store purchases are not accepted',
+        );
+      }
+    }
+    if (!transaction.expiresDate || transaction.expiresDate <= Date.now()) {
+      throw new BadRequestException(
+        'This App Store subscription is not active',
+      );
+    }
+    return {
+      tier,
+      productId: transaction.productId,
+      originalTransactionId: transaction.originalTransactionId,
+      currentPeriodEnd: new Date(transaction.expiresDate),
+    };
   }
 
   private appleProductIdToTier(productId: string): SubscriptionTier | null {
@@ -232,6 +334,20 @@ export class BillingService {
     userEmail: string,
     priceId: string,
   ) {
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (
+      existing?.stripeSubscriptionId?.startsWith('apple:') &&
+      existing.status === 'active' &&
+      existing.currentPeriodEnd &&
+      existing.currentPeriodEnd.getTime() > Date.now()
+    ) {
+      throw new BadRequestException(
+        'This plan is billed by Apple. Manage it in Settings on your iPhone.',
+      );
+    }
     const stripe = this.ensureStripe();
     const customerId = await this.getOrCreateStripeCustomerInternal(
       userId,

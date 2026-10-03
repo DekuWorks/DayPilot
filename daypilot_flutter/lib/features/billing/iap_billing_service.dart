@@ -96,8 +96,9 @@ class IapBillingService {
     if (!_session.hasSession) {
       await _session.exchangeFromSupabaseSession();
     }
-    final transactionId =
-        purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
+    final transactionId = purchase.purchaseID ?? '';
+    final signedTransaction =
+        purchase.verificationData.serverVerificationData.trim();
     if (transactionId.isEmpty) {
       throw Exception('Missing App Store transaction id');
     }
@@ -106,6 +107,8 @@ class IapBillingService {
       body: {
         'productId': purchase.productID,
         'transactionId': transactionId,
+        if (signedTransaction.isNotEmpty)
+          'signedTransaction': signedTransaction,
       },
     );
     if (res.statusCode >= 400) {
