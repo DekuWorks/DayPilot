@@ -16,7 +16,7 @@ void main() {
 
   test('home calendar views are Month, Week, Day', () {
     expect(kCalendarViewLabels, ['Month', 'Week', 'Day']);
-    expect(parseCalendarViewMode(null), CalendarViewMode.month);
+    expect(parseCalendarViewMode(null), CalendarViewMode.day);
     expect(parseCalendarViewMode('week'), CalendarViewMode.week);
     expect(parseCalendarViewMode('day'), CalendarViewMode.day);
     expect(CalendarViewMode.month.index, 0);

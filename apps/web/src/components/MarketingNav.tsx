@@ -55,9 +55,9 @@ export function MarketingNav({
             </Link>
           ))}
           {ctaAsButton ? (
-            <Link href={ctaHref} className="inline-block">
-              <Button size="lg">{ctaLabel}</Button>
-            </Link>
+            <Button href={ctaHref} size="lg">
+              {ctaLabel}
+            </Button>
           ) : (
             <Link href={ctaHref} className={linkClass(ctaHref)}>
               {ctaLabel}
@@ -122,15 +122,14 @@ export function MarketingNav({
             </Link>
           ))}
           {ctaAsButton ? (
-            <Link
+            <Button
               href={ctaHref}
-              onClick={() => setOpenForPath(null)}
-              className="mt-2 inline-block"
+              size="lg"
+              className="mt-2 w-full"
+              onNavigate={() => setOpenForPath(null)}
             >
-              <Button size="lg" className="w-full">
-                {ctaLabel}
-              </Button>
-            </Link>
+              {ctaLabel}
+            </Button>
           ) : (
             <Link
               href={ctaHref}

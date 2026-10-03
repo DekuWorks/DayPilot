@@ -1,4 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
+import { getApiUrl } from "@/lib/api";
+import type { CalendarBooking } from "@/lib/booking-calendar";
+import { buildPublicSlots } from "@/lib/booking-slots";
 
 export type BookingLink = {
   id: string;
@@ -29,7 +32,9 @@ function mapRow(row: Row): BookingLink {
   };
 }
 
-export async function listMyBookingLinks(userId: string): Promise<BookingLink[]> {
+export async function listMyBookingLinks(
+  userId: string,
+): Promise<BookingLink[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("booking_links")
@@ -40,9 +45,17 @@ export async function listMyBookingLinks(userId: string): Promise<BookingLink[]>
   return ((data as Row[]) ?? []).map(mapRow);
 }
 
+export function browserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
 export async function createBookingLink(
   userId: string,
-  data: { slug: string; title: string; duration?: number }
+  data: { slug: string; title: string; duration?: number; timeZone?: string },
 ): Promise<BookingLink> {
   const supabase = createClient();
   const { data: row, error } = await supabase
@@ -52,7 +65,7 @@ export async function createBookingLink(
       slug: data.slug,
       title: data.title,
       duration: data.duration ?? 30,
-      timezone: "America/New_York",
+      timezone: data.timeZone || browserTimeZone(),
       is_active: true,
       type: "one-on-one",
     })
@@ -78,7 +91,7 @@ export async function createBookingLink(
 
 export async function setBookingLinkActive(
   id: string,
-  isActive: boolean
+  isActive: boolean,
 ): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
@@ -97,23 +110,32 @@ export async function getPublicBookingLink(slug: string): Promise<{
   title: string;
   description: string | null;
   duration: number;
+  timeZone: string;
+  paused: boolean;
 } | null> {
   const supabase = createClient();
+  // Active links are public. A paused link is visible only to its owner, so
+  // they can preview the page. Guests get no row from RLS.
   const { data, error } = await supabase
     .from("booking_links")
-    .select("id, slug, title, description, duration")
+    .select("id, slug, title, description, duration, timezone, is_active")
     .eq("slug", slug)
-    .eq("is_active", true)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  const row = data as Row & { duration: number };
+  const row = data as Row & {
+    duration: number;
+    timezone?: string | null;
+    is_active?: boolean;
+  };
   return {
     id: row.id,
     slug: row.slug,
     title: row.title?.trim() || "Book time",
     description: row.description,
     duration: row.duration,
+    timeZone: row.timezone?.trim() || "UTC",
+    paused: row.is_active === false,
   };
 }
 
@@ -124,29 +146,24 @@ type Rule = {
   is_available: boolean | null;
 };
 
-function parseTime(v: string): { h: number; m: number } {
-  const [h, m] = v.split(":").map((x) => parseInt(x, 10));
-  return { h: h || 0, m: m || 0 };
-}
-
 export type PublicSlot = {
   id: string;
   start: string;
   end: string;
 };
 
-/** Generate open slots for the next 21 days (same logic as mobile). */
+/** Open slots for the next 21 days, using the link's timezone. */
 export async function listPublicSlots(
-  bookingLinkId: string
+  bookingLinkId: string,
 ): Promise<PublicSlot[]> {
   const supabase = createClient();
   const { data: link, error: linkErr } = await supabase
     .from("booking_links")
-    .select("duration")
+    .select("duration, timezone")
     .eq("id", bookingLinkId)
     .single();
   if (linkErr) throw new Error(linkErr.message);
-  const durationMin = Number((link as { duration: number }).duration ?? 30);
+  const linkRow = link as { duration: number; timezone?: string | null };
 
   const { data: rulesRaw, error: rulesErr } = await supabase
     .from("availability_rules")
@@ -154,81 +171,91 @@ export async function listPublicSlots(
     .eq("booking_link_id", bookingLinkId);
   if (rulesErr) throw new Error(rulesErr.message);
   const rules = ((rulesRaw as Rule[]) ?? []).filter(
-    (r) => r.is_available !== false
+    (rule) => rule.is_available !== false,
   );
-  if (rules.length === 0) return [];
 
   const { data: excludedRaw } = await supabase
     .from("booking_excluded_dates")
     .select("excluded_date")
     .eq("booking_link_id", bookingLinkId);
-  const excluded = new Set(
-    ((excludedRaw as { excluded_date: string }[]) ?? []).map((e) =>
-      e.excluded_date.slice(0, 10)
-    )
-  );
 
   const { data: bookingsRaw } = await supabase
     .from("bookings")
-    .select("start_time, end_time, status")
+    .select("start_time, end_time")
     .eq("booking_link_id", bookingLinkId)
     .neq("status", "cancelled");
-  const busy = ((bookingsRaw as { start_time: string; end_time: string }[]) ??
-    []
-  ).map((b) => ({
-    start: new Date(b.start_time).getTime(),
-    end: new Date(b.end_time).getTime(),
-  }));
 
-  const slots: PublicSlot[] = [];
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  for (let d = 0; d < 21; d++) {
-    const day = new Date(today);
-    day.setDate(today.getDate() + d);
-    const key = day.toISOString().slice(0, 10);
-    if (excluded.has(key)) continue;
-    const dow = day.getDay(); // 0=Sun
-    for (const rule of rules) {
-      if (rule.day_of_week !== dow) continue;
-      const startT = parseTime(String(rule.start_time));
-      const endT = parseTime(String(rule.end_time));
-      let cursor = new Date(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate(),
-        startT.h,
-        startT.m
-      );
-      const dayEnd = new Date(
-        day.getFullYear(),
-        day.getMonth(),
-        day.getDate(),
-        endT.h,
-        endT.m
-      );
-      while (cursor < dayEnd) {
-        const slotEnd = new Date(cursor.getTime() + durationMin * 60_000);
-        if (slotEnd > dayEnd) break;
-        if (slotEnd > now) {
-          const cs = cursor.getTime();
-          const ce = slotEnd.getTime();
-          const overlaps = busy.some((b) => cs < b.end && ce > b.start);
-          if (!overlaps) {
-            slots.push({
-              id: `${bookingLinkId}|${cursor.toISOString()}`,
-              start: cursor.toISOString(),
-              end: slotEnd.toISOString(),
-            });
-          }
-        }
-        cursor = slotEnd;
-      }
-    }
-  }
-  return slots;
+  return buildPublicSlots({
+    linkId: bookingLinkId,
+    timeZone: linkRow.timezone || "UTC",
+    durationMin: Number(linkRow.duration ?? 30),
+    rules: rules.map((rule) => ({
+      dayOfWeek: Number(rule.day_of_week),
+      start: String(rule.start_time),
+      end: String(rule.end_time),
+    })),
+    excludedDates: ((excludedRaw as { excluded_date: string }[]) ?? []).map(
+      (row) => String(row.excluded_date),
+    ),
+    busy: (
+      (bookingsRaw as { start_time: string; end_time: string }[]) ?? []
+    ).map((row) => ({
+      start: row.start_time,
+      end: row.end_time,
+    })),
+  });
 }
+
+/** Confirmed bookings owned by this user, for the calendar they actually see. */
+export async function listConfirmedBookingsForCalendar(
+  userId: string,
+  range?: { from?: string; to?: string },
+): Promise<CalendarBooking[]> {
+  const supabase = createClient();
+  const { data: links, error: linkErr } = await supabase
+    .from("booking_links")
+    .select("id, title")
+    .eq("owner_user_id", userId);
+  if (linkErr) throw new Error(linkErr.message);
+  const linkRows = (links as { id: string; title: string | null }[]) ?? [];
+  if (linkRows.length === 0) return [];
+  const titles = new Map(linkRows.map((row) => [row.id, row.title ?? ""]));
+
+  let query = supabase
+    .from("bookings")
+    .select(
+      "id, booker_name, booker_email, start_time, end_time, booking_link_id",
+    )
+    .in(
+      "booking_link_id",
+      linkRows.map((row) => row.id),
+    )
+    .eq("status", "confirmed");
+  if (range?.from) query = query.gt("end_time", range.from);
+  if (range?.to) query = query.lt("start_time", range.to);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (
+    (data as {
+      id: string;
+      booker_name: string | null;
+      booker_email: string | null;
+      start_time: string;
+      end_time: string;
+      booking_link_id: string;
+    }[]) ?? []
+  ).map((row) => ({
+    id: row.id,
+    title: titles.get(row.booking_link_id) || "Booking",
+    bookerName: row.booker_name || "Guest",
+    bookerEmail: row.booker_email || "",
+    start: row.start_time,
+    end: row.end_time,
+  }));
+}
+
+export type BookingEmailStatus = "sent" | "not_sent";
 
 export async function confirmPublicBooking(input: {
   bookingLinkId: string;
@@ -236,15 +263,14 @@ export async function confirmPublicBooking(input: {
   end: string;
   bookerName: string;
   bookerEmail: string;
-}): Promise<void> {
+}): Promise<{ email: BookingEmailStatus }> {
   const supabase = createClient();
   const { data: link } = await supabase
     .from("booking_links")
     .select("timezone")
     .eq("id", input.bookingLinkId)
     .single();
-  const tz =
-    (link as { timezone?: string } | null)?.timezone ?? "America/New_York";
+  const tz = (link as { timezone?: string } | null)?.timezone ?? "UTC";
   const { error } = await supabase.from("bookings").insert({
     booking_link_id: input.bookingLinkId,
     booker_name: input.bookerName.trim() || "Guest",
@@ -255,4 +281,28 @@ export async function confirmPublicBooking(input: {
     status: "confirmed",
   });
   if (error) throw new Error(error.message);
+  return { email: await requestBookingEmail(input) };
+}
+
+async function requestBookingEmail(input: {
+  bookingLinkId: string;
+  start: string;
+  bookerEmail: string;
+}): Promise<BookingEmailStatus> {
+  try {
+    const res = await fetch(`${getApiUrl()}/bookings/confirmation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookingLinkId: input.bookingLinkId,
+        start: input.start,
+        bookerEmail: input.bookerEmail.trim(),
+      }),
+    });
+    if (!res.ok) return "not_sent";
+    const body = (await res.json()) as { sent?: boolean };
+    return body.sent ? "sent" : "not_sent";
+  } catch {
+    return "not_sent";
+  }
 }

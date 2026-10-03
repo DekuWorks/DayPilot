@@ -15,6 +15,7 @@ import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { EventsModule } from './events/events.module';
 import { AiModule } from './ai/ai.module';
+import { BookingConfirmationModule } from './bookings/booking-confirmation.module';
 import { CalendarConnectionsModule } from './calendar-connections/calendar-connections.module';
 import { envSchema } from './env.schema';
 import { AuditModule } from './audit/audit.module';
@@ -53,6 +54,7 @@ const apiEnvFiles = [
     EventsModule,
     AiModule,
     CalendarConnectionsModule,
+    BookingConfirmationModule,
   ],
   controllers: [AppController],
   providers: [

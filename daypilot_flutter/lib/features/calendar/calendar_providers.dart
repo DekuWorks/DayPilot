@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/daypilot_env.dart';
+import '../../core/providers/api_session_sync_provider.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../domain/models/event_record.dart';
@@ -31,16 +35,37 @@ Future<List<EventRecord>> _withWorkspaceColors(
   }
 }
 
+Future<List<EventRecord>> loadEventsForRange(
+  Ref ref, {
+  required DateTime from,
+  required DateTime to,
+}) {
+  if (DayPilotEnv.hasDaypilotApi) {
+    final sync = ref.watch(apiSessionSyncProvider);
+    if (sync.status != ApiSessionSyncStatus.ready &&
+        sync.status != ApiSessionSyncStatus.failed) {
+      final pending = Completer<List<EventRecord>>();
+      ref.onDispose(() {
+        if (!pending.isCompleted) pending.complete(const []);
+      });
+      return pending.future;
+    }
+  }
+  return ref.watch(eventRepositoryProvider).listForRange(from: from, to: to);
+}
+
 /// Month grid: [key] is the first day of that month (year, month, 1).
 final calendarMonthEventsFamily =
     FutureProvider.autoDispose.family<List<EventRecord>, DateTime>(
   (ref, month) async {
     ref.watch(calendarDataVersionProvider);
-    final repo = ref.watch(eventRepositoryProvider);
     final from = DateTime(month.year, month.month, 1);
     final to = DateTime(month.year, month.month + 1, 1)
         .subtract(const Duration(seconds: 1));
-    return _withWorkspaceColors(ref, repo.listForRange(from: from, to: to));
+    return _withWorkspaceColors(
+      ref,
+      loadEventsForRange(ref, from: from, to: to),
+    );
   },
 );
 
@@ -56,7 +81,7 @@ final calendarWeekEventsFamily =
     final to = from.add(const Duration(days: 7));
     return _withWorkspaceColors(
       ref,
-      ref.watch(eventRepositoryProvider).listForRange(from: from, to: to),
+      loadEventsForRange(ref, from: from, to: to),
     );
   },
 );
@@ -72,7 +97,7 @@ final calendarDayEventsFamily =
         .subtract(const Duration(milliseconds: 1));
     return _withWorkspaceColors(
       ref,
-      ref.watch(eventRepositoryProvider).listForRange(from: from, to: to),
+      loadEventsForRange(ref, from: from, to: to),
     );
   },
 );

@@ -1,15 +1,32 @@
 "use client";
 
 import { forwardRef } from "react";
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import Link from "next/link";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline";
   size?: "sm" | "md" | "lg";
+  /** Renders a link instead of a button so the control is one element. */
+  href?: string;
+  /** Called when a link-styled button is activated. */
+  onNavigate?: () => void;
+  children?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = "", variant = "primary", size = "md", ...props }, ref) => {
+  (
+    {
+      className = "",
+      variant = "primary",
+      size = "md",
+      href,
+      onNavigate,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const baseStyles =
       "inline-flex items-center justify-center font-semibold rounded-[var(--radius-md)] transition-all duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background-primary)] disabled:opacity-50 disabled:cursor-not-allowed";
 
@@ -28,14 +45,29 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "px-6 py-3 text-[var(--text-body)] min-h-12",
     };
 
+    const classes = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
+
+    if (href) {
+      if (href.startsWith("mailto:")) {
+        return (
+          <a href={href} className={classes} onClick={() => onNavigate?.()}>
+            {children}
+          </a>
+        );
+      }
+      return (
+        <Link href={href} className={classes} onClick={() => onNavigate?.()}>
+          {children}
+        </Link>
+      );
+    }
+
     return (
-      <button
-        ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-        {...props}
-      />
+      <button ref={ref} className={classes} {...props}>
+        {children}
+      </button>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

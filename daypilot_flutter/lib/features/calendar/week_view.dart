@@ -6,6 +6,7 @@ import '../../core/providers/api_session_sync_provider.dart';
 import 'calendar_chip_color.dart';
 import 'calendar_error_view.dart';
 import 'calendar_providers.dart';
+import 'empty_schedule_hint.dart';
 
 class WeekCalendarView extends ConsumerWidget {
   const WeekCalendarView({super.key, required this.focusDay});
@@ -17,7 +18,9 @@ class WeekCalendarView extends ConsumerWidget {
     final d = DateTime(focusDay.year, focusDay.month, focusDay.day);
     final async = ref.watch(calendarWeekEventsFamily(d));
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading events'),
+      ),
       error: (e, _) => CalendarErrorView(
         error: e,
         onRetry: () async {
@@ -27,7 +30,17 @@ class WeekCalendarView extends ConsumerWidget {
       ),
       data: (events) {
         if (events.isEmpty) {
-          return const Center(child: Text('No events this week.'));
+          return EmptyScheduleHint(
+            title: 'No events this week.',
+            body:
+                'Add an event, or connect a calendar when you want this week to include commitments you already have. Connecting is optional.',
+            primaryLabel: 'New event',
+            onPrimary: () => context.push('/events/new'),
+            secondaryLabel: 'Connect a calendar',
+            onSecondary: () => context.push('/sync'),
+            tertiaryLabel: 'Pilot Brief',
+            onTertiary: () => context.push('/insights/brief'),
+          );
         }
         return ListView.separated(
           padding: const EdgeInsets.all(16),

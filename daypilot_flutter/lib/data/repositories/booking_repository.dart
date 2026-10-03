@@ -1,19 +1,27 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/models/booking_page.dart';
 import '../../domain/models/booking_slot.dart';
+import 'booking_confirmation.dart';
 
 class BookingRepository {
   BookingRepository(this._client);
 
   final SupabaseClient _client;
+  static bool _zonesReady = false;
+
+  void _ensureZones() {
+    if (_zonesReady) return;
+    tzdata.initializeTimeZones();
+    _zonesReady = true;
+  }
 
   Future<BookingPage?> getPageBySlug(String slug) async {
     final row = await _client
         .from('booking_links')
-        .select(
-          'id, slug, title, description, is_active, owner_user_id',
-        )
+        .select('id, slug, title, description, is_active, owner_user_id')
         .eq('slug', slug)
         .eq('is_active', true)
         .maybeSingle();
@@ -32,12 +40,15 @@ class BookingRepository {
   }
 
   Future<List<BookingSlot>> listSlotsForPage(String bookingPageId) async {
+    _ensureZones();
     final link = await _client
         .from('booking_links')
-        .select('id, duration')
+        .select('id, duration, timezone')
         .eq('id', bookingPageId)
         .single();
     final durationMin = (link['duration'] as num?)?.toInt() ?? 30;
+    final timeZone = (link['timezone'] as String?)?.trim();
+    final location = _location(timeZone);
 
     final rulesRaw = await _client
         .from('availability_rules')
@@ -55,8 +66,7 @@ class BookingRepository {
         .select('excluded_date')
         .eq('booking_link_id', bookingPageId);
     final excluded = (excludedRaw as List<dynamic>)
-        .map((e) => DateTime.parse((e as Map)['excluded_date'].toString()))
-        .map((d) => DateTime(d.year, d.month, d.day))
+        .map((e) => (e as Map)['excluded_date'].toString().substring(0, 10))
         .toSet();
 
     final bookingsRaw = await _client
@@ -71,71 +81,82 @@ class BookingRepository {
       final en = m['end_time'];
       if (st != null && en != null) {
         busy.add((
-          start: DateTime.parse(st.toString()),
-          end: DateTime.parse(en.toString()),
+          start: DateTime.parse(st.toString()).toUtc(),
+          end: DateTime.parse(en.toString()).toUtc(),
         ));
       }
     }
 
     final slots = <BookingSlot>[];
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final now = tz.TZDateTime.now(location);
+    var day = tz.TZDateTime(location, now.year, now.month, now.day);
 
     for (var d = 0; d < 21; d++) {
-      final day = today.add(Duration(days: d));
-      if (excluded.contains(DateTime(day.year, day.month, day.day))) {
-        continue;
-      }
-      final dow = day.weekday % 7;
-      for (final rule in rules) {
-        if ((rule['day_of_week'] as num).toInt() != dow) continue;
-        final startT = _parseTime(rule['start_time']);
-        final endT = _parseTime(rule['end_time']);
-        var cursor = DateTime(
-          day.year,
-          day.month,
-          day.day,
-          startT.hour,
-          startT.minute,
-        );
-        final dayEnd = DateTime(
-          day.year,
-          day.month,
-          day.day,
-          endT.hour,
-          endT.minute,
-        );
-        while (cursor.isBefore(dayEnd)) {
-          final slotEnd = cursor.add(Duration(minutes: durationMin));
-          if (slotEnd.isAfter(dayEnd)) break;
-          if (slotEnd.isBefore(now)) {
-            cursor = slotEnd;
-            continue;
-          }
-          var overlaps = false;
-          for (final b in busy) {
-            if (cursor.isBefore(b.end) && slotEnd.isAfter(b.start)) {
-              overlaps = true;
-              break;
-            }
-          }
-          final id = '$bookingPageId|${cursor.toUtc().toIso8601String()}';
-          slots.add(
-            BookingSlot(
-              id: id,
-              bookingPageId: bookingPageId,
-              startsAt: cursor,
-              endsAt: slotEnd,
-              capacity: 1,
-              bookedCount: overlaps ? 1 : 0,
-            ),
+      final key =
+          '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      if (!excluded.contains(key)) {
+        final dow = day.weekday % 7;
+        for (final rule in rules) {
+          if ((rule['day_of_week'] as num).toInt() != dow) continue;
+          final startT = _parseTime(rule['start_time']);
+          final endT = _parseTime(rule['end_time']);
+          var cursor = tz.TZDateTime(
+            location,
+            day.year,
+            day.month,
+            day.day,
+            startT.hour,
+            startT.minute,
           );
-          cursor = slotEnd;
+          final dayEnd = tz.TZDateTime(
+            location,
+            day.year,
+            day.month,
+            day.day,
+            endT.hour,
+            endT.minute,
+          );
+          while (cursor.isBefore(dayEnd)) {
+            final slotEnd = cursor.add(Duration(minutes: durationMin));
+            if (slotEnd.isAfter(dayEnd)) break;
+            if (!slotEnd.isBefore(now)) {
+              var overlaps = false;
+              for (final b in busy) {
+                if (cursor.isBefore(b.end) && slotEnd.isAfter(b.start)) {
+                  overlaps = true;
+                  break;
+                }
+              }
+              if (!overlaps) {
+                slots.add(
+                  BookingSlot(
+                    id: '$bookingPageId|${cursor.toUtc().toIso8601String()}',
+                    bookingPageId: bookingPageId,
+                    startsAt: cursor.toUtc(),
+                    endsAt: slotEnd.toUtc(),
+                    capacity: 1,
+                    bookedCount: 0,
+                  ),
+                );
+              }
+            }
+            cursor = slotEnd;
+          }
         }
       }
+      day = tz.TZDateTime(location, day.year, day.month, day.day + 1);
     }
 
     return slots;
+  }
+
+  tz.Location _location(String? name) {
+    if (name == null || name.isEmpty) return tz.UTC;
+    try {
+      return tz.getLocation(name);
+    } catch (_) {
+      return tz.UTC;
+    }
   }
 
   ({int hour, int minute}) _parseTime(dynamic v) {
@@ -146,7 +167,9 @@ class BookingRepository {
     return (hour: h, minute: m);
   }
 
-  Future<void> confirmBooking({
+  /// Inserts the booking, then asks the API to email a calendar file.
+  /// Returns whether that email was sent. The booking stands either way.
+  Future<bool> confirmBooking({
     required String bookingPageId,
     required BookingSlot slot,
     required String guestEmail,
@@ -158,16 +181,22 @@ class BookingRepository {
         .eq('id', bookingPageId)
         .single();
     final tz = link['timezone'] as String? ?? 'UTC';
+    final email = guestEmail.trim();
     await _client.from('bookings').insert({
       'booking_link_id': bookingPageId,
       'booker_name': (guestName?.trim().isNotEmpty ?? false)
           ? guestName!.trim()
           : 'Guest',
-      'booker_email': guestEmail.trim(),
+      'booker_email': email,
       'start_time': slot.startsAt.toUtc().toIso8601String(),
       'end_time': slot.endsAt.toUtc().toIso8601String(),
       'timezone': tz,
       'status': 'confirmed',
     });
+    return requestBookingConfirmation(
+      bookingLinkId: bookingPageId,
+      start: slot.startsAt,
+      bookerEmail: email,
+    );
   }
 }

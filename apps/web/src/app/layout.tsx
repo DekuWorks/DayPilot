@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/providers/Providers";
+import {
+  productDescription,
+  productPositioning,
+} from "@/lib/product-positioning";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,13 +14,12 @@ const inter = Inter({
   preload: true,
 });
 
-const siteTitle = "DayPilot — Plan. Pilot. Perform.";
-const siteDescription =
-  "One intelligent workspace for your calendar, tasks, meetings, notes, and daily planning.";
+const siteTitle = `DayPilot — ${productPositioning}`;
+const siteDescription = productDescription;
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://daypilot.co"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://daypilot.co",
   ),
   title: {
     default: siteTitle,
@@ -37,22 +40,20 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "DayPilot",
     title: siteTitle,
-    description:
-      "Bring your calendar, tasks, meetings, and daily planning into one intelligent workspace.",
+    description: siteDescription,
     images: [
       {
         url: "/brand/og-image.png",
         width: 1200,
         height: 630,
-        alt: "DayPilot — Plan. Pilot. Perform.",
+        alt: siteTitle,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: siteTitle,
-    description:
-      "Bring your calendar, tasks, meetings, and daily planning into one intelligent workspace.",
+    description: siteDescription,
     images: ["/brand/og-image.png"],
   },
 };

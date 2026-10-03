@@ -85,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Plan. Pilot. Perform.',
+                  'A realistic plan for today, built around your calendar and tasks.',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: DayPilotScheme.of(context).accent,
                         fontWeight: FontWeight.w700,
@@ -95,19 +95,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 20),
                 const _FeatureRow(
                   icon: Icons.calendar_month_outlined,
-                  label: 'Connected Calendars',
-                ),
-                const _FeatureRow(
-                  icon: Icons.auto_awesome_outlined,
-                  label: 'AI Scheduling',
+                  label: 'Calendar commitments, when you connect one',
                 ),
                 const _FeatureRow(
                   icon: Icons.check_circle_outline,
-                  label: 'Tasks & Reminders',
+                  label: 'Tasks you still need to do',
                 ),
                 const _FeatureRow(
-                  icon: Icons.insights_outlined,
-                  label: 'Insights & Analytics',
+                  icon: Icons.wb_sunny_outlined,
+                  label: 'Pilot Brief from what is already scheduled',
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -332,12 +328,14 @@ class _FeatureRow extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: DayPilotScheme.of(context).accent),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: TextStyle(
-              color: DayPilotScheme.of(context).textSecondary,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: DayPilotScheme.of(context).textSecondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
