@@ -16,6 +16,7 @@ class EventRecord {
     this.status = 'scheduled',
     this.source = 'native',
     this.syncDirection,
+    this.copyWarning,
   });
 
   final String id;
@@ -33,6 +34,7 @@ class EventRecord {
   final String status;
   final String source;
   final String? syncDirection;
+  final String? copyWarning;
 
   /// Only events the user created in DayPilot. Imported calendars are read-only.
   bool get canDelete =>
@@ -65,6 +67,7 @@ class EventRecord {
     String? status,
     String? source,
     String? syncDirection,
+    String? copyWarning,
   }) {
     return EventRecord(
       id: id ?? this.id,
@@ -82,6 +85,7 @@ class EventRecord {
       status: status ?? this.status,
       source: source ?? this.source,
       syncDirection: syncDirection ?? this.syncDirection,
+      copyWarning: copyWarning ?? this.copyWarning,
     );
   }
 
@@ -109,6 +113,7 @@ class EventRecord {
       status: 'scheduled',
       source: json['source'] as String? ?? 'native',
       syncDirection: json['syncDirection'] as String?,
+      copyWarning: json['copyWarning'] as String?,
     );
   }
 

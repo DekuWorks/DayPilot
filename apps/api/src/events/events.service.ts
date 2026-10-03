@@ -206,7 +206,7 @@ export class EventsService {
         calendarColor: dto.calendarColor,
       },
     );
-    const event = await this.prisma.event.create({
+    const created = await this.prisma.event.create({
       data: {
         userId,
         title: dto.title,
@@ -218,6 +218,8 @@ export class EventsService {
         metadata: metadata as Prisma.InputJsonValue,
       },
     });
+    const copied = await this.copyToConnectedCalendars(userId, created);
+    const event = copied.event;
     const meta = readEventMeta(event.metadata);
     const payload = toEventPayload({
       ...event,
@@ -231,7 +233,9 @@ export class EventsService {
       entityId: event.id,
       userId,
     });
-    return payload;
+    return copied.copyWarning
+      ? { ...payload, copyWarning: copied.copyWarning }
+      : payload;
   }
 
   async update(userId: string, eventId: string, dto: UpdateEventDto) {
@@ -268,7 +272,7 @@ export class EventsService {
       );
     }
 
-    const event = await this.prisma.event.update({
+    const updated = await this.prisma.event.update({
       where: { id: eventId },
       data: {
         ...(dto.title != null && { title: dto.title }),
@@ -287,6 +291,11 @@ export class EventsService {
         }),
       },
     });
+    const copied =
+      updated.source === 'native'
+        ? await this.copyToConnectedCalendars(userId, updated)
+        : { event: updated, copyWarning: undefined as string | undefined };
+    const event = copied.event;
     const meta = readEventMeta(event.metadata);
     const payload = toEventPayload({
       ...event,
@@ -294,7 +303,9 @@ export class EventsService {
       calendarColor: meta.calendarColor ?? null,
     });
     this.eventEmitter.emit('event.updated', { userId, event: payload });
-    return payload;
+    return copied.copyWarning
+      ? { ...payload, copyWarning: copied.copyWarning }
+      : payload;
   }
 
   async remove(userId: string, eventId: string) {
@@ -309,6 +320,13 @@ export class EventsService {
       );
     }
 
+    if (existing.source === 'native') {
+      await this.calendarConnections.deleteNativeCopies(
+        userId,
+        existing.metadata,
+      );
+    }
+
     await this.prisma.event.delete({ where: { id: eventId } });
     this.eventEmitter.emit('event.deleted', { userId, eventId });
     await this.audit.log({
@@ -318,5 +336,46 @@ export class EventsService {
       userId,
     });
     return { id: eventId };
+  }
+
+  private async copyToConnectedCalendars(
+    userId: string,
+    event: {
+      id: string;
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+      metadata: unknown;
+    },
+  ): Promise<{
+    event: {
+      id: string;
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+      metadata: unknown;
+      source: string;
+      externalId: string | null;
+    };
+    copyWarning?: string;
+  }> {
+    const mirrored = await this.calendarConnections.mirrorNativeEvent(
+      userId,
+      event,
+    );
+    const saved = await this.prisma.event.update({
+      where: { id: event.id },
+      data: { metadata: mirrored.metadata as Prisma.InputJsonValue },
+    });
+    return {
+      event: saved,
+      copyWarning: mirrored.warnings.length
+        ? `Saved in DayPilot. Could not copy to ${mirrored.warnings.join('; ')}.`
+        : undefined,
+    };
   }
 }

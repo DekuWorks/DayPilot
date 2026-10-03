@@ -1,5 +1,7 @@
 import {
   appSpecificPasswordVariants,
+  buildOutboundIcs,
+  daypilotAppleUid,
   decodeCalendarIds,
   encodeCalendarIds,
   looksLikeAppSpecificPassword,
@@ -65,5 +67,23 @@ END:VCALENDAR`;
     expect(events[0]?.uid).toBe('evt-1');
     expect(events[0]?.title).toBe('Standup');
     expect(events[0]?.location).toBe('Zoom');
+  });
+
+  it('round-trips a DayPilot event written to iCloud', () => {
+    const uid = daypilotAppleUid('evt_1');
+    const ics = buildOutboundIcs({
+      uid,
+      daypilotEventId: 'evt_1',
+      title: 'Web check',
+      start: new Date('2026-10-05T14:00:00.000Z'),
+      end: new Date('2026-10-05T14:30:00.000Z'),
+      description: 'Notes',
+      location: 'Desk',
+    });
+    const events = parseIcsEvents(ics);
+    expect(events[0]?.uid).toBe(uid);
+    expect(events[0]?.title).toBe('Web check');
+    expect(events[0]?.daypilotEventId).toBe('evt_1');
+    expect(events[0]?.start.toISOString()).toBe('2026-10-05T14:00:00.000Z');
   });
 });

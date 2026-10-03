@@ -237,6 +237,11 @@ class _EventCreateScreenState extends ConsumerState<EventCreateScreen> {
     // Still create DayPilot native when destination is DayPilot.
     if (_destinationCalendarId == null) {
       final saved = await ref.read(eventRepositoryProvider).create(draft);
+      if (saved.copyWarning != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(saved.copyWarning!)),
+        );
+      }
       ref.invalidate(calendarMonthEventsFamily);
       ref.invalidate(calendarWeekEventsFamily);
       ref.invalidate(calendarDayEventsFamily);

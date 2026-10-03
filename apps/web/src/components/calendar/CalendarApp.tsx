@@ -157,9 +157,10 @@ export function CalendarApp() {
   }) {
     if (!user) return;
     try {
-      await eventsApi.createEvent(user.id, data);
+      const created = await eventsApi.createEvent(user.id, data);
       setCreateModal(null);
       refetch();
+      if (created.copyWarning) alert(created.copyWarning);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to create event");
     }

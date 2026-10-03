@@ -23,6 +23,8 @@ export type CalDavEvent = {
   end: Date;
   description?: string;
   location?: string;
+  /** Set when DayPilot created this iCloud event. */
+  daypilotEventId?: string;
 };
 
 export class CalDavError extends Error {
@@ -248,6 +250,7 @@ export function parseIcsEvents(ics: string): CalDavEvent[] {
     if (!end) continue;
     const description = get('DESCRIPTION')?.value?.replace(/\\n/g, '\n');
     const location = get('LOCATION')?.value;
+    const daypilotEventId = get('X-DAYPILOT-EVENT-ID')?.value;
     events.push({
       uid,
       title: summary.replace(/\\,/g, ','),
@@ -255,6 +258,7 @@ export function parseIcsEvents(ics: string): CalDavEvent[] {
       end,
       description,
       location: location?.replace(/\\,/g, ','),
+      daypilotEventId: daypilotEventId || undefined,
     });
   }
   return events;
@@ -602,6 +606,177 @@ export async function fetchIcloudEvents(
         events.push(...parseIcsEvents(ics));
       }
       return events;
+    } catch (err) {
+      lastError = err;
+      if (
+        err instanceof CalDavError &&
+        err.code !== 'auth' &&
+        err.code !== 'forbidden'
+      ) {
+        throw err;
+      }
+    }
+  }
+  if (lastError instanceof Error) throw lastError;
+  throw new CalDavError(
+    'iCloud CalDAV auth failed. Reconnect with a new app-specific password.',
+    'auth',
+  );
+}
+
+export function daypilotAppleUid(eventId: string): string {
+  return `${eventId}@daypilot.co`;
+}
+
+function escapeIcsText(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/\r\n/g, '\\n')
+    .replace(/\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+}
+
+function formatIcsUtc(date: Date): string {
+  return date
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z');
+}
+
+/** VEVENT written to iCloud so a later sync can recognise the DayPilot row. */
+export function buildOutboundIcs(event: {
+  uid: string;
+  daypilotEventId: string;
+  title: string;
+  start: Date;
+  end: Date;
+  description: string | null;
+  location: string | null;
+}): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//DayPilot//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${event.uid}`,
+    `DTSTAMP:${formatIcsUtc(new Date())}`,
+    `DTSTART:${formatIcsUtc(event.start)}`,
+    `DTEND:${formatIcsUtc(event.end)}`,
+    `SUMMARY:${escapeIcsText(event.title)}`,
+  ];
+  if (event.description) {
+    lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
+  }
+  if (event.location) {
+    lines.push(`LOCATION:${escapeIcsText(event.location)}`);
+  }
+  lines.push(`X-DAYPILOT-EVENT-ID:${event.daypilotEventId}`);
+  lines.push('END:VEVENT', 'END:VCALENDAR');
+  return `${lines.join('\r\n')}\r\n`;
+}
+
+function icsHref(calendarUrl: string, uid: string): string {
+  const base = calendarUrl.endsWith('/') ? calendarUrl : `${calendarUrl}/`;
+  return `${base}${encodeURIComponent(uid)}.ics`;
+}
+
+export async function putIcloudEvent(
+  appleId: string,
+  appSpecificPassword: string,
+  calendarUrl: string,
+  event: {
+    uid: string;
+    daypilotEventId: string;
+    title: string;
+    start: Date;
+    end: Date;
+    description: string | null;
+    location: string | null;
+  },
+): Promise<void> {
+  const ics = buildOutboundIcs(event);
+  const href = icsHref(calendarUrl, event.uid);
+  const email = appleId.trim().toLowerCase();
+  let lastError: unknown;
+  for (const password of appSpecificPasswordVariants(appSpecificPassword)) {
+    try {
+      const res = await caldavRequest(
+        href,
+        'PUT',
+        email,
+        password,
+        ics,
+        '0',
+        'text/calendar; charset=utf-8',
+      );
+      if (res.status === 401 || res.status === 403) {
+        throwForAuthStatus(res.status, 'event write');
+      }
+      if (res.status === 200 || res.status === 201 || res.status === 204) {
+        return;
+      }
+      throw new CalDavError(
+        `iCloud event write failed (${res.status})`,
+        'sync',
+        res.status,
+      );
+    } catch (err) {
+      lastError = err;
+      if (
+        err instanceof CalDavError &&
+        err.code !== 'auth' &&
+        err.code !== 'forbidden'
+      ) {
+        throw err;
+      }
+    }
+  }
+  if (lastError instanceof Error) throw lastError;
+  throw new CalDavError(
+    'iCloud CalDAV auth failed. Reconnect with a new app-specific password.',
+    'auth',
+  );
+}
+
+export async function deleteIcloudEvent(
+  appleId: string,
+  appSpecificPassword: string,
+  calendarUrl: string,
+  uid: string,
+): Promise<void> {
+  const href = icsHref(calendarUrl, uid);
+  const email = appleId.trim().toLowerCase();
+  let lastError: unknown;
+  for (const password of appSpecificPasswordVariants(appSpecificPassword)) {
+    try {
+      const res = await caldavRequest(
+        href,
+        'DELETE',
+        email,
+        password,
+        '',
+        '0',
+        'text/calendar; charset=utf-8',
+      );
+      if (res.status === 401 || res.status === 403) {
+        throwForAuthStatus(res.status, 'event delete');
+      }
+      if (
+        res.status === 200 ||
+        res.status === 202 ||
+        res.status === 204 ||
+        res.status === 404
+      ) {
+        return;
+      }
+      throw new CalDavError(
+        `iCloud event delete failed (${res.status})`,
+        'sync',
+        res.status,
+      );
     } catch (err) {
       lastError = err;
       if (

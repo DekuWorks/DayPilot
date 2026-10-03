@@ -52,6 +52,7 @@ function mapNestToCalendar(e: nestEvents.Event): CalendarEvent {
     allDay: e.allDay ?? false,
     source: e.source,
     syncDirection: e.syncDirection,
+    copyWarning: e.copyWarning,
   };
 }
 

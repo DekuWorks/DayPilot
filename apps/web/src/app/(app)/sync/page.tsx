@@ -25,6 +25,7 @@ import {
   type CalendarProviderUi,
 } from "@/lib/calendar-connection-ui";
 import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
+import { AppleIcloudMobileNote } from "@/components/AppleIcloudMobileNote";
 import { formatWhen } from "@/lib/format-when";
 
 export default function SyncPage() {
@@ -123,9 +124,10 @@ export default function SyncPage() {
     setActionLoading("sync-all");
     try {
       const apple = rows.find((r) => r.id === "apple");
+      const eventKitId = eventKit?.connections?.[0]?.id ?? null;
       const count = await calendarConnectionsApi.syncAllConnections({
         connections,
-        eventKitConnectionId: apple?.canSync ? apple.connectionId : null,
+        eventKitConnectionId: apple?.canSync && eventKitId ? eventKitId : null,
       });
       await reload();
       if (count === 0) {
@@ -144,9 +146,9 @@ export default function SyncPage() {
         Sync
       </h1>
       <p className="text-[var(--text-secondary)] mb-6">
-        One status per calendar. Apple Calendar syncs through the DayPilot iOS
-        app (EventKit) — manage it on iPhone.
+        One status per calendar. Connect Google or Outlook here.
       </p>
+      <AppleIcloudMobileNote />
 
       {appleSso && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
@@ -217,7 +219,7 @@ export default function SyncPage() {
                     : undefined
                 }
                 onDisconnect={
-                  row.id !== "apple" && row.connectionId
+                  row.connectionId && (row.id !== "apple" || row.canDisconnect)
                     ? () => void handleDisconnect(row.connectionId!)
                     : undefined
                 }
@@ -286,74 +288,59 @@ function ProviderCard({
         </span>
       </div>
 
-      {row.id === "apple" && row.tone === "notConnected" ? (
-        <div className="space-y-3">
-          <p className="text-sm text-[var(--text-secondary)]">
-            Open DayPilot on your iPhone to allow calendar access. Events then
-            appear here automatically (read-only on web).
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={APPLE_CALENDAR_DEEP_LINK}
-              className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
-            >
-              Open in DayPilot app
-            </a>
-            <Link
-              href="/app/integrations/apple-calendar"
-              className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
-            >
-              Setup instructions
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {row.tone === "notConnected" &&
-          ssoBrandForProvider(row.id) &&
-          row.id !== "apple" ? (
-            <div className="w-full max-w-xs">
-              <SsoBrandButton
-                brand={ssoBrandForProvider(row.id)!}
-                label={
-                  connecting ? "Redirecting…" : ssoConnectLabel(row.id, false)
-                }
-                busy={connecting}
-                disabled={busy}
-                onClick={onConnect}
-              />
-            </div>
-          ) : null}
-          {onReconnect && ssoBrandForProvider(row.id) ? (
-            <div className="w-full max-w-xs">
-              <SsoBrandButton
-                brand={ssoBrandForProvider(row.id)!}
-                label={ssoConnectLabel(row.id, true)}
-                disabled={busy}
-                onClick={onReconnect}
-              />
-            </div>
-          ) : null}
-          {row.id === "apple" && row.tone === "healthy" ? (
-            <a
-              href={APPLE_CALENDAR_DEEP_LINK}
-              className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
-            >
-              Manage on iPhone
-            </a>
-          ) : null}
-          {onDisconnect ? (
-            <button
-              type="button"
-              onClick={onDisconnect}
+      <div className="flex flex-wrap gap-2">
+        {row.id === "apple" && row.tone === "notConnected" ? (
+          <a
+            href={APPLE_CALENDAR_DEEP_LINK}
+            className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+          >
+            Sync on your phone
+          </a>
+        ) : null}
+        {row.tone === "notConnected" &&
+        ssoBrandForProvider(row.id) &&
+        row.id !== "apple" ? (
+          <div className="w-full max-w-xs">
+            <SsoBrandButton
+              brand={ssoBrandForProvider(row.id)!}
+              label={
+                connecting ? "Redirecting…" : ssoConnectLabel(row.id, false)
+              }
+              busy={connecting}
               disabled={busy}
-              className="text-sm text-[var(--error)] hover:underline px-2"
-            >
-              {disconnecting ? "Disconnecting…" : "Disconnect"}
-            </button>
-          ) : null}
-        </div>
-      )}
+              onClick={onConnect}
+            />
+          </div>
+        ) : null}
+        {onReconnect && ssoBrandForProvider(row.id) ? (
+          <div className="w-full max-w-xs">
+            <SsoBrandButton
+              brand={ssoBrandForProvider(row.id)!}
+              label={ssoConnectLabel(row.id, true)}
+              disabled={busy}
+              onClick={onReconnect}
+            />
+          </div>
+        ) : null}
+        {row.id === "apple" && row.tone === "healthy" && !row.canDisconnect ? (
+          <a
+            href={APPLE_CALENDAR_DEEP_LINK}
+            className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
+          >
+            Manage on iPhone
+          </a>
+        ) : null}
+        {onDisconnect ? (
+          <button
+            type="button"
+            onClick={onDisconnect}
+            disabled={busy}
+            className="text-sm text-[var(--error)] hover:underline px-2"
+          >
+            {disconnecting ? "Disconnecting…" : "Disconnect"}
+          </button>
+        ) : null}
+      </div>
     </li>
   );
 }
