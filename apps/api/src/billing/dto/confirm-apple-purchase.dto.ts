@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ConfirmApplePurchaseDto {
   @IsString()
@@ -10,4 +10,11 @@ export class ConfirmApplePurchaseDto {
   @IsNotEmpty()
   @MaxLength(200)
   transactionId!: string;
+
+  /** StoreKit 2 signed transaction (JWS). Required in production. */
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20000)
+  signedTransaction?: string;
 }

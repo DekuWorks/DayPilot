@@ -16,14 +16,6 @@ import type { BillingPlan, Subscription } from "@/lib/billing-api";
 /** Fallback when API plans are empty but a single public price id is set. */
 const ENV_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
 
-const FREE_FALLBACK: Subscription = {
-  tier: "Free",
-  status: "active",
-  currentPeriodEnd: null,
-  stripeCustomerId: null,
-  configured: false,
-};
-
 function BillingPageInner() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<BillingPlan[]>([]);
@@ -38,7 +30,9 @@ function BillingPageInner() {
     let cancelled = false;
     Promise.all([
       billingApi.getSubscription().catch(() => null),
-      billingApi.getPlans().catch(() => ({ configured: false, plans: [] as BillingPlan[] })),
+      billingApi
+        .getPlans()
+        .catch(() => ({ configured: false, plans: [] as BillingPlan[] })),
     ])
       .then(([sub, planRes]) => {
         if (cancelled) return;
@@ -47,10 +41,10 @@ function BillingPageInner() {
           setStripeConfigured(Boolean(sub.configured ?? planRes.configured));
           setServiceNotice("");
         } else {
-          setSubscription(FREE_FALLBACK);
+          setSubscription(null);
           setStripeConfigured(planRes.configured);
           setServiceNotice(
-            "Billing service is unavailable right now. Showing the Free plan until it reconnects."
+            "Could not load your plan. It will show here when billing reconnects.",
           );
         }
         let nextPlans = planRes.plans ?? [];
@@ -76,8 +70,13 @@ function BillingPageInner() {
 
   const success = searchParams.get("success") === "true";
   const canceled = searchParams.get("canceled") === "true";
+  const appleActive =
+    subscription?.source === "apple" && subscription.status === "active";
   const canCheckout =
-    !serviceNotice && (stripeConfigured || plans.length > 0) && plans.length > 0;
+    !serviceNotice &&
+    !appleActive &&
+    (stripeConfigured || plans.length > 0) &&
+    plans.length > 0;
 
   async function handleUpgrade(priceId: string, label: string) {
     setError("");
@@ -86,11 +85,7 @@ function BillingPageInner() {
       const { url } = await billingApi.createCheckoutSession(priceId);
       if (url) window.location.href = url;
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : `Checkout failed for ${label}`
-      );
+      setError(e instanceof Error ? e.message : `Checkout failed for ${label}`);
     } finally {
       setActionLoading(null);
     }
@@ -103,7 +98,9 @@ function BillingPageInner() {
       const { url } = await billingApi.createPortalSession();
       if (url) window.location.href = url;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not open billing portal");
+      setError(
+        e instanceof Error ? e.message : "Could not open billing portal",
+      );
     } finally {
       setActionLoading(null);
     }
@@ -163,12 +160,22 @@ function BillingPageInner() {
                 {subscription.currentPeriodEnd && (
                   <>
                     {" "}
-                    · Renews{" "}
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                    · {subscription.status === "active"
+                      ? "Renews"
+                      : "Ended"}{" "}
+                    {new Date(
+                      subscription.currentPeriodEnd,
+                    ).toLocaleDateString()}
                   </>
                 )}
               </p>
             </div>
+            {subscription.source === "apple" && (
+              <p className="text-sm text-[var(--text-secondary)]">
+                This plan is billed by Apple. To change or cancel it, open
+                Settings on your iPhone, then your Apple ID, then Subscriptions.
+              </p>
+            )}
             <div className="flex flex-wrap gap-3">
               {subscription.tier === "Free" &&
                 canCheckout &&
@@ -184,9 +191,7 @@ function BillingPageInner() {
                   </Button>
                 ))}
               {subscription.tier === "Free" && !canCheckout && (
-                <Button disabled>
-                  Upgrade coming soon
-                </Button>
+                <Button disabled>Upgrade coming soon</Button>
               )}
               {subscription.stripeCustomerId && (
                 <Button
@@ -202,7 +207,7 @@ function BillingPageInner() {
             </div>
           </>
         )}
-        {!canCheckout && !serviceNotice && (
+        {!canCheckout && !serviceNotice && subscription?.source !== "apple" && (
           <p className="text-sm text-[var(--text-secondary)]">
             Paid upgrades are not enabled in this environment yet. Set Stripe
             price IDs on the API (`STRIPE_PRICE_*`) and optionally

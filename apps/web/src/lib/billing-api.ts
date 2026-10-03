@@ -10,13 +10,19 @@
 import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 
 export type SubscriptionTier = "Free" | "Personal" | "Business" | "Enterprise";
-export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
+export type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "trialing";
 
 export type Subscription = {
   tier: SubscriptionTier;
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
+  /** apple when the plan was bought in the App Store. stripe when billed on the website. */
+  source?: "apple" | "stripe" | null;
   /** True when the API has STRIPE_SECRET_KEY configured. */
   configured?: boolean;
 };
@@ -47,7 +53,9 @@ export async function getPlans(): Promise<BillingPlansResponse> {
   return res.json();
 }
 
-export async function createCheckoutSession(priceId: string): Promise<{ url: string }> {
+export async function createCheckoutSession(
+  priceId: string,
+): Promise<{ url: string }> {
   const res = await nestFetch(`${getApiUrl()}/billing/checkout-session`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -55,7 +63,9 @@ export async function createCheckoutSession(priceId: string): Promise<{ url: str
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Failed to create checkout session"));
+    throw new Error(
+      getApiErrorMessage(err, "Failed to create checkout session"),
+    );
   }
   return res.json();
 }
