@@ -27,6 +27,7 @@ class BookingRepository {
         .maybeSingle();
     if (row == null) return null;
     final m = Map<String, dynamic>.from(row);
+    final choices = await _meetingChoices(m['id'].toString());
     return BookingPage(
       id: m['id'].toString(),
       slug: m['slug'] as String? ?? slug,
@@ -36,7 +37,36 @@ class BookingRepository {
       description: m['description'] as String?,
       ownerId: m['owner_user_id']?.toString(),
       isPublished: m['is_active'] as bool? ?? false,
+      meetingChoices: choices,
     );
+  }
+
+  Future<List<MeetingChoice>> _meetingChoices(String linkId) async {
+    try {
+      final raw = await _client.rpc(
+        'public_meeting_choices',
+        params: {'link_id': linkId},
+      );
+      return (raw as List<dynamic>)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .map(
+            (item) => MeetingChoice(
+              id: item['id'].toString(),
+              label: item['label']?.toString() ?? item['id'].toString(),
+              detail: item['detail']?.toString() ?? '',
+            ),
+          )
+          .where(
+            (choice) =>
+                choice.id == 'link' ||
+                choice.id == 'phone' ||
+                choice.id == 'slack' ||
+                choice.id == 'discord',
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<BookingSlot>> listSlotsForPage(String bookingPageId) async {
@@ -174,6 +204,8 @@ class BookingRepository {
     required BookingSlot slot,
     required String guestEmail,
     String? guestName,
+    String? meetingMethod,
+    String? guestPhone,
   }) async {
     final link = await _client
         .from('booking_links')
@@ -192,6 +224,10 @@ class BookingRepository {
       'end_time': slot.endsAt.toUtc().toIso8601String(),
       'timezone': tz,
       'status': 'confirmed',
+      if (meetingMethod != null && meetingMethod.isNotEmpty)
+        'meeting_method': meetingMethod,
+      if (guestPhone != null && guestPhone.trim().isNotEmpty)
+        'booker_phone': guestPhone.trim(),
     });
     return requestBookingConfirmation(
       bookingLinkId: bookingPageId,

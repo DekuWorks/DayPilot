@@ -14,9 +14,15 @@ type BookingRow = {
   id: string;
   booker_name: string | null;
   booker_email: string | null;
+  booker_phone: string | null;
   start_time: string;
   end_time: string;
   timezone: string | null;
+  meeting_method: string | null;
+  meeting_join_url: string | null;
+  meeting_status: string | null;
+  confirmation_sent_at: string | null;
+  booking_link_id?: string;
   booking_links:
     | { title: string | null; owner_user_id: string | null }
     | { title: string | null; owner_user_id: string | null }[]
@@ -52,6 +58,7 @@ export class BookingConfirmationService {
       input.bookerEmail,
     );
     if (!booking) return { sent: false, reason: 'not_found' };
+    if (booking.confirmationSentAt) return { sent: true };
 
     const from =
       this.config.get<string>('RESEND_FROM_EMAIL')?.trim() ||
@@ -59,6 +66,7 @@ export class BookingConfirmationService {
     const guest = buildGuestMail(booking);
     const guestOk = await this.deliver(resendKey, from, guest);
     if (!guestOk) return { sent: false, reason: 'send_failed' };
+    await this.markConfirmationSent(supabaseUrl, serviceKey, booking.id);
 
     const hostEmail = await this.hostEmail(
       supabaseUrl,
@@ -87,7 +95,7 @@ export class BookingConfirmationService {
     url.searchParams.set('limit', '5');
     url.searchParams.set(
       'select',
-      'id,booker_name,booker_email,start_time,end_time,timezone,booking_links(title,owner_user_id)',
+      'id,booker_name,booker_email,booker_phone,start_time,end_time,timezone,meeting_method,meeting_join_url,meeting_status,confirmation_sent_at,booking_links(title,owner_user_id)',
     );
     const res = await fetch(url, { headers: supabaseHeaders(serviceKey) });
     if (!res.ok) {
@@ -100,6 +108,11 @@ export class BookingConfirmationService {
     const link = Array.isArray(row.booking_links)
       ? row.booking_links[0]
       : row.booking_links;
+    const method = row.meeting_method?.trim() || null;
+    const hostPhone =
+      method === 'phone'
+        ? await this.hostPhone(supabaseUrl, serviceKey, bookingLinkId)
+        : null;
     return {
       id: row.id,
       bookerName: row.booker_name?.trim() || 'Guest',
@@ -109,7 +122,51 @@ export class BookingConfirmationService {
       timeZone: row.timezone?.trim() || 'UTC',
       title: link?.title?.trim() || 'Booking',
       ownerUserId: link?.owner_user_id ?? null,
+      meetingMethod: method,
+      meetingJoinUrl: row.meeting_join_url?.trim() || null,
+      hostPhone,
+      guestPhone: row.booker_phone?.trim() || null,
+      confirmationSentAt: row.confirmation_sent_at,
     };
+  }
+
+  private async hostPhone(
+    supabaseUrl: string,
+    serviceKey: string,
+    bookingLinkId: string,
+  ): Promise<string | null> {
+    const url = new URL(`${supabaseUrl}/rest/v1/booking_link_meetings`);
+    url.searchParams.set('booking_link_id', `eq.${bookingLinkId}`);
+    url.searchParams.set('select', 'host_phone');
+    const res = await fetch(url, { headers: supabaseHeaders(serviceKey) });
+    if (!res.ok) return null;
+    const rows = (await res.json()) as { host_phone?: string | null }[];
+    return rows[0]?.host_phone?.trim() || null;
+  }
+
+  private async markConfirmationSent(
+    supabaseUrl: string,
+    serviceKey: string,
+    bookingId: string,
+  ): Promise<void> {
+    const url = new URL(`${supabaseUrl}/rest/v1/bookings`);
+    url.searchParams.set('id', `eq.${bookingId}`);
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        ...supabaseHeaders(serviceKey),
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        confirmation_sent_at: new Date().toISOString(),
+      }),
+    });
+    if (!res.ok) {
+      this.logger.warn(
+        `Could not record confirmation send status=${res.status}`,
+      );
+    }
   }
 
   private async hostEmail(

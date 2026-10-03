@@ -8,6 +8,7 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/async_body.dart';
 import '../../core/widgets/daypilot_page_shell.dart';
 import '../../domain/booking/booking_ics.dart';
+import '../../domain/models/booking_page.dart';
 import '../../domain/models/booking_slot.dart';
 
 /// Public booking page loaded by slug (task 19–20).
@@ -31,13 +32,17 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
   var _slots = <BookingSlot>[];
   String? _pageId;
   String _pageTitle = 'Booking';
+  var _choices = const <MeetingChoice>[];
+  String? _methodId;
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _name = TextEditingController();
 
   @override
   void dispose() {
     _email.dispose();
     _name.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -66,6 +71,10 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
       }
       _pageId = page.id;
       _pageTitle = page.title;
+      _choices = page.meetingChoices;
+      _methodId = page.meetingChoices.length == 1
+          ? page.meetingChoices.first.id
+          : null;
       final slots = await ref
           .read(bookingRepositoryProvider)
           .listSlotsForPage(page.id);
@@ -92,6 +101,12 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
       ).showSnackBar(const SnackBar(content: Text('Enter a valid email.')));
       return;
     }
+    if (_choices.isNotEmpty && (_methodId == null || _methodId!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose how you want to meet.')),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       final sent = await ref
@@ -101,6 +116,8 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
             slot: slot,
             guestEmail: email,
             guestName: _name.text.trim().isEmpty ? null : _name.text.trim(),
+            meetingMethod: _methodId,
+            guestPhone: _methodId == 'phone' ? _phone.text : null,
           );
       if (!mounted) return;
       setState(() {
@@ -197,6 +214,38 @@ class _PublicBookingScreenState extends ConsumerState<PublicBookingScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
+                    if (_choices.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        'How do you want to meet?',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      RadioGroup<String>(
+                        groupValue: _methodId,
+                        onChanged: (value) => setState(() => _methodId = value),
+                        child: Column(
+                          children: [
+                            for (final choice in _choices)
+                              RadioListTile<String>(
+                                value: choice.id,
+                                title: Text(choice.label),
+                                subtitle: Text(choice.detail),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (_methodId == 'phone')
+                        TextField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Your number, if you want a callback',
+                            helperText:
+                                'Optional. Only the host sees this after you book.',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: 20),
                     Text(
                       'Choose a slot',

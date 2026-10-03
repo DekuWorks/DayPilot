@@ -12,6 +12,11 @@ import {
 } from "@/lib/booking-page-calendar";
 import * as bookingApi from "@/lib/booking-supabase";
 import type { PublicSlot } from "@/lib/booking-supabase";
+import {
+  normalizeCallbackNumber,
+  type ConfiguredMethod,
+  type PublicMeetingChoice,
+} from "@/lib/meeting-choice";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -73,6 +78,9 @@ export function PublicBookPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [methods, setMethods] = useState<PublicMeetingChoice[]>([]);
+  const [methodId, setMethodId] = useState<ConfiguredMethod | null>(null);
+  const [guestPhone, setGuestPhone] = useState("");
 
   const viewerZone = useMemo(() => bookingApi.browserTimeZone(), []);
   const slotsByDay = useMemo(() => groupSlotsByLocalDay(slots), [slots]);
@@ -108,6 +116,9 @@ export function PublicBookPage() {
       setDuration(page.duration);
       setHostZone(page.timeZone);
       setPaused(page.paused);
+      const choices = await bookingApi.listPublicMeetingChoices(page.id);
+      setMethods(choices);
+      setMethodId(choices.length === 1 ? choices[0].id : null);
       const nextSlots = await bookingApi.listPublicSlots(page.id);
       setSlots(nextSlots);
       const first = nextSlots[0] ? new Date(nextSlots[0].start) : new Date();
@@ -151,6 +162,16 @@ export function PublicBookPage() {
       setError("Enter a valid email");
       return;
     }
+    if (methods.length > 0 && !methodId) {
+      setError("Choose how you want to meet");
+      return;
+    }
+    const callback =
+      methodId === "phone" ? normalizeCallbackNumber(guestPhone) : null;
+    if (methodId === "phone" && guestPhone.trim() && !callback) {
+      setError("Enter a phone number with at least 8 digits, or leave it blank");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -160,6 +181,8 @@ export function PublicBookPage() {
         end: selected.end,
         bookerName: name.trim(),
         bookerEmail: email.trim(),
+        meetingMethod: methodId,
+        guestPhone: callback,
       });
       setEmailSent(result.email === "sent");
       setStep("done");
@@ -209,6 +232,13 @@ export function PublicBookPage() {
             <p className="mt-1 text-base text-[var(--text-primary)]">
               {formatWhen(selected.start)}
             </p>
+            {methodId ? (
+              <p className="mt-4 text-sm text-[var(--text-primary)]">
+                {methodId === "phone"
+                  ? "The host will call you. Their number is in the confirmation email, not on this page."
+                  : "The join details are in the confirmation email, not on this page."}
+              </p>
+            ) : null}
             <p className="mt-4 text-sm text-[var(--text-secondary)]">
               {emailSent
                 ? "We emailed a confirmation with a calendar file attached. You can also save that file here."
@@ -316,6 +346,68 @@ export function PublicBookPage() {
                       className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--background-primary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
                     />
                   </label>
+                  {methods.length > 0 ? (
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-medium text-[var(--text-primary)]">
+                        How do you want to meet?
+                      </legend>
+                      {methods.map((method) => (
+                        <label
+                          key={method.id}
+                          className={`block rounded-[var(--radius-md)] border px-3 py-2 text-sm ${
+                            methodId === method.id
+                              ? "border-[var(--brand-500)]"
+                              : "border-[var(--border-subtle)]"
+                          }`}
+                        >
+                          <span className="flex items-start gap-2">
+                            <input
+                              type="radio"
+                              name="meeting-method"
+                              value={method.id}
+                              checked={methodId === method.id}
+                              onChange={() => setMethodId(method.id)}
+                              className="mt-1"
+                            />
+                            <span>
+                              <span className="font-medium text-[var(--text-primary)]">
+                                {method.label}
+                              </span>
+                              <span className="mt-1 block text-[var(--text-secondary)]">
+                                {method.detail}
+                              </span>
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  ) : null}
+                  {methodId === "phone" ? (
+                    <label className="block space-y-1">
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
+                        Your number, if you want a callback
+                      </span>
+                      <input
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        type="tel"
+                        autoComplete="tel"
+                        aria-describedby="callback-hint"
+                        className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--background-primary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+                      />
+                      <span
+                        id="callback-hint"
+                        className="text-xs text-[var(--text-tertiary)]"
+                      >
+                        Optional. Only the host sees this after you book.
+                      </span>
+                    </label>
+                  ) : null}
+                  {methodId ? (
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      {methods.find((method) => method.id === methodId)?.detail}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-[var(--text-tertiary)]">
                     The host uses this to see who booked. After you confirm, you
                     can save a calendar file, and DayPilot emails that file when
