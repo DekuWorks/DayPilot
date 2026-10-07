@@ -14,6 +14,7 @@ import '../calendar/calendar_panel.dart';
 import '../calendar/calendar_providers.dart';
 import '../calendar/calendar_view_mode.dart';
 import '../calendar/empty_schedule_hint.dart';
+import '../founder_hub/founder_hub_home_button.dart';
 import '../profile/profile_providers.dart';
 
 final _homeNextEventProvider =
@@ -181,6 +182,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             if (upcomingEmpty && user != null)
               _TodayPlanPrompt(userId: user.id),
+            const FounderHubHomeButton(),
             Expanded(
               child: CalendarPanel(initialView: view),
             ),
