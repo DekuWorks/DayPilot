@@ -25,26 +25,26 @@ export function FounderHubAccountLinks() {
 
   const owner = user?.founderHub?.isOwner === true;
   const showHub = hub?.canRead === true;
-  if (!owner && !showHub) return null;
 
   return (
     <div className="space-y-3">
-      {showHub ? (
-        <Link
-          href="/settings/founder-hub"
-          className="block min-h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
-        >
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            Founder Hub
-          </p>
-          <p className="text-sm text-[var(--text-secondary)]">
-            {hub?.label ?? "Founding Member"}
-            {hub && hub.unreadReplyCount > 0
-              ? ` · ${hub.unreadReplyCount} unread`
-              : ""}
-          </p>
-        </Link>
-      ) : null}
+      <Link
+        href="/settings/founder-hub"
+        className="block min-h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
+      >
+        <p className="text-sm font-medium text-[var(--text-primary)]">
+          Founder Hub
+        </p>
+        <p className="text-sm text-[var(--text-secondary)]">
+          {showHub
+            ? `${hub?.label ?? "Founding Member"}${
+                hub && hub.unreadReplyCount > 0
+                  ? ` · ${hub.unreadReplyCount} unread`
+                  : ""
+              }`
+            : "For active Founding members"}
+        </p>
+      </Link>
       {owner ? (
         <Link
           href="/settings/founder-inbox"
