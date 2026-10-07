@@ -32,7 +32,7 @@ export function FounderHubAccountLinks() {
       {showHub ? (
         <Link
           href="/settings/founder-hub"
-          className="block rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
+          className="block min-h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
         >
           <p className="text-sm font-medium text-[var(--text-primary)]">
             Founder Hub
@@ -48,7 +48,7 @@ export function FounderHubAccountLinks() {
       {owner ? (
         <Link
           href="/settings/founder-inbox"
-          className="block rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
+          className="block min-h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
         >
           <p className="text-sm font-medium text-[var(--text-primary)]">
             Founder messages

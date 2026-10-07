@@ -52,7 +52,9 @@ export default function FounderHubPage() {
 
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : "Could not load Founder Hub");
+      setError(
+        err instanceof Error ? err.message : "Could not load Founder Hub",
+      );
     });
   }, []);
 
@@ -69,7 +71,9 @@ export default function FounderHubPage() {
       setFile(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send suggestion");
+      setError(
+        err instanceof Error ? err.message : "Could not send suggestion",
+      );
     } finally {
       setBusy(false);
     }
@@ -78,7 +82,9 @@ export default function FounderHubPage() {
   if (summary && !summary.canRead) {
     return (
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Founder Hub</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          Founder Hub
+        </h1>
         <p className="mt-2 text-[var(--text-secondary)]">
           Founder Hub is available to founding members.
         </p>
@@ -117,7 +123,7 @@ export default function FounderHubPage() {
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Title"
             required
-            className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+            className="min-h-11 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
           />
           <textarea
             value={description}
@@ -130,7 +136,7 @@ export default function FounderHubPage() {
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+            className="min-h-11 w-full max-w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
           >
             {CATEGORIES.map(([value, label]) => (
               <option key={value} value={value}>
@@ -141,12 +147,13 @@ export default function FounderHubPage() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
+            className="block max-w-full text-sm"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-[var(--brand-500)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
+            className="min-h-11 rounded-lg bg-[var(--brand-500)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
           >
             {busy ? "Sending…" : "Submit"}
           </button>
@@ -154,9 +161,13 @@ export default function FounderHubPage() {
       ) : null}
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-[var(--text-primary)]">My suggestions</h2>
+        <h2 className="font-semibold text-[var(--text-primary)]">
+          My suggestions
+        </h2>
         {items.length === 0 ? (
-          <p className="text-sm text-[var(--text-secondary)]">No suggestions yet.</p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            No suggestions yet.
+          </p>
         ) : (
           items.map((item) => (
             <Link
@@ -177,7 +188,9 @@ export default function FounderHubPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-[var(--text-primary)]">Early access</h2>
+        <h2 className="font-semibold text-[var(--text-primary)]">
+          Early access
+        </h2>
         {beta.length === 0 ? (
           <p className="text-sm text-[var(--text-secondary)]">
             No founder beta features are available right now.
@@ -215,7 +228,9 @@ export default function FounderHubPage() {
                   type="button"
                   className="mt-2 block text-sm text-[var(--text-primary)]"
                   onClick={() => {
-                    void setBetaOptOut(feature.key, !feature.optedOut).then(setBeta);
+                    void setBetaOptOut(feature.key, !feature.optedOut).then(
+                      setBeta,
+                    );
                   }}
                 >
                   {feature.optedOut
@@ -249,7 +264,9 @@ export default function FounderHubPage() {
                   setPrefs(next);
                   void saveNoticePrefs(next).catch((err: unknown) => {
                     setError(
-                      err instanceof Error ? err.message : "Could not save preferences",
+                      err instanceof Error
+                        ? err.message
+                        : "Could not save preferences",
                     );
                   });
                 }}
