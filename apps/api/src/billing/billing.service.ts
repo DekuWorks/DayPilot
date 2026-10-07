@@ -284,8 +284,7 @@ export class BillingService {
       return {
         mapping,
         productId: input.productId,
-        originalTransactionId:
-          input.transactionId.trim(),
+        originalTransactionId: input.transactionId.trim(),
         currentPeriodEnd: new Date(
           Date.now() + APPLE_CONFIRM_PERIOD_DAYS * 24 * 60 * 60 * 1000,
         ),
