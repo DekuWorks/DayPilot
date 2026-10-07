@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -36,7 +37,8 @@ class IapBillingService {
       onError: (Object e) => onError('$e'),
     );
 
-    final response = await _iap.queryProductDetails(DayPilotIapProducts.all.toSet());
+    final response =
+        await _iap.queryProductDetails(DayPilotIapProducts.forSale.toSet());
     if (response.error != null) {
       onError(response.error!.message);
     }
@@ -102,11 +104,13 @@ class IapBillingService {
     if (transactionId.isEmpty) {
       throw Exception('Missing App Store transaction id');
     }
+    final originalTransactionId = _originalTransactionId(purchase) ?? transactionId;
     final res = await _session.post(
       '/billing/apple/confirm',
       body: {
         'productId': purchase.productID,
         'transactionId': transactionId,
+        'originalTransactionId': originalTransactionId,
         if (signedTransaction.isNotEmpty)
           'signedTransaction': signedTransaction,
       },
@@ -115,4 +119,21 @@ class IapBillingService {
       throw Exception('Could not sync subscription (${res.statusCode})');
     }
   }
+}
+
+/// Reads originalTransactionId from the StoreKit JWS payload when present.
+/// The server assigns founder numbers. This value is not a founder number.
+String? _originalTransactionId(PurchaseDetails purchase) {
+  final jws = purchase.verificationData.serverVerificationData;
+  final parts = jws.split('.');
+  if (parts.length < 2) return purchase.purchaseID;
+  try {
+    final normalized = base64Url.normalize(parts[1]);
+    final decoded = utf8.decode(base64Url.decode(normalized));
+    final json = jsonDecode(decoded);
+    if (json is Map && json['originalTransactionId'] != null) {
+      return '${json['originalTransactionId']}';
+    }
+  } catch (_) {}
+  return purchase.purchaseID;
 }

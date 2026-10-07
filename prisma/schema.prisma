@@ -24,6 +24,8 @@ enum SubscriptionTier {
   Personal
   Business
   Enterprise
+  Pro
+  FoundingPro
 }
 
 enum SubscriptionStatus {
@@ -106,6 +108,8 @@ model User {
   events              Event[]
   tasks               Task[]
   subscriptions       Subscription[]
+  foundingClaims      FoundingClaim[]
+  planWaitlistEntries PlanWaitlistEntry[]
   auditLogs           AuditLog[]
   refreshTokens       RefreshToken[]
   calendarConnections CalendarConnection[]
@@ -303,12 +307,50 @@ model Subscription {
   tier                 SubscriptionTier    @default(Free)
   status               SubscriptionStatus? @default(active)
   currentPeriodEnd     DateTime?           @map("current_period_end")
+  planId               String?             @map("plan_id")
+  founderNumber        Int?                @map("founder_number")
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+/// One row per verified founding purchase. Rows are never deleted when a
+/// subscription expires, so spots 01–25 are not reused.
+model FoundingClaim {
+  id                    String   @id @default(cuid())
+  founderNumber         Int      @unique @map("founder_number")
+  originalTransactionId String   @unique @map("original_transaction_id")
+  latestTransactionId   String   @map("latest_transaction_id")
+  userId                String?  @map("user_id")
+  productId             String   @map("product_id")
+  periodEnd             DateTime @map("period_end")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("founding_claims")
+}
+
+model PlanWaitlistEntry {
+  id               String   @id @default(cuid())
+  userId           String?  @map("user_id")
+  email            String
+  requestedPlan    String   @map("requested_plan")
+  companyName      String?  @map("company_name")
+  teamSize         String?  @map("team_size")
+  marketingConsent Boolean  @default(false) @map("marketing_consent")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([email, requestedPlan])
+  @@index([requestedPlan])
+  @@map("plan_waitlist")
 }
 
 model AuditLog {

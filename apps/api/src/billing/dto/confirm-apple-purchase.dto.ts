@@ -11,10 +11,18 @@ export class ConfirmApplePurchaseDto {
   @MaxLength(200)
   transactionId!: string;
 
+  /**
+   * StoreKit original transaction id. Renewals reuse it so a founding spot
+   * is not consumed twice. The signed transaction is authoritative when present.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  originalTransactionId?: string;
+
   /** StoreKit 2 signed transaction (JWS). Required in production. */
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(20000)
   signedTransaction?: string;
 }

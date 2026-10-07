@@ -27,6 +27,8 @@ import {
 import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
 import { AppleIcloudMobileNote } from "@/components/AppleIcloudMobileNote";
 import { formatWhen } from "@/lib/format-when";
+import * as billingApi from "@/lib/billing-api";
+import { connectionLimitFor, isPaidSubscription } from "@/lib/billing-api";
 
 export default function SyncPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
@@ -36,6 +38,9 @@ export default function SyncPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [connectionCap, setConnectionCap] = useState<number | null | undefined>(
+    undefined,
+  );
   const searchParams = useSearchParams();
 
   const connected = searchParams.get("connected");
@@ -55,6 +60,17 @@ export default function SyncPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    billingApi
+      .getSubscription()
+      .then((sub) => {
+        if (cancelled) return;
+        setConnectionCap(
+          isPaidSubscription(sub) ? null : connectionLimitFor(sub),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setConnectionCap(1);
+      });
     reload()
       .catch((e) => {
         if (!cancelled) {
@@ -93,6 +109,17 @@ export default function SyncPage() {
 
   async function handleConnect(provider: CalendarProviderUi["id"]) {
     if (provider === "apple") return;
+    const already = connections.some((row) => row.provider === provider);
+    if (
+      !already &&
+      connectionCap != null &&
+      connections.length >= connectionCap
+    ) {
+      setError(
+        "Free includes 1 external calendar connection. Upgrade to Pro in the DayPilot iOS app to connect more.",
+      );
+      return;
+    }
     setError("");
     setActionLoading(provider);
     try {

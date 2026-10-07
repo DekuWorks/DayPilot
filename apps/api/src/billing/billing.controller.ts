@@ -12,6 +12,7 @@ import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { ConfirmApplePurchaseDto } from './dto/confirm-apple-purchase.dto';
+import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 
 interface RequestWithRawBody extends Request {
   rawBody?: Buffer;
@@ -21,10 +22,32 @@ interface RequestWithRawBody extends Request {
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
-  /** Catalog of configured Stripe plans (auth optional but kept consistent). */
+  /** Canonical plan catalog. Prices here are marketing comparisons, not charges. */
+  @Get('catalog')
+  listCatalog() {
+    return this.billingService.listCatalog();
+  }
+
   @Get('plans')
   listPlans() {
     return this.billingService.listPlans();
+  }
+
+  @Get('founding')
+  getFoundingOffer() {
+    return this.billingService.getFoundingOffer();
+  }
+
+  @Post('waitlist')
+  joinWaitlist(
+    @Req()
+    req: { headers?: { authorization?: string; cookie?: string } },
+    @Body() dto: JoinWaitlistDto,
+  ) {
+    return this.billingService.joinWaitlist(
+      this.billingService.optionalAccessUserId(req),
+      dto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

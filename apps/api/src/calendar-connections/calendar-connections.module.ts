@@ -6,10 +6,12 @@ import { CalendarConnectionsController } from './calendar-connections.controller
 import { CalendarConnectionsService } from './calendar-connections.service';
 import { EventKitSyncService } from './eventkit-sync.service';
 import { PrismaModule } from '../prisma/prisma.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     PrismaModule,
+    BillingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({

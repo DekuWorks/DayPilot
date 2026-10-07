@@ -25,6 +25,7 @@ import {
   PatchExternalCalendarsDto,
 } from './dto/eventkit-sync.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { BillingService } from '../billing/billing.service';
 import type { CalendarProvider } from '../generated/prisma';
 
 @Controller('calendar-connections')
@@ -35,7 +36,17 @@ export class CalendarConnectionsController {
     private readonly calendarConnections: CalendarConnectionsService,
     private readonly eventKitSync: EventKitSyncService,
     private readonly config: ConfigService,
+    private readonly billing: BillingService,
   ) {}
+
+  /** Reconnects stay open. Free accounts can add one new connection. */
+  private async gateNewConnection(userId: string, provider: string) {
+    const rows = await this.calendarConnections.list(userId);
+    const already = rows.some((row) => row.provider === provider);
+    if (!already) {
+      await this.billing.assertCanAddCalendarConnection(userId, rows.length);
+    }
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -112,6 +123,7 @@ export class CalendarConnectionsController {
     @Req() req: { user: { id: string } },
     @Body() dto: ImportOutlookTokenDto,
   ) {
+    await this.gateNewConnection(req.user.id, 'outlook');
     return this.calendarConnections.importOutlookProviderToken(req.user.id, {
       accessToken: dto.accessToken,
       refreshToken: dto.refreshToken,
@@ -126,6 +138,7 @@ export class CalendarConnectionsController {
     @Req() req: { user: { id: string } },
     @Body() dto: ConnectAppleDto,
   ) {
+    await this.gateNewConnection(req.user.id, 'apple');
     return this.calendarConnections.connectAppleCalDav(
       req.user.id,
       dto.appleId,
@@ -150,6 +163,7 @@ export class CalendarConnectionsController {
     @Req() req: { user: { id: string } },
     @Body() dto: EventKitSyncDto,
   ) {
+    await this.gateNewConnection(req.user.id, 'apple_eventkit');
     return this.eventKitSync.sync(req.user.id, dto);
   }
 
@@ -183,6 +197,7 @@ export class CalendarConnectionsController {
     @Req() req: { user: { id: string } },
     @Body() dto: ImportDeviceEventsDto,
   ) {
+    await this.gateNewConnection(req.user.id, 'apple_eventkit');
     return this.calendarConnections.importDeviceEvents(req.user.id, dto);
   }
 
@@ -196,6 +211,7 @@ export class CalendarConnectionsController {
     if (p !== 'google' && p !== 'outlook' && p !== 'apple') {
       return { redirectUrl: null, error: 'Unknown provider' };
     }
+    await this.gateNewConnection(req.user.id, p);
     return this.calendarConnections.getConnectUrl(req.user.id, p);
   }
 

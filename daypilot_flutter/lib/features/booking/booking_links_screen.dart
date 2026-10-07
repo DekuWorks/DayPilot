@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
+import '../billing/entitlements.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 
@@ -30,6 +32,23 @@ class BookingLinksScreen extends ConsumerStatefulWidget {
 
 class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
   Future<void> _create() async {
+    final existing = ref.read(myBookingLinksProvider).asData?.value ?? [];
+    if (existing.isNotEmpty) {
+      final paid = await accountHasPaidPlan(ref.read(nestApiSessionProvider));
+      if (!paid) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Free includes one booking link. Subscribe in Billing for more.',
+            ),
+          ),
+        );
+        context.push('/billing');
+        return;
+      }
+    }
+    if (!mounted) return;
     final slugCtrl = TextEditingController();
     final titleCtrl = TextEditingController(text: 'Book time with me');
     final ok = await showDialog<bool>(
