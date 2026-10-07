@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
+import 'features/founder_hub/founder_alert_host.dart';
 import 'core/widgets/api_session_bootstrap.dart';
 import 'core/widgets/nest_events_socket_listener.dart';
 import 'core/widgets/notification_schedule_sync.dart';
@@ -28,6 +29,9 @@ class DayPilotApp extends ConsumerWidget {
               darkTheme: AppTheme.dark(),
               themeMode: themeMode,
               routerConfig: router,
+              builder: (context, child) => FounderAlertHost(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         ),

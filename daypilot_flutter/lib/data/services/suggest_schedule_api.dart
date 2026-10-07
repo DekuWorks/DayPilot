@@ -25,6 +25,14 @@ class SuggestedEvent {
   }
 }
 
+String? parseScheduleBetaLabel(Object? raw) {
+  if (raw is! Map) return null;
+  final beta = raw['beta'];
+  if (beta is! Map) return null;
+  final label = beta['label'];
+  return label is String && label.isNotEmpty ? label : null;
+}
+
 List<SuggestedEvent> parseSuggestedEvents(Object? raw) {
   if (raw is! Map) return const [];
   final arr = raw['suggestions'];
@@ -36,8 +44,15 @@ List<SuggestedEvent> parseSuggestedEvents(Object? raw) {
       .toList();
 }
 
+class ScheduleSuggestionResult {
+  const ScheduleSuggestionResult({required this.suggestions, this.betaLabel});
+
+  final List<SuggestedEvent> suggestions;
+  final String? betaLabel;
+}
+
 /// Nest `POST /ai/suggest-schedule`. OpenAI keys stay on the server.
-Future<List<SuggestedEvent>> suggestSchedule({
+Future<ScheduleSuggestionResult> suggestSchedule({
   required NestApiSession session,
   required String prompt,
 }) async {
@@ -50,5 +65,8 @@ Future<List<SuggestedEvent>> suggestSchedule({
     }
     throw Exception(message ?? 'Could not get schedule suggestions');
   }
-  return parseSuggestedEvents(payload);
+  return ScheduleSuggestionResult(
+    suggestions: parseSuggestedEvents(payload),
+    betaLabel: parseScheduleBetaLabel(payload),
+  );
 }

@@ -26,6 +26,7 @@ class _SuggestScheduleCardState extends ConsumerState<SuggestScheduleCard> {
   String? _error;
   final _added = <String>{};
   List<SuggestedEvent> _suggestions = const [];
+  String? _betaLabel;
 
   @override
   void dispose() {
@@ -44,14 +45,15 @@ class _SuggestScheduleCardState extends ConsumerState<SuggestScheduleCard> {
       _added.clear();
     });
     try {
-      final slots = await suggestSchedule(
+      final result = await suggestSchedule(
         session: ref.read(nestApiSessionProvider),
         prompt: prompt,
       );
       if (!mounted) return;
       setState(() {
-        _suggestions = slots;
-        if (slots.isEmpty) {
+        _suggestions = result.suggestions;
+        _betaLabel = result.betaLabel;
+        if (result.suggestions.isEmpty) {
           _error = 'No slots found. Try a different request.';
         }
       });
@@ -112,7 +114,9 @@ class _SuggestScheduleCardState extends ConsumerState<SuggestScheduleCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'When can I fit this?',
+            _betaLabel == null
+                ? 'When can I fit this?'
+                : 'When can I fit this? · $_betaLabel',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),

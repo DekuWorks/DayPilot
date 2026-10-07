@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
+import { FounderHubModule } from './founder-hub/founder-hub.module';
 import { EventsModule } from './events/events.module';
 import { AiModule } from './ai/ai.module';
 import { BookingConfirmationModule } from './bookings/booking-confirmation.module';
@@ -51,6 +52,7 @@ const apiEnvFiles = [
     HealthModule,
     AuthModule,
     BillingModule,
+    FounderHubModule,
     EventsModule,
     AiModule,
     CalendarConnectionsModule,

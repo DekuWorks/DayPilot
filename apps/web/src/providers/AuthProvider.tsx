@@ -34,7 +34,7 @@ import {
   persistSharedAvatarIfMissing,
   normalizeUsername,
 } from "@/lib/supabase/auth";
-import { deleteAccount as deleteAccountApi } from "@/lib/auth-api";
+import { deleteAccount as deleteAccountApi, fetchMe } from "@/lib/auth-api";
 import { maybeAutoConnectCalendars } from "@/lib/calendar-auto-connect";
 
 type AuthState = {
@@ -133,22 +133,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session.user,
       fetchedProfile,
     );
+    const nestMe = await fetchMe().catch(() => null);
     void maybeAutoConnectCalendars(session);
 
     if (!mountedRef.current || gen !== enrichGenRef.current) return;
     if (appliedAccessTokenRef.current !== accessToken) return;
 
-    if (profile) {
-      setState((prev) => {
-        if (!prev.isAuthenticated || prev.user?.id !== session.user.id) {
-          return prev;
-        }
-        return {
-          ...prev,
-          user: mapSupabaseUser(session.user, profile),
-        };
-      });
-    }
+    setState((prev) => {
+      if (!prev.isAuthenticated || prev.user?.id !== session.user.id) {
+        return prev;
+      }
+      const base = profile
+        ? mapSupabaseUser(session.user, profile)
+        : prev.user;
+      if (!base) return prev;
+      return {
+        ...prev,
+        user: {
+          ...base,
+          founderHub: nestMe?.founderHub ?? base.founderHub,
+        },
+      };
+    });
   }, []);
 
   /**

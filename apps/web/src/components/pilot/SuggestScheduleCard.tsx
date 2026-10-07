@@ -19,6 +19,7 @@ export function SuggestScheduleCard() {
   const [error, setError] = useState("");
   const [added, setAdded] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestedEvent[]>([]);
+  const [betaLabel, setBetaLabel] = useState<string | null>(null);
 
   async function requestSlots() {
     const q = prompt.trim();
@@ -29,13 +30,14 @@ export function SuggestScheduleCard() {
     try {
       const result = await suggestSchedule(q);
       setSuggestions(result.suggestions ?? []);
+      setBetaLabel(result.beta?.label ?? null);
       if (!result.suggestions?.length) {
         setError("No slots found. Try a different request.");
       }
     } catch (e) {
       setSuggestions([]);
       setError(
-        e instanceof Error ? e.message : "Could not get schedule suggestions"
+        e instanceof Error ? e.message : "Could not get schedule suggestions",
       );
     } finally {
       setBusy(false);
@@ -66,10 +68,15 @@ export function SuggestScheduleCard() {
     <div className="rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4">
       <h2 className="text-sm font-semibold text-[var(--text-primary)]">
         When can I fit this?
+        {betaLabel ? (
+          <span className="ml-2 rounded-full bg-[var(--brand-500)] px-2 py-0.5 text-xs text-black">
+            {betaLabel}
+          </span>
+        ) : null}
       </h2>
       <p className="mt-1 text-sm text-[var(--text-secondary)]">
-        Ask for a slot around your existing week. Suggestions stay on the
-        server — nothing is added until you confirm.
+        Ask for a slot around your existing week. Suggestions stay on the server
+        — nothing is added until you confirm.
       </p>
       <form
         className="mt-3 flex gap-2"

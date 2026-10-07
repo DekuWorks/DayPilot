@@ -24,6 +24,8 @@ import '../../features/contacts/contacts_screen.dart';
 import '../../features/events/event_create_screen.dart';
 import '../../features/events/event_detail_screen.dart';
 import '../../features/events/event_edit_screen.dart';
+import '../../features/founder_hub/founder_hub_screen.dart';
+import '../../features/founder_hub/founder_inbox_screen.dart';
 import '../../features/friends/friends_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/integrations/integrations_screen.dart';
@@ -179,6 +181,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/founder-hub',
+        builder: (context, state) => const FounderHubScreen(),
+      ),
+      GoRoute(
+        path: '/settings/founder-hub/:id',
+        builder: (context, state) => FounderThreadScreen(
+          id: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/settings/founder-inbox',
+        builder: (context, state) => const FounderInboxScreen(),
+      ),
+      GoRoute(
+        path: '/settings/founder-inbox/:id',
+        builder: (context, state) => FounderInboxThreadScreen(
+          id: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: '/search',
