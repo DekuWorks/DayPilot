@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/AuthProvider";
 import { CalendarApp } from "@/components/calendar/CalendarApp";
+import { FounderHubHomeButton } from "@/components/founder-hub/FounderHubHomeButton";
 import * as eventsApi from "@/lib/events";
 import type { CalendarEvent } from "@/lib/events";
 
@@ -163,6 +164,7 @@ export function HomeDashboard() {
           </div>
         </div>
       )}
+      <FounderHubHomeButton />
       <CalendarApp />
     </div>
   );
