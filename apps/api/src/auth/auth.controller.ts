@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { FounderHubService } from '../founder-hub/founder-hub.service';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -29,7 +30,10 @@ import {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly founderHub: FounderHubService,
+  ) {}
 
   /** Hybrid mobile: Supabase Auth → Nest JWT (events/calendar use Nest API). */
   @Post('supabase-exchange')
@@ -107,7 +111,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: { user: { id: string } }) {
-    return this.authService.validateUserById(req.user.id);
+    const user = await this.authService.validateUserById(req.user.id);
+    const founderHub = await this.founderHub.accountFlags(req.user.id);
+    return { ...user, founderHub };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -116,7 +122,9 @@ export class AuthController {
     @Req() req: { user: { id: string } },
     @Body() dto: UpdateProfileDto,
   ) {
-    return this.authService.updateProfile(req.user.id, dto);
+    const user = await this.authService.updateProfile(req.user.id, dto);
+    const founderHub = await this.founderHub.accountFlags(req.user.id);
+    return { ...user, founderHub };
   }
 
   /** App Store 5.1.1(v) — permanent account deletion (Nest + Supabase Auth). */

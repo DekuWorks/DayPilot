@@ -89,6 +89,7 @@ function PlanCard({
       {isFounding ? (
         <div className="mb-4 space-y-2 text-sm text-[var(--text-secondary)]">
           <p>{FOUNDING_COPY.body}</p>
+          <p>{FOUNDING_COPY.hub}</p>
           <p>{FOUNDING_COPY.rate}</p>
           <p className="font-medium text-[var(--text-primary)]">
             {foundingStatus === "loading"

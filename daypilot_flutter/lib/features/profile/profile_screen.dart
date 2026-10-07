@@ -14,6 +14,7 @@ import '../../core/widgets/profile_avatar.dart';
 import '../../core/widgets/sso_brand_button.dart';
 import '../../data/services/avatar_upload_service.dart';
 import '../../domain/calendar/calendar_connection_ui.dart';
+import '../founder_hub/founder_hub_entry.dart';
 import 'profile_providers.dart';
 
 /// Profile tab — hub for the same product areas as daypilot.co.
@@ -206,6 +207,8 @@ class ProfileScreen extends ConsumerWidget {
               title: 'Settings',
               onTap: () => context.push('/settings'),
             ),
+            const SizedBox(height: 8),
+            const FounderHubEntry(),
             const SizedBox(height: 8),
             NavTile(
               icon: Icons.notifications_outlined,

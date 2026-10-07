@@ -247,7 +247,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                     kicker: 'FOUNDING 25',
                     title: 'Help shape the future of DayPilot.',
                     body:
-                        r'Join the first 25 paid members and unlock every Pro feature for only $5/month. Your founding rate remains active while you stay subscribed.',
+                        'Join the first 25 paid members and unlock every Pro feature for only \$5/month. '
+                        'Everything in Pro, plus a private Founder Hub to share ideas and talk directly with DayPilot, and early access to every new feature as it enters founder beta. '
+                        'Your founding rate remains active while you stay subscribed.',
                     detail: _spotsLine(),
                     featured: true,
                     trailing: _isIos

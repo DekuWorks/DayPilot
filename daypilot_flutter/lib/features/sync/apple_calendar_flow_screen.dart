@@ -10,7 +10,7 @@ import '../../core/widgets/feature_scaffold.dart';
 import '../../data/services/apple_calendar_service.dart';
 import '../../domain/calendar/calendar_provider.dart';
 
-enum _FlowStep { explain, permission, select, syncing, done }
+enum _FlowStep { permission, select, syncing, done }
 
 /// Guided Apple Calendar (EventKit) connection — separate from Apple SSO.
 class AppleCalendarFlowScreen extends ConsumerStatefulWidget {
@@ -24,19 +24,21 @@ class AppleCalendarFlowScreen extends ConsumerStatefulWidget {
 class _AppleCalendarFlowScreenState
     extends ConsumerState<AppleCalendarFlowScreen> {
   final _service = AppleCalendarService();
-  _FlowStep _step = _FlowStep.explain;
+  _FlowStep _step = _FlowStep.permission;
   String? _error;
   List<DiscoveredDeviceCalendar> _calendars = [];
   double _progress = 0;
   String _progressLabel = '';
   bool _busy = false;
 
-  Future<void> _continueFromExplain() async {
-    setState(() {
-      _error = null;
-      _step = _FlowStep.permission;
+  @override
+  void initState() {
+    super.initState();
+    // The system calendar prompt is the first step. A custom screen with
+    // Cancel was delaying that prompt (App Review 5.1.1(iv)).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _requestPermissionAndDiscover();
     });
-    await _requestPermissionAndDiscover();
   }
 
   Future<void> _requestPermissionAndDiscover() async {
@@ -185,50 +187,12 @@ class _AppleCalendarFlowScreenState
               ),
             const SizedBox(height: 12),
           ],
-          if (_step == _FlowStep.explain) _explainCard(),
           if (_step == _FlowStep.permission) _permissionCard(),
           if (_step == _FlowStep.select) _selectCard(),
           if (_step == _FlowStep.syncing) _syncCard(),
           if (_step == _FlowStep.done) _doneCard(),
         ],
       ),
-    );
-  }
-
-  Widget _explainCard() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Connect Apple Calendar',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: DayPilotScheme.of(context).textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'DayPilot reads calendars already on this iPhone (including iCloud) '
-          'through Apple EventKit. Sign in with Apple only signs you in — '
-          'it does not grant calendar access.\n\n'
-          'You will choose which calendars to import. Google or Outlook '
-          'calendars already connected in DayPilot are skipped to avoid duplicates.',
-          style: TextStyle(
-            color: DayPilotScheme.of(context).textSecondary,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: _busy ? null : _continueFromExplain,
-          child: Text('Continue'),
-        ),
-        TextButton(
-          onPressed: () => context.pop(),
-          child: Text('Cancel'),
-        ),
-      ],
     );
   }
 
@@ -252,7 +216,9 @@ class _AppleCalendarFlowScreenState
         ),
         const SizedBox(height: 16),
         if (_busy) LinearProgressIndicator(color: DayPilotScheme.of(context).accent),
-        if (!_busy)
+        if (!_busy &&
+            !(_error?.contains('denied') ?? false) &&
+            !(_error?.contains('restricted') ?? false))
           FilledButton(
             onPressed: _requestPermissionAndDiscover,
             child: Text('Allow access'),

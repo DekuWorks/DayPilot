@@ -10,6 +10,7 @@ import '../../core/widgets/feature_scaffold.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../data/services/avatar_upload_service.dart';
 import '../profile/profile_providers.dart';
+import '../founder_hub/founder_hub_entry.dart';
 import 'daypilot_notifications_toggle.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -175,6 +176,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const DayPilotNotificationsToggle(),
                 const SizedBox(height: 16),
+                const FounderHubEntry(),
+                const SizedBox(height: 8),
                 Text(
                   'Profile',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(

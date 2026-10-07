@@ -7,7 +7,10 @@ export type SuggestedEvent = {
   description?: string;
 };
 
-export async function suggestSchedule(prompt: string): Promise<{ suggestions: SuggestedEvent[] }> {
+export async function suggestSchedule(prompt: string): Promise<{
+  suggestions: SuggestedEvent[];
+  beta?: { key: string; label: string; name: string };
+}> {
   const res = await nestFetch(`${getApiUrl()}/ai/suggest-schedule`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -15,7 +18,9 @@ export async function suggestSchedule(prompt: string): Promise<{ suggestions: Su
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(getApiErrorMessage(err, "Could not get schedule suggestions"));
+    throw new Error(
+      getApiErrorMessage(err, "Could not get schedule suggestions"),
+    );
   }
   return res.json();
 }

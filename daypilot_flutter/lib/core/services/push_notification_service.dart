@@ -28,6 +28,15 @@ class PushNotificationService {
 
   /// Resume FCM after relaunch when the user already opted in.
   /// Does not show the iOS permission dialog.
+  /// FCM device token, or null when Firebase / APNs cannot provide one.
+  Future<String?> currentToken() async {
+    try {
+      return await _messaging.getToken();
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> listenWithoutRequesting() async {
     await _messaging.setAutoInitEnabled(true);
     try {

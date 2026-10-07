@@ -2,6 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { SCHEDULE_BUFFER_KEY } from '../founder-hub/beta-access';
+import { FounderHubService } from '../founder-hub/founder-hub.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type SuggestedEvent = {
@@ -18,6 +20,7 @@ export class AiService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly founderHub: FounderHubService,
   ) {}
 
   private getProvider(): AiProvider | null {
@@ -92,7 +95,10 @@ export class AiService {
   async suggestSchedule(
     userId: string,
     prompt: string,
-  ): Promise<{ suggestions: SuggestedEvent[] }> {
+  ): Promise<{
+    suggestions: SuggestedEvent[];
+    beta?: { key: string; label: 'Beta'; name: string };
+  }> {
     const now = new Date();
     const weekEnd = new Date(now);
     weekEnd.setDate(weekEnd.getDate() + 7);
@@ -115,17 +121,25 @@ export class AiService {
             )
             .join('\n');
 
+    const buffer = await this.founderHub.scheduleBufferLine(userId);
     const systemPrompt = `You are a scheduling assistant. The user will describe what they want to schedule in natural language (e.g. "2 hours for deep work tomorrow morning", "Lunch with Sarah Friday at 12:30").
 Current time: ${now.toISOString()}.
 Existing events in the next 7 days (do not double-book; suggest times that fit around these):
 ${existingStr}
-
+${buffer ? `${buffer}\n` : ''}
 Respond with ONLY a valid JSON object with one key "suggestions" whose value is an array of events. Each event: "title" (string), "start" (ISO 8601 datetime), "end" (ISO 8601 datetime), optional "description" (string).
 Example: {"suggestions":[{"title":"Deep work","start":"2025-02-22T09:00:00.000Z","end":"2025-02-22T11:00:00.000Z","description":"Focus time"}]}`;
 
     const content = await this.getCompletion(systemPrompt, prompt);
+    const beta = buffer
+      ? {
+          key: SCHEDULE_BUFFER_KEY,
+          label: 'Beta' as const,
+          name: 'Schedule buffer',
+        }
+      : undefined;
     if (!content) {
-      return { suggestions: [] };
+      return { suggestions: [], beta };
     }
     try {
       const parsed = JSON.parse(content);
@@ -150,9 +164,9 @@ Example: {"suggestions":[{"title":"Deep work","start":"2025-02-22T09:00:00.000Z"
           end: e.end,
           description: e.description,
         }));
-      return { suggestions };
+      return { suggestions, beta };
     } catch {
-      return { suggestions: [] };
+      return { suggestions: [], beta };
     }
   }
 }

@@ -9,6 +9,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ensureNestSession, normalizeUsername } from "@/lib/supabase/auth";
 import { mergeDuplicateAccount } from "@/lib/auth-api";
 import { uploadAvatarFile } from "@/lib/avatar-upload";
+import { FounderHubAccountLinks } from "@/components/founder-hub/FounderHubAccountLinks";
 
 const MERGE_DONOR_KEY = "daypilot_merge_donor";
 
@@ -161,6 +162,8 @@ export default function SettingsPage() {
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">{user?.email}</p>
         </div>
+
+        <FounderHubAccountLinks />
 
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3">
           <div>

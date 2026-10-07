@@ -1,5 +1,10 @@
 import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 
+export type FounderHubAccount = {
+  isOwner: boolean;
+  unreadCount: number;
+};
+
 export type User = {
   id: string;
   email: string;
@@ -9,6 +14,8 @@ export type User = {
   username: string | null;
   avatarUrl?: string | null;
   role: string;
+  /** From Nest GET /auth/me. Never derived from an email in the browser. */
+  founderHub?: FounderHubAccount;
 };
 
 export async function updateProfile(data: {

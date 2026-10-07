@@ -31,8 +31,47 @@ enum SubscriptionTier {
 enum SubscriptionStatus {
   active
   canceled
+  // Billing-retry grace only when currentPeriodEnd is still in the future.
+  // Apple does not set this: there is no App Store Server Notification pipeline.
   past_due
   trialing
+}
+
+enum SuggestionCategory {
+  feature_idea
+  improvement
+  bug
+  integration
+  other
+}
+
+enum SuggestionStatus {
+  submitted
+  under_review
+  planned
+  building
+  shipped
+  closed
+}
+
+enum SuggestionMessageKind {
+  founder
+  admin_reply
+  internal_note
+  status_change
+}
+
+enum BetaReleaseStage {
+  internal_testing
+  founder_beta
+  general_availability
+}
+
+enum FounderNoticeKind {
+  founder_message
+  admin_reply
+  status_change
+  beta_available
 }
 
 enum EventSource {
@@ -112,9 +151,16 @@ model User {
   planWaitlistEntries PlanWaitlistEntry[]
   auditLogs           AuditLog[]
   refreshTokens       RefreshToken[]
-  calendarConnections CalendarConnection[]
-  externalCalendars   ExternalCalendar[]
-  calendarSyncLogs    CalendarSyncLog[]
+  calendarConnections            CalendarConnection[]
+  externalCalendars              ExternalCalendar[]
+  calendarSyncLogs               CalendarSyncLog[]
+  founderSuggestions             FounderSuggestion[]
+  founderMessages                FounderSuggestionMessage[]
+  founderAttachments             FounderSuggestionAttachment[]
+  founderNotices                 FounderNotice[]
+  founderNotificationPreference  FounderNotificationPreference?
+  devicePushTokens               DevicePushToken[]
+  founderBetaOptOuts             FounderBetaOptOut[]
 
   @@map("users")
 }
@@ -351,6 +397,145 @@ model PlanWaitlistEntry {
   @@unique([email, requestedPlan])
   @@index([requestedPlan])
   @@map("plan_waitlist")
+}
+
+/// Private founder ↔ DayPilot thread. Founder number is never stored from the client.
+model FounderSuggestion {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  title             String
+  description       String
+  category          SuggestionCategory
+  status            SuggestionStatus   @default(submitted)
+  featureKey        String?            @map("feature_key")
+  contentHash       String             @map("content_hash")
+  founderLastReadAt DateTime?          @map("founder_last_read_at")
+  ownerLastReadAt   DateTime?          @map("owner_last_read_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  user         User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     FounderSuggestionMessage[]
+  attachments  FounderSuggestionAttachment[]
+  notices      FounderNotice[]
+
+  @@index([userId, createdAt])
+  @@index([contentHash])
+  @@index([status])
+  @@index([category])
+  @@map("founder_suggestions")
+}
+
+model FounderSuggestionMessage {
+  id           String                @id @default(cuid())
+  suggestionId String                @map("suggestion_id")
+  authorUserId String                @map("author_user_id")
+  kind         SuggestionMessageKind
+  body         String
+  createdAt    DateTime              @default(now()) @map("created_at")
+
+  suggestion FounderSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  author     User              @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([suggestionId, createdAt])
+  @@map("founder_suggestion_messages")
+}
+
+model FounderSuggestionAttachment {
+  id           String   @id @default(cuid())
+  suggestionId String   @map("suggestion_id")
+  userId       String   @map("user_id")
+  fileName     String   @map("file_name")
+  mimeType     String   @map("mime_type")
+  byteSize     Int      @map("byte_size")
+  bytes        Bytes
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  suggestion FounderSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([suggestionId])
+  @@map("founder_suggestion_attachments")
+}
+
+model FounderNotice {
+  id              String            @id @default(cuid())
+  userId          String            @map("user_id")
+  kind            FounderNoticeKind
+  title           String
+  body            String
+  suggestionId    String?           @map("suggestion_id")
+  featureKey      String?           @map("feature_key")
+  readAt          DateTime?         @map("read_at")
+  pushSentAt      DateTime?         @map("push_sent_at")
+  pushSkipReason  String?           @map("push_skip_reason")
+  emailSentAt     DateTime?         @map("email_sent_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  suggestion FounderSuggestion? @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([suggestionId])
+  @@map("founder_notices")
+}
+
+model FounderNotificationPreference {
+  userId    String   @id @map("user_id")
+  inApp     Boolean  @default(true) @map("in_app")
+  push      Boolean  @default(true)
+  email     Boolean  @default(false)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("founder_notification_preferences")
+}
+
+model DevicePushToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String
+  /// fcm tokens must not be sent to APNs. apns is a raw device token.
+  provider  String   @default("fcm")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_push_tokens")
+}
+
+model BetaFeature {
+  key                 String           @id
+  name                String
+  description         String
+  stage               BetaReleaseStage
+  platforms           String[]
+  minimumAppVersion   String?          @map("minimum_app_version")
+  enabled             Boolean          @default(false)
+  founderAvailableAt  DateTime?        @map("founder_available_at")
+  generalAvailableAt  DateTime?        @map("general_available_at")
+  planEntitlement     String           @map("plan_entitlement")
+  changesScheduling   Boolean          @default(false) @map("changes_scheduling")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  @@map("beta_features")
+}
+
+model FounderBetaOptOut {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  featureKey String   @map("feature_key")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureKey])
+  @@map("founder_beta_opt_outs")
 }
 
 model AuditLog {

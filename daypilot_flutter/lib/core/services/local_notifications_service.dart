@@ -4,6 +4,10 @@ import 'package:timezone/timezone.dart' as tz;
 
 const kDayPilotReminderChannelId = 'daypilot_reminders';
 const kDayPilotBriefChannelId = 'daypilot_pilot_brief';
+const kDayPilotFounderChannelId = 'daypilot_founder_hub';
+
+/// Set by the signed-in app shell so a local founder alert can open a thread.
+void Function(String? payload)? onFounderLocalNotificationTap;
 const kBriefNotificationBaseId = 91000;
 const kEventNotificationBaseId = 92000;
 
@@ -55,7 +59,12 @@ class LocalNotificationsService {
         requestSoundPermission: false,
       ),
     );
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: (response) {
+        onFounderLocalNotificationTap?.call(response.payload);
+      },
+    );
     await _ensureAndroidChannels();
   }
 
@@ -77,6 +86,14 @@ class LocalNotificationsService {
         'Pilot Brief',
         description: 'Local Pilot Brief alerts',
         importance: Importance.defaultImportance,
+      ),
+    );
+    await android.createNotificationChannel(
+      const AndroidNotificationChannel(
+        kDayPilotFounderChannelId,
+        'Founder messages',
+        description: 'Alerts when a founding member sends a message',
+        importance: Importance.high,
       ),
     );
   }
@@ -120,6 +137,35 @@ class LocalNotificationsService {
   }
 
   Future<void> cancelAllScheduled() => _plugin.cancelAll();
+
+  /// Shows an alert immediately. This is a local notification, not a remote push.
+  Future<void> showNow({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) {
+    return _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      payload: payload,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          kDayPilotFounderChannelId,
+          'Founder messages',
+          channelDescription: 'Alerts when a founding member sends a message',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
 
   /// One-shot local alerts: event reminders + morning Pilot Brief for a week.
   Future<void> reschedule({

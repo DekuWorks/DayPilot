@@ -56,11 +56,15 @@ export type PricingPlan = {
 export const PRO_ENTITLEMENT_NOTE =
   "Included with Pro. A Pro subscription covers this set. Some of these tools are still rolling out.";
 
+export const FOUNDING_HUB_LINE =
+  "Everything in Pro, plus a private Founder Hub to share ideas and talk directly with DayPilot, and early access to every new feature as it enters founder beta.";
+
 export const FOUNDING_COPY = {
   kicker: "FOUNDING 25",
   headline: "Help shape the future of DayPilot.",
   body: "Join the first 25 paid members and unlock every Pro feature for only $5/month.",
   rate: "Your founding rate remains active while you stay subscribed.",
+  hub: FOUNDING_HUB_LINE,
 } as const;
 
 export const TEAM_COPY = {
@@ -156,7 +160,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     planId: "founding_pro",
     name: "Founding 25",
-    description: FOUNDING_COPY.body,
+    description: `${FOUNDING_COPY.body} ${FOUNDING_COPY.hub}`,
     availability: "available",
     marketingPrice: "$5",
     marketingPriceDetail: "month",
@@ -166,8 +170,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     features: [
       "Every Pro feature",
       "Founding Member badge",
-      "Early access to selected beta features",
-      "Priority feedback opportunities",
+      FOUNDING_HUB_LINE,
       "Founding rate stays while you stay subscribed",
     ],
     limits: { bookingLinks: null, calendarConnections: null },
