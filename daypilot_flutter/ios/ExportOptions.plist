@@ -16,6 +16,8 @@
 	<dict>
 		<key>com.dekuworks.daypilot</key>
 		<string>DayPilot App Store</string>
+		<key>com.dekuworks.daypilot.widgets</key>
+		<string>DayPilot Widgets App Store</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>

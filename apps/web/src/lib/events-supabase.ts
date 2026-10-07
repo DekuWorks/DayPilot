@@ -15,6 +15,7 @@ export type CalendarEvent = {
   allDay?: boolean;
   source?: string;
   syncDirection?: string;
+  copyWarning?: string;
 };
 
 type EventRow = {
@@ -54,10 +55,12 @@ function eventSelect() {
   return "id, title, description, location, meeting_url, calendar_id, workspace_id, all_day, start, end, start_time, end_time, workspaces(color), calendars(color)";
 }
 
-function mapJoinedRow(row: EventRow & {
-  workspaces?: { color?: string | null } | null;
-  calendars?: { color?: string | null } | null;
-}): CalendarEvent {
+function mapJoinedRow(
+  row: EventRow & {
+    workspaces?: { color?: string | null } | null;
+    calendars?: { color?: string | null } | null;
+  },
+): CalendarEvent {
   return mapRow({
     ...row,
     calendar_color: row.workspaces?.color ?? row.calendars?.color ?? null,
@@ -131,7 +134,7 @@ export async function listEvents(params?: {
     let rows = (fallback.data as unknown as EventRow[]) ?? [];
     if (params?.from) {
       rows = rows.filter(
-        (r) => (r.start_time || r.start || "") >= params.from!
+        (r) => (r.start_time || r.start || "") >= params.from!,
       );
     }
     if (params?.to) {
@@ -153,7 +156,7 @@ export async function createEvent(
     meetingUrl?: string;
     workspaceId?: string;
     calendarColor?: string;
-  }
+  },
 ): Promise<CalendarEvent> {
   const supabase = createClient();
   const calendarId = await ensureDefaultCalendar(userId);
@@ -176,7 +179,8 @@ export async function createEvent(
     .select(eventSelect())
     .single();
 
-  if (error || !row) throw new Error(error?.message ?? "Failed to create event");
+  if (error || !row)
+    throw new Error(error?.message ?? "Failed to create event");
   return mapJoinedRow(row as unknown as EventRow);
 }
 
@@ -191,7 +195,7 @@ export async function updateEvent(
     meetingUrl?: string | null;
     workspaceId?: string;
     calendarColor?: string;
-  }
+  },
 ): Promise<CalendarEvent> {
   const supabase = createClient();
   const patch: Record<string, unknown> = {};
@@ -216,7 +220,8 @@ export async function updateEvent(
     .select(eventSelect())
     .single();
 
-  if (error || !row) throw new Error(error?.message ?? "Failed to update event");
+  if (error || !row)
+    throw new Error(error?.message ?? "Failed to update event");
   return mapJoinedRow(row as unknown as EventRow);
 }
 

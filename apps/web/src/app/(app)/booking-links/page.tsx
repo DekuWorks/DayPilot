@@ -8,6 +8,10 @@ import * as bookingApi from "@/lib/booking-supabase";
 import type { BookingLink } from "@/lib/booking-supabase";
 import * as billingApi from "@/lib/billing-api";
 import { isPaidSubscription } from "@/lib/billing-api";
+import {
+  AUTOMATIC_MEETING_NOTES,
+  type HostMeetingDraft,
+} from "@/lib/meeting-choice";
 
 export default function BookingLinksPage() {
   const { user } = useAuth();
@@ -215,10 +219,184 @@ export default function BookingLinksPage() {
               >
                 {link.isActive ? "Pause" : "Activate"}
               </Button>
+              <MeetingSetup linkId={link.id} onError={setError} />
             </li>
           ))
         )}
       </ul>
+    </div>
+  );
+}
+
+const EMPTY_DRAFT: HostMeetingDraft = {
+  link: false,
+  linkUrl: "",
+  phone: false,
+  phoneNumber: "",
+  slack: false,
+  slackUrl: "",
+  discord: false,
+  discordUrl: "",
+};
+
+function MeetingSetup({
+  linkId,
+  onError,
+}: {
+  linkId: string;
+  onError: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<HostMeetingDraft>(EMPTY_DRAFT);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    setOpen(true);
+    setLoading(true);
+    try {
+      setDraft(await bookingApi.getMeetingSetup(linkId));
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Could not load meeting setup");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await bookingApi.saveMeetingSetup(linkId, draft);
+      onError("");
+      setOpen(false);
+    } catch (err) {
+      onError(
+        err instanceof Error ? err.message : "Could not save meeting setup",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        type="button"
+        onClick={() => void load()}
+      >
+        Meeting options
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={save}
+      className="mt-3 w-full space-y-3 border-t border-[var(--border-subtle)] pt-3"
+    >
+      {loading ? (
+        <p className="text-sm text-[var(--text-secondary)]">
+          Loading meeting options…
+        </p>
+      ) : (
+        <>
+          <MethodRow
+            label="Meeting link"
+            checked={draft.link}
+            onChecked={(link) => setDraft({ ...draft, link })}
+            value={draft.linkUrl}
+            onValue={(linkUrl) => setDraft({ ...draft, linkUrl })}
+            placeholder="https://"
+          />
+          <MethodRow
+            label="Phone call"
+            checked={draft.phone}
+            onChecked={(phone) => setDraft({ ...draft, phone })}
+            value={draft.phoneNumber}
+            onValue={(phoneNumber) => setDraft({ ...draft, phoneNumber })}
+            placeholder="Your number, sent only after someone books"
+          />
+          <MethodRow
+            label="Slack link"
+            checked={draft.slack}
+            onChecked={(slack) => setDraft({ ...draft, slack })}
+            value={draft.slackUrl}
+            onValue={(slackUrl) => setDraft({ ...draft, slackUrl })}
+            placeholder="https://"
+          />
+          <MethodRow
+            label="Discord invite"
+            checked={draft.discord}
+            onChecked={(discord) => setDraft({ ...draft, discord })}
+            value={draft.discordUrl}
+            onValue={(discordUrl) => setDraft({ ...draft, discordUrl })}
+            placeholder="https://"
+          />
+          <ul className="space-y-1 text-xs text-[var(--text-tertiary)]">
+            {AUTOMATIC_MEETING_NOTES.map((note) => (
+              <li key={note.id}>
+                {note.label}: {note.detail}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={saving || loading}>
+          {saving ? "Saving…" : "Save meeting options"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setOpen(false)}
+        >
+          Close
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function MethodRow({
+  label,
+  checked,
+  onChecked,
+  value,
+  onValue,
+  placeholder,
+}: {
+  label: string;
+  checked: boolean;
+  onChecked: (value: boolean) => void;
+  value: string;
+  onValue: (value: string) => void;
+  placeholder: string;
+}) {
+  const fieldId = label.toLowerCase().replace(/\s+/g, "-");
+  return (
+    <div className="space-y-1">
+      <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChecked(e.target.checked)}
+        />
+        {label}
+      </label>
+      {checked ? (
+        <input
+          id={fieldId}
+          aria-label={label}
+          value={value}
+          onChange={(e) => onValue(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+        />
+      ) : null}
     </div>
   );
 }

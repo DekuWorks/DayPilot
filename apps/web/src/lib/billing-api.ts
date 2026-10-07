@@ -32,6 +32,8 @@ export type Subscription = {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
+  /** apple when the plan was bought in the App Store. */
+  source?: "apple" | "stripe" | null;
   configured?: boolean;
   paid?: boolean;
   hasProAccess?: boolean;

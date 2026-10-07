@@ -25,12 +25,13 @@ import {
   type CalendarProviderUi,
 } from "@/lib/calendar-connection-ui";
 import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
+import { AppleIcloudMobileNote } from "@/components/AppleIcloudMobileNote";
 import { formatWhen } from "@/lib/format-when";
 
 export default function IntegrationsPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
   const [eventKit, setEventKit] = useState<EventKitConnectionStatus | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,7 +59,7 @@ export default function IntegrationsPage() {
         if (!cancelled) {
           setConnections([]);
           setError(
-            e instanceof Error ? e.message : "Failed to load connections"
+            e instanceof Error ? e.message : "Failed to load connections",
           );
         }
       })
@@ -121,9 +122,10 @@ export default function IntegrationsPage() {
     setActionLoading("sync-all");
     try {
       const apple = rows.find((r) => r.id === "apple");
+      const eventKitId = eventKit?.connections?.[0]?.id ?? null;
       const count = await calendarConnectionsApi.syncAllConnections({
         connections,
-        eventKitConnectionId: apple?.canSync ? apple.connectionId : null,
+        eventKitConnectionId: apple?.canSync && eventKitId ? eventKitId : null,
       });
       await reload();
       if (count === 0) {
@@ -142,9 +144,10 @@ export default function IntegrationsPage() {
         Connected calendars
       </h1>
       <p className="text-[var(--text-secondary)] mb-6">
-        Google, Outlook, and Apple Calendar (EventKit on iPhone). Sign in with
-        Apple is account login only — it is not a calendar connection.
+        Google and Outlook connect here. Sign in with Apple is account login
+        only — it is not a calendar connection.
       </p>
+      <AppleIcloudMobileNote />
 
       {connected && !err && (
         <div className="mb-6 p-4 rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_12%,transparent)] border border-[color-mix(in_srgb,var(--brand-500)_35%,transparent)] text-[var(--text-primary)]">
@@ -162,7 +165,7 @@ export default function IntegrationsPage() {
           {err === "outlook_callback" &&
             "Outlook connection failed. Try again."}
           {!["missing_params", "google_callback", "outlook_callback"].includes(
-            err ?? ""
+            err ?? "",
           ) && "Something went wrong. Try again."}
         </div>
       )}
@@ -233,12 +236,12 @@ export default function IntegrationsPage() {
                     </div>
                   ) : null}
                   {row.tone === "notConnected" && row.id === "apple" ? (
-                    <Link
-                      href="/app/integrations/apple-calendar"
+                    <a
+                      href={APPLE_CALENDAR_DEEP_LINK}
                       className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
                     >
-                      Set up on iPhone
-                    </Link>
+                      Sync on your phone
+                    </a>
                   ) : null}
                   {row.canReconnect && ssoBrandForProvider(row.id) ? (
                     <div className="w-full max-w-xs">
@@ -250,7 +253,9 @@ export default function IntegrationsPage() {
                       />
                     </div>
                   ) : null}
-                  {row.id === "apple" && row.tone === "healthy" ? (
+                  {row.id === "apple" &&
+                  row.tone === "healthy" &&
+                  !row.canDisconnect ? (
                     <a
                       href={APPLE_CALENDAR_DEEP_LINK}
                       className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--brand-500)] hover:underline"
@@ -258,7 +263,8 @@ export default function IntegrationsPage() {
                       Manage on iPhone
                     </a>
                   ) : null}
-                  {row.id !== "apple" && row.connectionId ? (
+                  {row.connectionId &&
+                  (row.id !== "apple" || row.canDisconnect) ? (
                     <button
                       type="button"
                       onClick={() => void handleDisconnect(row.connectionId!)}

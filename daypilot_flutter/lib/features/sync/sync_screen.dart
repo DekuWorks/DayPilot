@@ -82,7 +82,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
     if (provider == 'apple') {
       if (!AppleCalendarService.isSupported) {
         setState(
-          () => _error = 'Apple Calendar setup requires the DayPilot iOS app.',
+          () => _error =
+              'On iPhone, allow Calendar in the DayPilot app. On the web, connect iCloud from Sync.',
         );
         return;
       }

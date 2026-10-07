@@ -23,6 +23,11 @@ import { ACCESS_COOKIE, readCookie } from '../auth/auth-cookies';
 import { resolveJwtSecret } from '../common/jwt-secret';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SubscriptionStatus, SubscriptionTier } from '../generated/prisma';
+import {
+  type AppleTransaction,
+  AppleTransactionError,
+  verifyAppleSignedTransaction,
+} from './apple-signed-transaction';
 
 export {
   entitlementsForSubscription,
@@ -79,7 +84,19 @@ export class BillingService {
       where: { userId },
       orderBy: { founderNumber: 'asc' },
     });
-    const status = sub.status ?? 'active';
+    const source = sub.stripeSubscriptionId?.startsWith('apple:')
+      ? 'apple'
+      : sub.stripeCustomerId
+        ? 'stripe'
+        : null;
+    let status = sub.status ?? 'active';
+    if (
+      source === 'apple' &&
+      sub.currentPeriodEnd &&
+      sub.currentPeriodEnd.getTime() < Date.now()
+    ) {
+      status = 'canceled';
+    }
     const entitlements = entitlementsForSubscription({
       tier: sub.tier,
       planId: sub.planId,
@@ -95,6 +112,7 @@ export class BillingService {
       status,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       stripeCustomerId: sub.stripeCustomerId ?? null,
+      source,
       configured: Boolean(this.stripe),
       displayName: formatSubscriptionDisplayName({
         tier: sub.tier,
@@ -141,18 +159,12 @@ export class BillingService {
   }
 
   /**
-   * Confirm an App Store purchase and map product → plan.
-   * The iOS app is the only checkout. Founder numbers are assigned here from
-   * the transaction id the app posts. The client cannot choose a number.
-   *
-   * Receipt cryptographic verification is not implemented. This method does
-   * not check the StoreKit JWS signature. Do not set APPLE_IAP_SKIP_VERIFY in
-   * production; that flag is not a signature check and is unused here.
-   *
-   * Apple billing-retry grace is not applied. There is no App Store Server
-   * Notification pipeline, so access lasts until currentPeriodEnd (30 days
-   * from the last confirm or restore). A renewal extends that only when the
-   * app posts another confirm for the same original transaction id.
+   * Confirm a StoreKit 2 purchase. Production requires the signed transaction
+   * and checks it against Apple Root CA - G3. APPLE_IAP_SKIP_VERIFY=1 is
+   * local Xcode StoreKit only and is ignored in production.
+   * Founder numbers come from the verified original transaction id.
+   * There is no App Store Server Notification pipeline, so access follows
+   * the expiry in the signed transaction.
    */
   async confirmApplePurchase(
     userId: string,
@@ -160,54 +172,64 @@ export class BillingService {
       productId: string;
       transactionId: string;
       originalTransactionId?: string;
+      signedTransaction?: string;
     },
   ) {
-    const mapping = this.appleProductMapping(input.productId);
-    if (!mapping) {
+    const verified = this.readApplePurchase(input);
+    const appleId = `apple:${verified.originalTransactionId}`;
+    const linked = await this.prisma.subscription.findFirst({
+      where: { stripeSubscriptionId: appleId },
+    });
+    if (linked && linked.userId !== userId) {
       throw new BadRequestException(
-        `Unknown App Store product: ${input.productId}`,
+        'This App Store subscription is already linked to another DayPilot account.',
       );
     }
-    const transactionId = input.transactionId?.trim();
-    if (!transactionId) {
-      throw new BadRequestException('Missing transactionId');
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (
+      existing?.stripeSubscriptionId &&
+      !existing.stripeSubscriptionId.startsWith('apple:') &&
+      existing.status === 'active' &&
+      existing.tier !== 'Free'
+    ) {
+      throw new BadRequestException(
+        'This account already has a subscription billed on the website.',
+      );
     }
-    const originalTransactionId =
-      input.originalTransactionId?.trim() || transactionId;
-    const periodEnd = new Date(
-      Date.now() + APPLE_CONFIRM_PERIOD_DAYS * 24 * 60 * 60 * 1000,
-    );
 
     let founderNumber: number | null = null;
-    if (mapping.founding) {
+    if (verified.mapping.founding) {
       const reserved = await this.reserveFoundingSpot({
         userId,
-        originalTransactionId,
-        latestTransactionId: transactionId,
-        productId: input.productId,
-        periodEnd,
+        originalTransactionId: verified.originalTransactionId,
+        latestTransactionId:
+          input.transactionId?.trim() || verified.originalTransactionId,
+        productId: verified.productId,
+        periodEnd: verified.currentPeriodEnd,
       });
       founderNumber = reserved.founderNumber;
     }
 
     await this.upsertAppleSubscription({
       userId,
-      tier: mapping.tier,
-      planId: mapping.planId,
+      tier: verified.mapping.tier,
+      planId: verified.mapping.planId,
       founderNumber,
-      periodEnd,
-      originalTransactionId,
+      periodEnd: verified.currentPeriodEnd,
+      originalTransactionId: verified.originalTransactionId,
     });
     await this.audit.log({
       action: 'billing.apple_purchase_confirmed',
       entityType: 'subscription',
       userId,
       metadata: {
-        productId: input.productId,
-        transactionId,
-        originalTransactionId,
-        tier: mapping.tier,
-        planId: mapping.planId,
+        productId: verified.productId,
+        transactionId: verified.originalTransactionId,
+        tier: verified.mapping.tier,
+        planId: verified.mapping.planId,
         founderNumber,
       },
     });
@@ -234,6 +256,95 @@ export class BillingService {
     } catch {
       return null;
     }
+  }
+
+  private readApplePurchase(input: {
+    productId: string;
+    transactionId: string;
+    signedTransaction?: string;
+  }): {
+    mapping: AppleProductMapping;
+    productId: string;
+    originalTransactionId: string;
+    currentPeriodEnd: Date;
+  } {
+    const skip =
+      this.config.get<string>('APPLE_IAP_SKIP_VERIFY') === '1' &&
+      this.config.get<string>('NODE_ENV') !== 'production';
+    if (skip && !input.signedTransaction?.trim()) {
+      const mapping = this.appleProductMapping(input.productId);
+      if (!mapping) {
+        throw new BadRequestException(
+          `Unknown App Store product: ${input.productId}`,
+        );
+      }
+      if (!input.transactionId?.trim()) {
+        throw new BadRequestException('Missing transactionId');
+      }
+      return {
+        mapping,
+        productId: input.productId,
+        originalTransactionId:
+          input.transactionId.trim(),
+        currentPeriodEnd: new Date(
+          Date.now() + APPLE_CONFIRM_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+        ),
+      };
+    }
+    if (!input.signedTransaction?.trim()) {
+      throw new BadRequestException('Missing App Store signed transaction');
+    }
+    let transaction: AppleTransaction;
+    try {
+      transaction = verifyAppleSignedTransaction(
+        input.signedTransaction.trim(),
+      );
+    } catch (error) {
+      if (error instanceof AppleTransactionError) {
+        throw new BadRequestException(
+          'App Store purchase could not be verified',
+        );
+      }
+      throw error;
+    }
+    const bundleId =
+      this.config.get<string>('APPLE_BUNDLE_ID') ?? 'com.dekuworks.daypilot';
+    if (
+      transaction.bundleId !== bundleId ||
+      transaction.productId !== input.productId
+    ) {
+      throw new BadRequestException('App Store purchase could not be verified');
+    }
+    const mapping = this.appleProductMapping(transaction.productId);
+    if (!mapping) {
+      throw new BadRequestException(
+        `Unknown App Store product: ${transaction.productId}`,
+      );
+    }
+    if (transaction.revocationDate) {
+      throw new BadRequestException('This App Store purchase was revoked');
+    }
+    if (transaction.environment !== 'Production') {
+      const sandbox =
+        transaction.environment === 'Sandbox' &&
+        this.config.get<string>('APPLE_IAP_ACCEPT_SANDBOX') === '1';
+      if (!sandbox) {
+        throw new BadRequestException(
+          'Sandbox App Store purchases are not accepted',
+        );
+      }
+    }
+    if (!transaction.expiresDate || transaction.expiresDate <= Date.now()) {
+      throw new BadRequestException(
+        'This App Store subscription is not active',
+      );
+    }
+    return {
+      mapping,
+      productId: transaction.productId,
+      originalTransactionId: transaction.originalTransactionId,
+      currentPeriodEnd: new Date(transaction.expiresDate),
+    };
   }
 
   async joinWaitlist(

@@ -92,14 +92,41 @@ export async function importOutlookProviderToken(args: {
     );
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(getApiErrorMessage(err, "Failed to import Outlook token"));
+      throw new Error(
+        getApiErrorMessage(err, "Failed to import Outlook token"),
+      );
+    }
+    return res.json();
+  });
+}
+
+export async function connectAppleCalendar(
+  appleId: string,
+  appSpecificPassword: string,
+): Promise<CalendarConnection | undefined> {
+  return withNestAuth(async () => {
+    const res = await nestFetch(
+      `${getApiUrl()}/calendar-connections/apple/connect`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appleId,
+          appSpecificPassword:
+            normalizeAppSpecificPassword(appSpecificPassword),
+        }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(getApiErrorMessage(err, "Could not connect iCloud"));
     }
     return res.json();
   });
 }
 
 export async function getConnectUrl(
-  provider: CalendarProvider
+  provider: CalendarProvider,
 ): Promise<ConnectUrlResult> {
   return withNestAuth(async () => {
     const res = await nestFetch(
@@ -150,7 +177,7 @@ export async function getEventKitStatus(): Promise<EventKitConnectionStatus> {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(
-        getApiErrorMessage(err, "Failed to load Apple Calendar status")
+        getApiErrorMessage(err, "Failed to load Apple Calendar status"),
       );
     }
     return res.json();
@@ -158,7 +185,7 @@ export async function getEventKitStatus(): Promise<EventKitConnectionStatus> {
 }
 
 export async function disconnectConnection(
-  id: string
+  id: string,
 ): Promise<{ ok: boolean }> {
   return withNestAuth(async () => {
     const res = await nestFetch(`${getApiUrl()}/calendar-connections/${id}`, {
@@ -186,7 +213,7 @@ export async function syncConnection(id: string): Promise<{ ok: boolean }> {
 }
 
 export async function validateConnection(
-  id: string
+  id: string,
 ): Promise<ValidateConnectionResult> {
   return withNestAuth(async () => {
     const res = await nestFetch(
@@ -223,7 +250,7 @@ export async function syncAllConnections(args: {
 }): Promise<number> {
   let count = 0;
   for (const c of args.connections) {
-    if (c.provider === "apple" || c.provider === "apple_eventkit") continue;
+    if (c.provider === "apple_eventkit") continue;
     if (c.status === "needs_reconnect") continue;
     await syncConnection(c.id);
     count += 1;

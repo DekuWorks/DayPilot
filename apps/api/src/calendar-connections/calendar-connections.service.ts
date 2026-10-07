@@ -13,13 +13,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CalendarProvider } from '../generated/prisma';
 import {
   CalDavError,
+  daypilotAppleUid,
   decodeCalendarIds,
+  deleteIcloudEvent,
   encodeCalendarIds,
   fetchIcloudEvents,
   looksLikeAppSpecificPassword,
   normalizeAppSpecificPassword,
+  putIcloudEvent,
   verifyIcloudCalDav,
 } from './icloud-caldav';
+import {
+  readOutbound,
+  withOutbound,
+  type OutboundLinks,
+} from './outbound-event';
 import type { ImportDeviceEventsDto } from './dto/import-device-events.dto';
 import {
   GRAPH_MICROSOFT_ORIGIN,
@@ -770,6 +778,20 @@ export class CalendarConnectionsService {
       for (const item of items) {
         if (seenUids.has(item.uid)) continue;
         seenUids.add(item.uid);
+        const absorbed = await this.absorbDayPilotCopy(
+          userId,
+          'apple',
+          item.uid,
+          item.daypilotEventId,
+          {
+            title: item.title,
+            start: item.start,
+            end: item.end,
+            description: item.description ?? null,
+            location: item.location ?? null,
+          },
+        );
+        if (absorbed) continue;
         await this.prisma.event.upsert({
           where: {
             userId_source_externalId: {
@@ -1077,6 +1099,20 @@ export class CalendarConnectionsService {
         ? new Date(item.end.dateTime)
         : new Date(item.end.date!);
       const timeFields = googleEventTimeFields(item);
+      const absorbed = await this.absorbDayPilotCopy(
+        userId,
+        'google',
+        item.id,
+        item.extendedProperties?.private?.daypilotEventId,
+        {
+          title: item.summary ?? 'Event',
+          start,
+          end,
+          description: item.description ?? null,
+          location: item.location ?? null,
+        },
+      );
+      if (absorbed) continue;
       await this.prisma.event.upsert({
         where: {
           userId_source_externalId: {
@@ -1187,6 +1223,20 @@ export class CalendarConnectionsService {
       const start = new Date(ev.start.dateTime);
       const end = new Date(ev.end.dateTime);
       const timeFields = outlookEventTimeFields(ev);
+      const absorbed = await this.absorbDayPilotCopy(
+        userId,
+        'outlook',
+        ev.id,
+        undefined,
+        {
+          title: ev.subject ?? 'Event',
+          start,
+          end,
+          description: ev.body?.content ?? null,
+          location: ev.location?.displayName ?? null,
+        },
+      );
+      if (absorbed) continue;
       await this.prisma.event.upsert({
         where: {
           userId_source_externalId: {
@@ -1229,6 +1279,143 @@ export class CalendarConnectionsService {
             : {}),
         },
       });
+    }
+  }
+
+  /**
+   * Copy a DayPilot-created event to every connected calendar.
+   * Returns metadata that records the remote ids. Warnings name calendars
+   * that were connected but rejected the write.
+   */
+  async mirrorNativeEvent(
+    userId: string,
+    event: {
+      id: string;
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+      metadata: unknown;
+    },
+  ): Promise<{ metadata: Record<string, unknown>; warnings: string[] }> {
+    const connections = await this.prisma.calendarConnection.findMany({
+      where: { userId },
+    });
+    const links: OutboundLinks = { ...readOutbound(event.metadata) };
+    const warnings: string[] = [];
+    const patch = {
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      description: event.description,
+      location: event.location,
+    };
+
+    const google = connections.find((c) => c.providerType === 'google');
+    if (google) {
+      try {
+        links.google = {
+          id: await this.writeGoogleCopy(
+            google,
+            links.google?.id,
+            event.id,
+            patch,
+          ),
+        };
+      } catch (err) {
+        warnings.push(`Google Calendar (${safeProviderError(err)})`);
+      }
+    }
+
+    const outlook = connections.find((c) => c.providerType === 'outlook');
+    if (outlook) {
+      try {
+        links.outlook = {
+          id: await this.writeOutlookCopy(outlook, links.outlook?.id, patch),
+        };
+      } catch (err) {
+        warnings.push(`Outlook (${safeProviderError(err)})`);
+      }
+    }
+
+    const icloud = connections.find(
+      (c) =>
+        c.providerType === 'apple' &&
+        c.accessToken &&
+        c.accessToken !== DEVICE_EVENTKIT_TOKEN &&
+        c.email,
+    );
+    if (icloud) {
+      try {
+        links.apple = {
+          id: await this.writeAppleCopy(icloud, event.id, patch),
+        };
+      } catch (err) {
+        warnings.push(`iCloud (${safeProviderError(err)})`);
+      }
+    }
+
+    return { metadata: withOutbound(event.metadata, links), warnings };
+  }
+
+  /** Remove remote copies of a DayPilot event. Missing copies are ignored. */
+  async deleteNativeCopies(userId: string, metadata: unknown): Promise<void> {
+    const links = readOutbound(metadata);
+    if (!links.google && !links.outlook && !links.apple) return;
+    const connections = await this.prisma.calendarConnection.findMany({
+      where: { userId },
+    });
+    const google = connections.find((c) => c.providerType === 'google');
+    if (links.google && google) {
+      try {
+        await this.pushGoogleEventDelete(google, links.google.id);
+      } catch (err) {
+        if (!isMissingRemote(err)) {
+          throw new BadRequestException(
+            `Could not remove the Google Calendar copy. ${safeProviderError(err)}`,
+          );
+        }
+      }
+    }
+    const outlook = connections.find((c) => c.providerType === 'outlook');
+    if (links.outlook && outlook) {
+      try {
+        await this.pushOutlookEventDelete(outlook, links.outlook.id);
+      } catch (err) {
+        if (!isMissingRemote(err)) {
+          throw new BadRequestException(
+            `Could not remove the Outlook copy. ${safeProviderError(err)}`,
+          );
+        }
+      }
+    }
+    const icloud = connections.find(
+      (c) =>
+        c.providerType === 'apple' &&
+        c.accessToken &&
+        c.accessToken !== DEVICE_EVENTKIT_TOKEN &&
+        c.email,
+    );
+    if (links.apple && icloud) {
+      const urls = decodeCalendarIds(icloud.calendarId);
+      const calendarUrl = urls[0];
+      if (calendarUrl) {
+        try {
+          await deleteIcloudEvent(
+            icloud.email,
+            icloud.accessToken,
+            calendarUrl,
+            links.apple.id,
+          );
+        } catch (err) {
+          if (err instanceof CalDavError && err.httpStatus === 404) return;
+          const message = err instanceof Error ? err.message : 'failed';
+          throw new BadRequestException(
+            `Could not remove the iCloud copy. ${message.slice(0, 160)}`,
+          );
+        }
+      }
     }
   }
 
@@ -1281,6 +1468,196 @@ export class CalendarConnectionsService {
     } else {
       await this.pushOutlookEventDelete(conn, externalId);
     }
+  }
+
+  private async absorbDayPilotCopy(
+    userId: string,
+    provider: 'google' | 'outlook' | 'apple',
+    externalId: string,
+    daypilotEventId: string | undefined,
+    fields: {
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+    },
+  ): Promise<boolean> {
+    const byId = daypilotEventId
+      ? await this.prisma.event.findFirst({
+          where: { id: daypilotEventId, userId, source: 'native' },
+        })
+      : null;
+    const existing =
+      byId ??
+      (await this.prisma.event.findFirst({
+        where: {
+          userId,
+          source: 'native',
+          metadata: {
+            path: ['outbound', provider, 'id'],
+            equals: externalId,
+          },
+        },
+      }));
+    if (!existing) return false;
+    await this.prisma.event.update({
+      where: { id: existing.id },
+      data: fields,
+    });
+    return true;
+  }
+
+  private async writeGoogleCopy(
+    conn: {
+      id: string;
+      accessToken: string;
+      refreshToken: string | null;
+      expiresAt: Date | null;
+      calendarId: string | null;
+    },
+    existingId: string | undefined,
+    daypilotEventId: string,
+    patch: {
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+    },
+  ): Promise<string> {
+    if (existingId) {
+      try {
+        await this.pushGoogleEventUpdate(conn, existingId, patch);
+        return existingId;
+      } catch (err) {
+        if (!isMissingRemote(err)) throw err;
+      }
+    }
+    return this.createGoogleEvent(conn, daypilotEventId, patch);
+  }
+
+  private async createGoogleEvent(
+    conn: {
+      id: string;
+      accessToken: string;
+      refreshToken: string | null;
+      expiresAt: Date | null;
+      calendarId: string | null;
+    },
+    daypilotEventId: string,
+    patch: {
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+    },
+  ): Promise<string> {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Google Calendar is not configured');
+    }
+    const accessToken = await this.ensureGoogleAccessToken(conn);
+    const oauth2 = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      await this.googleRedirectUri(),
+    );
+    oauth2.setCredentials({
+      access_token: accessToken,
+      refresh_token: conn.refreshToken ?? undefined,
+    });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2 });
+    const calId = conn.calendarId ?? 'primary';
+    const { data } = await calendar.events.insert({
+      calendarId: calId,
+      requestBody: {
+        summary: patch.title,
+        description: patch.description ?? undefined,
+        location: patch.location ?? undefined,
+        start: { dateTime: patch.start.toISOString(), timeZone: 'UTC' },
+        end: { dateTime: patch.end.toISOString(), timeZone: 'UTC' },
+        extendedProperties: {
+          private: { daypilotEventId },
+        },
+      },
+    });
+    if (!data.id) {
+      throw new BadRequestException(
+        'Google Calendar did not return an event id',
+      );
+    }
+    return data.id;
+  }
+
+  private async writeOutlookCopy(
+    conn: {
+      id: string;
+      accessToken: string;
+      refreshToken: string | null;
+      expiresAt: Date | null;
+    },
+    existingId: string | undefined,
+    patch: {
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+    },
+  ): Promise<string> {
+    if (existingId) {
+      try {
+        await this.pushOutlookEventUpdate(conn, existingId, patch);
+        return existingId;
+      } catch (err) {
+        if (!isMissingRemote(err)) throw err;
+      }
+    }
+    const accessToken = await this.ensureOutlookAccessToken(conn);
+    const client = this.outlookGraphClient(accessToken);
+    const created = (await client.api('/me/events').post({
+      subject: patch.title,
+      body: { contentType: 'text', content: patch.description ?? '' },
+      start: { dateTime: patch.start.toISOString(), timeZone: 'UTC' },
+      end: { dateTime: patch.end.toISOString(), timeZone: 'UTC' },
+      location: { displayName: patch.location ?? '' },
+    })) as { id?: string };
+    if (!created.id) {
+      throw new BadRequestException('Outlook did not return an event id');
+    }
+    return created.id;
+  }
+
+  private async writeAppleCopy(
+    conn: { email: string; accessToken: string; calendarId: string | null },
+    daypilotEventId: string,
+    patch: {
+      title: string;
+      start: Date;
+      end: Date;
+      description: string | null;
+      location: string | null;
+    },
+  ): Promise<string> {
+    let urls = decodeCalendarIds(conn.calendarId);
+    if (urls.length === 0) {
+      const discovered = await verifyIcloudCalDav(conn.email, conn.accessToken);
+      urls = discovered.calendarUrls;
+    }
+    const calendarUrl = urls[0];
+    if (!calendarUrl) {
+      throw new BadRequestException('iCloud calendar was not found');
+    }
+    const uid = daypilotAppleUid(daypilotEventId);
+    await putIcloudEvent(conn.email, conn.accessToken, calendarUrl, {
+      uid,
+      daypilotEventId,
+      ...patch,
+    });
+    return uid;
   }
 
   private async pushGoogleEventUpdate(
@@ -1487,6 +1864,16 @@ const OUTLOOK_PRESET: Record<string, string> = {
   lightRed: '#EF4444',
   maxColor: '#6366F1',
 };
+
+function isMissingRemote(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /404|not found|erroritemnotfound|does not exist/i.test(message);
+}
+
+function safeProviderError(err: unknown): string {
+  const message = err instanceof Error ? err.message : 'failed';
+  return message.replace(/Bearer\s+\S+/gi, 'Bearer [redacted]').slice(0, 160);
+}
 
 function outlookCalendarHex(hexColor?: string, preset?: string): string | null {
   if (hexColor && hexColor !== 'auto' && /^#?[0-9a-fA-F]{6}$/.test(hexColor)) {

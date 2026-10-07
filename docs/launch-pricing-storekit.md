@@ -27,7 +27,7 @@ Do not create a Team or Enterprise subscription.
 
 A customer still cannot buy Founding 25 or Pro in the App Store build that is live today. Version 1.0 does not query `daypilot.pro.founding.monthly` or `daypilot.pro.monthly`. A new build has to be approved before those IDs can be purchased. Do not submit that build from this change.
 
-`POST /billing/apple/confirm` stores the transaction id the app sends. It does not cryptographically verify the StoreKit receipt. Do not set `APPLE_IAP_SKIP_VERIFY` in production.
+`POST /billing/apple/confirm` checks the StoreKit 2 signed transaction against Apple's certificate. `APPLE_IAP_SKIP_VERIFY=1` is ignored in production. Do not set it there.
 
 Founding stays open unless `FOUNDING_OFFER_ENABLED` is set to `false` on the API.
 
