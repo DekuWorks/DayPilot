@@ -30,9 +30,7 @@ export default function FounderInboxPage() {
   const [unread, setUnread] = useState(false);
   const [error, setError] = useState("");
 
-  async function load(
-    next = { category, status, q, unread },
-  ) {
+  async function load(next = { category, status, q, unread }) {
     setError("");
     try {
       setItems(await listInbox(next));
@@ -58,7 +56,7 @@ export default function FounderInboxPage() {
         Founder messages
       </h1>
       <form
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap"
         onSubmit={(event) => {
           event.preventDefault();
           void load();
@@ -68,12 +66,12 @@ export default function FounderInboxPage() {
           value={q}
           onChange={(event) => setQ(event.target.value)}
           placeholder="Search"
-          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+          className="min-h-11 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm sm:w-auto sm:min-w-40"
         />
         <select
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+          className="min-h-11 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm sm:w-auto"
         >
           {CATEGORIES.map((value) => (
             <option key={value || "all-cat"} value={value}>
@@ -84,7 +82,7 @@ export default function FounderInboxPage() {
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
-          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+          className="min-h-11 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm sm:w-auto"
         >
           {STATUSES.map((value) => (
             <option key={value || "all-status"} value={value}>
@@ -92,7 +90,7 @@ export default function FounderInboxPage() {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={unread}
@@ -100,7 +98,10 @@ export default function FounderInboxPage() {
           />
           Unread
         </label>
-        <button type="submit" className="text-sm text-[var(--brand-500)]">
+        <button
+          type="submit"
+          className="min-h-11 rounded-lg px-3 text-sm font-medium text-[var(--brand-500)]"
+        >
           Search
         </button>
       </form>
@@ -122,7 +123,9 @@ export default function FounderInboxPage() {
         </Link>
       ))}
       {items.length === 0 && !error ? (
-        <p className="text-sm text-[var(--text-secondary)]">No founder messages.</p>
+        <p className="text-sm text-[var(--text-secondary)]">
+          No founder messages.
+        </p>
       ) : null}
     </div>
   );

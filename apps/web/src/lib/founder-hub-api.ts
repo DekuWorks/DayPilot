@@ -110,10 +110,7 @@ export async function replyToSuggestion(id: string, body: string) {
   return parse(res, "Could not send message");
 }
 
-export async function uploadScreenshot(
-  id: string,
-  file: File,
-): Promise<void> {
+export async function uploadScreenshot(id: string, file: File): Promise<void> {
   const dataBase64 = await fileToBase64(file);
   const res = await nestFetch(
     `${getApiUrl()}/founder-hub/suggestions/${id}/attachments`,
@@ -142,9 +139,12 @@ export async function listBeta(platform = "web"): Promise<BetaFeature[]> {
 }
 
 export async function setBetaOptOut(key: string, off: boolean) {
-  const res = await nestFetch(`${getApiUrl()}/founder-hub/beta/${key}/opt-out`, {
-    method: off ? "POST" : "DELETE",
-  });
+  const res = await nestFetch(
+    `${getApiUrl()}/founder-hub/beta/${key}/opt-out`,
+    {
+      method: off ? "POST" : "DELETE",
+    },
+  );
   return parse<BetaFeature[]>(res, "Could not update early access");
 }
 
@@ -155,7 +155,9 @@ export async function getNoticePrefs(): Promise<NoticePrefs> {
   return parse(res, "Could not load notification preferences");
 }
 
-export async function saveNoticePrefs(prefs: NoticePrefs): Promise<NoticePrefs> {
+export async function saveNoticePrefs(
+  prefs: NoticePrefs,
+): Promise<NoticePrefs> {
   const res = await nestFetch(
     `${getApiUrl()}/founder-hub/notification-preferences`,
     {
@@ -189,7 +191,10 @@ export async function getInboxThread(id: string): Promise<HubSuggestion> {
   return parse(res, "Could not load thread");
 }
 
-export async function inboxReply(id: string, body: string) {
+export async function inboxReply(
+  id: string,
+  body: string,
+): Promise<HubSuggestion> {
   const res = await nestFetch(`${getApiUrl()}/founder-hub/inbox/${id}/reply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -198,7 +203,10 @@ export async function inboxReply(id: string, body: string) {
   return parse(res, "Could not send reply");
 }
 
-export async function inboxNote(id: string, body: string) {
+export async function inboxNote(
+  id: string,
+  body: string,
+): Promise<HubSuggestion> {
   const res = await nestFetch(`${getApiUrl()}/founder-hub/inbox/${id}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -207,7 +215,10 @@ export async function inboxNote(id: string, body: string) {
   return parse(res, "Could not save note");
 }
 
-export async function inboxStatus(id: string, status: string) {
+export async function inboxStatus(
+  id: string,
+  status: string,
+): Promise<HubSuggestion> {
   const res = await nestFetch(`${getApiUrl()}/founder-hub/inbox/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -216,7 +227,10 @@ export async function inboxStatus(id: string, status: string) {
   return parse(res, "Could not change status");
 }
 
-export async function markInboxRead(id: string, read: boolean) {
+export async function markInboxRead(
+  id: string,
+  read: boolean,
+): Promise<HubSuggestion> {
   const res = await nestFetch(
     `${getApiUrl()}/founder-hub/inbox/${id}/${read ? "read" : "unread"}`,
     { method: "POST" },

@@ -937,7 +937,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
