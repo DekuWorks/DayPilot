@@ -26,6 +26,8 @@ import {
 } from "@/lib/calendar-connection-ui";
 import { APPLE_CALENDAR_DEEP_LINK } from "@/lib/apple-calendar-deeplink";
 import { formatWhen } from "@/lib/format-when";
+import * as billingApi from "@/lib/billing-api";
+import { connectionLimitFor, isPaidSubscription } from "@/lib/billing-api";
 
 export default function SyncPage() {
   const [connections, setConnections] = useState<CalendarConnection[]>([]);
@@ -35,6 +37,9 @@ export default function SyncPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [connectionCap, setConnectionCap] = useState<number | null | undefined>(
+    undefined,
+  );
   const searchParams = useSearchParams();
 
   const connected = searchParams.get("connected");
@@ -54,6 +59,17 @@ export default function SyncPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    billingApi
+      .getSubscription()
+      .then((sub) => {
+        if (cancelled) return;
+        setConnectionCap(
+          isPaidSubscription(sub) ? null : connectionLimitFor(sub),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setConnectionCap(1);
+      });
     reload()
       .catch((e) => {
         if (!cancelled) {
@@ -86,12 +102,24 @@ export default function SyncPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, err, outlookTone, googleTone]);
 
+  const atConnectionCap =
+    connectionCap != null && connections.length >= connectionCap;
   const hint = syncAllHint(rows);
   const latest = latestSyncAt(rows);
   const busy = !!actionLoading;
 
-  async function handleConnect(provider: CalendarProviderUi["id"]) {
+  async function handleConnect(
+    provider: CalendarProviderUi["id"],
+    reconnect = false,
+  ) {
     if (provider === "apple") return;
+    const atCap = connectionCap != null && connections.length >= connectionCap;
+    if (!reconnect && atCap) {
+      setError(
+        "Free includes 1 external calendar connection. Upgrade to Pro in the DayPilot iOS app to connect more.",
+      );
+      return;
+    }
     setError("");
     setActionLoading(provider);
     try {
@@ -210,10 +238,11 @@ export default function SyncPage() {
                 busy={busy}
                 connecting={actionLoading === row.id}
                 disconnecting={actionLoading === (row.connectionId ?? row.id)}
+                subscribeLocked={atConnectionCap && row.tone === "notConnected"}
                 onConnect={() => void handleConnect(row.id)}
                 onReconnect={
                   row.canReconnect
-                    ? () => void handleConnect(row.id)
+                    ? () => void handleConnect(row.id, true)
                     : undefined
                 }
                 onDisconnect={
@@ -251,6 +280,7 @@ function ProviderCard({
   busy,
   connecting,
   disconnecting,
+  subscribeLocked,
   onConnect,
   onReconnect,
   onDisconnect,
@@ -259,6 +289,7 @@ function ProviderCard({
   busy: boolean;
   connecting: boolean;
   disconnecting: boolean;
+  subscribeLocked?: boolean;
   onConnect: () => void;
   onReconnect?: () => void;
   onDisconnect?: () => void;
@@ -289,8 +320,9 @@ function ProviderCard({
       {row.id === "apple" && row.tone === "notConnected" ? (
         <div className="space-y-3">
           <p className="text-sm text-[var(--text-secondary)]">
-            Open DayPilot on your iPhone to allow calendar access. Events then
-            appear here automatically (read-only on web).
+            Open DayPilot on your iPhone to allow calendar access. Free includes
+            1 external calendar connection. Events then appear here
+            automatically (read-only on web).
           </p>
           <div className="flex flex-wrap gap-2">
             <a
@@ -309,7 +341,16 @@ function ProviderCard({
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
+          {subscribeLocked && row.id !== "apple" ? (
+            <Link
+              href="/billing"
+              className="text-sm font-medium text-[var(--brand-500)] hover:underline"
+            >
+              Upgrade to Pro in the iOS app to connect more
+            </Link>
+          ) : null}
           {row.tone === "notConnected" &&
+          !subscribeLocked &&
           ssoBrandForProvider(row.id) &&
           row.id !== "apple" ? (
             <div className="w-full max-w-xs">

@@ -77,9 +77,65 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "9.99",
+          "displayPrice" : "5.00",
           "familyShareable" : false,
           "groupNumber" : 1,
+          "internalID" : "21480021",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Founding 25. Every Pro feature for the first 25 paid members.",
+              "displayName" : "Founding 25",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "daypilot.pro.founding.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Founding 25 Monthly",
+          "subscriptionGroupID" : "21480001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "10.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "21480022",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro. Advanced scheduling, booking, and AI tools.",
+              "displayName" : "Pro",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "daypilot.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "21480001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
           "internalID" : "21480011",
           "introductoryOffer" : null,
           "localizations" : [
@@ -107,7 +163,7 @@
           ],
           "displayPrice" : "29.99",
           "familyShareable" : false,
-          "groupNumber" : 2,
+          "groupNumber" : 4,
           "internalID" : "21480012",
           "introductoryOffer" : null,
           "localizations" : [
@@ -135,7 +191,7 @@
           ],
           "displayPrice" : "99.99",
           "familyShareable" : false,
-          "groupNumber" : 3,
+          "groupNumber" : 5,
           "internalID" : "21480013",
           "introductoryOffer" : null,
           "localizations" : [

@@ -48,12 +48,12 @@ From the **repo root**:
    ```
 2. Open `.env` and set these **required** values (edit the existing lines or uncomment):
 
-   | Variable | Example value | Notes |
-   |----------|----------------|--------|
-   | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/daypilot` | Match your Postgres user/password/db. |
-   | `JWT_SECRET` | `your-super-secret-key-at-least-32-characters-long` | Min 32 characters; use a random string in production. |
-   | `PORT` | `3001` | API port (use 3001 if web runs on 3000). |
-   | `CORS_ORIGIN` | `http://localhost:3000` | Frontend origin (Next.js dev is usually 3000). |
+   | Variable       | Example value                                            | Notes                                                 |
+   | -------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+   | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/daypilot` | Match your Postgres user/password/db.                 |
+   | `JWT_SECRET`   | `your-super-secret-key-at-least-32-characters-long`      | Min 32 characters; use a random string in production. |
+   | `PORT`         | `3001`                                                   | API port (use 3001 if web runs on 3000).              |
+   | `CORS_ORIGIN`  | `http://localhost:3000`                                  | Frontend origin (Next.js dev is usually 3000).        |
 
 3. Save the file. Do **not** commit `.env` (it’s in `.gitignore`).
 
@@ -171,7 +171,7 @@ STRIPE_PRICE_PERSONAL=<paste Price ID from Stripe>
 
 - Use your **Secret key** for `STRIPE_SECRET_KEY`.
 - Leave `STRIPE_WEBHOOK_SECRET` empty for now; you’ll set it in Step 2.5.
-- Use the Price ID(s) you copied. If you only have one price, set `STRIPE_PRICE_PERSONAL`; the app can use that for “Upgrade.”
+- Stripe price IDs are only for old webhook mapping. They are not the website purchase path.
 
 ---
 
@@ -201,27 +201,17 @@ When you deploy the API to a **public URL** (e.g. `https://api.daypilot.co`):
 
 ---
 
-### Step 2.6 — Optional: “Upgrade” button on the Web app
+### Step 2.6 — Website checkout stays in the iOS app
 
-In `apps/web/.env.local` add (use one Price ID, e.g. Personal):
-
-```env
-NEXT_PUBLIC_STRIPE_PRICE_ID=price_YOUR_PRICE_ID
-```
-
-Redeploy or restart the web app. The Billing page will show an “Upgrade” button that starts Stripe Checkout.
+Do not add a Stripe Checkout button on the website. Founding 25 and Pro are bought in the DayPilot iOS app. `POST /billing/checkout-session` refuses new web checkout.
 
 ---
 
-### Step 2.7 — Test payments (test mode)
+### Step 2.7 — Test a purchase
 
-1. Go to **Billing** in the app and click **Upgrade** (if you set `NEXT_PUBLIC_STRIPE_PRICE_ID`).
-2. Use Stripe test card `4242 4242 4242 4242`, any future expiry, any CVC.
-3. After payment, you should return to the app and subscription status should update (webhook must be running via Stripe CLI locally, or deployed endpoint in prod).
+Buy Founding 25 or Pro in the iOS app (Part 2b). The website billing page should show the same plan. It does not start a card checkout.
 
-**Result:** Checkout, subscription sync, and (if configured) billing portal work.
-
-The Billing page also loads `GET /billing/plans` from the API (prices from `STRIPE_PRICE_*`). If that catalog is empty, it falls back to `NEXT_PUBLIC_STRIPE_PRICE_ID`. When the billing API is offline, the UI shows the Free plan with a soft notice (not a hard error).
+When the billing API is offline, the UI shows the Free plan with a soft notice.
 
 Webhook events handled: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
 
@@ -229,25 +219,37 @@ Webhook events handled: `checkout.session.completed`, `customer.subscription.cre
 
 ## Part 2b: Optional — App Store subscriptions (Flutter / iOS)
 
-Tiers align with web: **Free**, **Personal**, **Business**, **Enterprise**.
+Plans: **Free**, **Founding 25**, **Pro**. **Team** and **Enterprise** are coming soon and have no StoreKit product. The website does not sell plans.
 
-**Repo status:** Flutter IAP (`in_app_purchase`), `daypilot_flutter/ios/Runner/DayPilot.storekit`, and Nest `POST /billing/apple/confirm` are already wired. You still need App Store Connect products + a reachable API for entitlement sync.
+**Repo status:** Flutter IAP (`in_app_purchase`), `daypilot_flutter/ios/Runner/DayPilot.storekit`, and Nest `POST /billing/apple/confirm` are wired. You still need the new App Store Connect products plus a reachable API. Do not resubmit the rejected 1.0.1 binary and do not delete the existing products.
 
 ### Step 2b.1 — Create subscriptions in App Store Connect
 
-1. Open [App Store Connect](https://appstoreconnect.apple.com) → your DayPilot iOS app (create the app record if it does not exist yet — use your real Apple Developer account; this doc does not invent credentials).
-2. **Subscriptions** → create a subscription group (e.g. “DayPilot Plans”).
-3. Add auto-renewable products with these **Product IDs** (must match Flutter + Nest defaults):
+Do this by hand in App Store Connect. This repo does not submit builds or change territories.
 
-   | Product ID | Tier | StoreKit display price (local) |
-   |------------|------|--------------------------------|
-   | `co.daypilot.personal.monthly` | Personal | $9.99 / month |
-   | `co.daypilot.business.monthly` | Business | $29.99 / month |
-   | `co.daypilot.enterprise.monthly` | Enterprise | $99.99 / month |
+1. Open [App Store Connect](https://appstoreconnect.apple.com) → DayPilot iOS → **Subscriptions**.
+2. Use the existing subscription group, or create one named “DayPilot Pro”.
+3. Add two auto-renewable subscriptions. Product IDs must match the app:
 
-4. Set pricing, localization, and review information for each.
-5. If you use different Product IDs, set matching env on the API:
-   `APPLE_PRODUCT_PERSONAL`, `APPLE_PRODUCT_BUSINESS`, `APPLE_PRODUCT_ENTERPRISE`.
+   | Product ID                      | Plan        | Price             |
+   | ------------------------------- | ----------- | ----------------- |
+   | `daypilot.pro.founding.monthly` | Founding 25 | USD 5.00 / month  |
+   | `daypilot.pro.monthly`          | Pro         | USD 10.00 / month |
+
+4. Set localization, a review screenshot, and the Paid Apps agreement.
+5. Set availability to the United States and the United Kingdom only. Do not add other territories. Do not change the live 1.0 app, and do not resubmit the rejected 1.0.1 build 16. Create the new products so they are not attached to that rejected submission.
+6. Leave these existing products in place. Do not delete them. Current subscribers keep access:
+
+   | Product ID                       | Legacy plan |
+   | -------------------------------- | ----------- |
+   | `co.daypilot.personal.monthly`   | Personal    |
+   | `co.daypilot.business.monthly`   | Business    |
+   | `co.daypilot.enterprise.monthly` | Enterprise  |
+
+7. Do not create a Team or Enterprise subscription.
+8. Apply `prisma/migrations/20261007170000_launch_pricing` to the API database before founding confirms. Do not run that against production from an agent.
+9. `FOUNDING_OFFER_ENABLED` defaults to on. Set it to `false` on the API to hide Founding 25 from new customers. Existing founding subscriptions can still renew.
+10. Optional env overrides: `APPLE_PRODUCT_FOUNDING`, `APPLE_PRODUCT_PRO`. Legacy overrides remain `APPLE_PRODUCT_PERSONAL`, `APPLE_PRODUCT_BUSINESS`, `APPLE_PRODUCT_ENTERPRISE`.
 
 ### Step 2b.2 — Local StoreKit testing (Xcode) — fastest path
 
@@ -277,21 +279,21 @@ No App Store Connect products or sandbox Apple ID required for this path.
 4. Build a TestFlight or development build **without** the StoreKit Configuration file selected (so the app talks to Sandbox, not the local `.storekit` file).
 5. Exercise Purchase / Restore on the Billing screen; confirm Nest updates the subscription when the API is online.
 
-**Result:** iOS users can buy Personal/Business/Enterprise; entitlements sync to the same subscription model as Stripe web users.
+**Result:** iOS users can buy Founding 25 or Pro. Team and Enterprise are waitlist only. Entitlements sync to the Nest subscription row. The website does not start Stripe Checkout.
 
-### Stripe Dashboard checklist (web) — when keys are ready
+### Stripe is not the purchase path
 
-Local/repo code already handles checkout, portal, plans, and Free fallback. Paste these into API env (never commit):
+The website does not sell plans. Do not add a Checkout button or a web Upgrade that charges a card. Founding 25 and Pro are bought in the DayPilot iOS app. Historical webhook env, if you still have old Stripe subscriptions:
 
-| Env var | Where to get it |
-|---------|-----------------|
-| `STRIPE_SECRET_KEY` | Stripe → Developers → API keys (`sk_test_…` / `sk_live_…`) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe → Developers → Webhooks → endpoint signing secret (`whsec_…`) |
-| `STRIPE_PRICE_PERSONAL` | Product catalog → Price ID (`price_…`) |
-| `STRIPE_PRICE_BUSINESS` | optional |
-| `STRIPE_PRICE_ENTERPRISE` | optional |
-| `FRONTEND_URL` | `https://www.daypilot.co` in prod |
-| `NEXT_PUBLIC_STRIPE_PRICE_ID` | optional single-plan fallback in `apps/web` / Pages vars |
+| Env var                       | Where to get it                                                      |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`           | Stripe → Developers → API keys (`sk_test_…` / `sk_live_…`)           |
+| `STRIPE_WEBHOOK_SECRET`       | Stripe → Developers → Webhooks → endpoint signing secret (`whsec_…`) |
+| `STRIPE_PRICE_PERSONAL`       | Product catalog → Price ID (`price_…`)                               |
+| `STRIPE_PRICE_BUSINESS`       | optional                                                             |
+| `STRIPE_PRICE_ENTERPRISE`     | optional                                                             |
+| `FRONTEND_URL`                | `https://www.daypilot.co` in prod                                    |
+| `NEXT_PUBLIC_STRIPE_PRICE_ID` | optional single-plan fallback in `apps/web` / Pages vars             |
 
 Production webhook endpoint (after API is public): `https://api.daypilot.co/billing/webhook`  
 Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.  
@@ -465,13 +467,13 @@ Rebuild/restart the web app. Frontend errors will be sent to Sentry.
 
 ## Checklist summary
 
-| Step | What | Required? |
-|------|------|-----------|
-| 1.1–1.7 | Postgres, API env, migrations, start API, Web env, start Web, verify auth | ✅ Yes |
-| 2.1–2.7 | Stripe keys, webhook, price IDs, test checkout | Optional |
-| 3.1–3.4 | Google OAuth client, Calendar API, env, test Connect Google | Optional |
-| 4.1–4.2 | OpenAI or Anthropic (or compatible) key, env | Optional |
-| 5.1–5.3 | Sentry project, DSN for API and Web | Optional |
-| 6.1–6.5 | Deploy DB, API, Web; CORS; Google/Stripe production | When going live |
+| Step    | What                                                                      | Required?       |
+| ------- | ------------------------------------------------------------------------- | --------------- |
+| 1.1–1.7 | Postgres, API env, migrations, start API, Web env, start Web, verify auth | ✅ Yes          |
+| 2.1–2.7 | Stripe keys, webhook, price IDs, test checkout                            | Optional        |
+| 3.1–3.4 | Google OAuth client, Calendar API, env, test Connect Google               | Optional        |
+| 4.1–4.2 | OpenAI or Anthropic (or compatible) key, env                              | Optional        |
+| 5.1–5.3 | Sentry project, DSN for API and Web                                       | Optional        |
+| 6.1–6.5 | Deploy DB, API, Web; CORS; Google/Stripe production                       | When going live |
 
 For more detail on deployment and env, see `docs/DEPLOYMENT.md` and `docs/WHAT_WORKS_AND_WHAT_TO_PLUG_IN.md`.

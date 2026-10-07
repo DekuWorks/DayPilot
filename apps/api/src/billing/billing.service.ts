@@ -1,9 +1,34 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
+import {
+  APPLE_CONFIRM_PERIOD_DAYS,
+  FREE_CALENDAR_CONNECTION_LIMIT,
+  decideFoundingClaim,
+  entitlementsForSubscription,
+  formatSubscriptionDisplayName,
+  foundingOfferEnabled,
+  foundingOfferSnapshot,
+  appleProductMapping as mapAppleProduct,
+  plansForWeb,
+  type AppleProductMapping,
+} from '@daypilot/lib';
 import { AuditService } from '../audit/audit.service';
+import { ACCESS_COOKIE, readCookie } from '../auth/auth-cookies';
+import { resolveJwtSecret } from '../common/jwt-secret';
 import { PrismaService } from '../prisma/prisma.service';
-import type { SubscriptionTier, SubscriptionStatus } from '../generated/prisma';
+import type { SubscriptionStatus, SubscriptionTier } from '../generated/prisma';
+
+export {
+  entitlementsForSubscription,
+  FREE_BOOKING_LINK_LIMIT,
+  FREE_CALENDAR_CONNECTION_LIMIT,
+} from '@daypilot/lib';
 
 const STRIPE_STATUS_MAP: Record<string, SubscriptionStatus> = {
   active: 'active',
@@ -50,205 +75,326 @@ export class BillingService {
         data: { userId },
       });
     }
+    const claim = await this.prisma.foundingClaim.findFirst({
+      where: { userId },
+      orderBy: { founderNumber: 'asc' },
+    });
+    const status = sub.status ?? 'active';
+    const entitlements = entitlementsForSubscription({
+      tier: sub.tier,
+      planId: sub.planId,
+      status,
+      currentPeriodEnd: sub.currentPeriodEnd,
+    });
+    const founderNumber =
+      entitlements.planId === 'founding_pro'
+        ? (sub.founderNumber ?? claim?.founderNumber ?? null)
+        : null;
     return {
       tier: sub.tier,
-      status: sub.status ?? 'active',
+      status,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       stripeCustomerId: sub.stripeCustomerId ?? null,
       configured: Boolean(this.stripe),
-    };
-  }
-
-  /** Public catalog of Stripe prices that are configured in env. */
-  listPlans() {
-    const plans: Array<{
-      tier: SubscriptionTier;
-      priceId: string;
-      label: string;
-      interval: 'month';
-    }> = [];
-    const personal = this.config.get<string>('STRIPE_PRICE_PERSONAL');
-    const business = this.config.get<string>('STRIPE_PRICE_BUSINESS');
-    const enterprise = this.config.get<string>('STRIPE_PRICE_ENTERPRISE');
-    if (personal) {
-      plans.push({
-        tier: 'Personal',
-        priceId: personal,
-        label: 'Personal',
-        interval: 'month',
-      });
-    }
-    if (business) {
-      plans.push({
-        tier: 'Business',
-        priceId: business,
-        label: 'Business',
-        interval: 'month',
-      });
-    }
-    if (enterprise) {
-      plans.push({
-        tier: 'Enterprise',
-        priceId: enterprise,
-        label: 'Enterprise',
-        interval: 'month',
-      });
-    }
-    return {
-      configured: Boolean(this.stripe),
-      plans,
+      displayName: formatSubscriptionDisplayName({
+        tier: sub.tier,
+        planId: sub.planId,
+        founderNumber,
+      }),
+      founderNumber,
+      ...entitlements,
     };
   }
 
   /**
-   * Confirm an App Store / Play Store purchase and map product → tier.
-   * Full App Store Server API verification can be enabled later via
-   * APPLE_IAP_ISSUER_ID / APPLE_IAP_KEY_ID / APPLE_IAP_PRIVATE_KEY.
-   * When APPLE_IAP_SKIP_VERIFY=1 (local/StoreKit testing), we trust the client.
+   * Free accounts may add one external calendar. Already-connected calendars
+   * are not passed through this check. Pro access removes the cap.
+   */
+  async assertCanAddCalendarConnection(
+    userId: string,
+    existingConnectionCount: number,
+  ) {
+    const sub = await this.getSubscription(userId);
+    if (sub.hasProAccess) return;
+    const limit = sub.calendarConnectionLimit ?? FREE_CALENDAR_CONNECTION_LIMIT;
+    if (existingConnectionCount < limit) return;
+    throw new ForbiddenException(
+      'Free includes 1 external calendar connection. Upgrade to Pro in the DayPilot iOS app to connect more.',
+    );
+  }
+
+  /** Marketing catalog. Purchases happen in the iOS app, not via Stripe price IDs. */
+  listCatalog() {
+    return { plans: plansForWeb() };
+  }
+
+  listPlans() {
+    return this.listCatalog();
+  }
+
+  async getFoundingOffer() {
+    const offerEnabled = foundingOfferEnabled(
+      this.config.get<string>('FOUNDING_OFFER_ENABLED'),
+    );
+    const claimedCount = await this.prisma.foundingClaim.count();
+    return foundingOfferSnapshot({ claimedCount, offerEnabled });
+  }
+
+  /**
+   * Confirm an App Store purchase and map product → plan.
+   * The iOS app is the only checkout. Founder numbers are assigned here from
+   * the transaction id the app posts. The client cannot choose a number.
+   *
+   * Receipt cryptographic verification is not implemented. This method does
+   * not check the StoreKit JWS signature. Do not set APPLE_IAP_SKIP_VERIFY in
+   * production; that flag is not a signature check and is unused here.
+   *
+   * Apple billing-retry grace is not applied. There is no App Store Server
+   * Notification pipeline, so access lasts until currentPeriodEnd (30 days
+   * from the last confirm or restore). A renewal extends that only when the
+   * app posts another confirm for the same original transaction id.
    */
   async confirmApplePurchase(
     userId: string,
-    input: { productId: string; transactionId: string },
+    input: {
+      productId: string;
+      transactionId: string;
+      originalTransactionId?: string;
+    },
   ) {
-    const tier = this.appleProductIdToTier(input.productId);
-    if (!tier) {
+    const mapping = this.appleProductMapping(input.productId);
+    if (!mapping) {
       throw new BadRequestException(
         `Unknown App Store product: ${input.productId}`,
       );
     }
-    const skip =
-      this.config.get<string>('APPLE_IAP_SKIP_VERIFY') === '1' ||
-      this.config.get<string>('NODE_ENV') !== 'production';
-    if (!skip) {
-      // Production path: require a verified transaction id at minimum.
-      // Hook App Store Server API here when keys are configured.
-      if (!input.transactionId?.trim()) {
-        throw new BadRequestException('Missing transactionId');
-      }
-      const hasAppleKeys =
-        Boolean(this.config.get<string>('APPLE_IAP_ISSUER_ID')) &&
-        Boolean(this.config.get<string>('APPLE_IAP_KEY_ID'));
-      if (!hasAppleKeys) {
-        throw new BadRequestException(
-          'Apple IAP verification is not configured. Set APPLE_IAP_* or APPLE_IAP_SKIP_VERIFY=1 for StoreKit testing.',
-        );
-      }
+    const transactionId = input.transactionId?.trim();
+    if (!transactionId) {
+      throw new BadRequestException('Missing transactionId');
+    }
+    const originalTransactionId =
+      input.originalTransactionId?.trim() || transactionId;
+    const periodEnd = new Date(
+      Date.now() + APPLE_CONFIRM_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    let founderNumber: number | null = null;
+    if (mapping.founding) {
+      const reserved = await this.reserveFoundingSpot({
+        userId,
+        originalTransactionId,
+        latestTransactionId: transactionId,
+        productId: input.productId,
+        periodEnd,
+      });
+      founderNumber = reserved.founderNumber;
     }
 
-    const existing = await this.prisma.subscription.findFirst({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
+    await this.upsertAppleSubscription({
+      userId,
+      tier: mapping.tier,
+      planId: mapping.planId,
+      founderNumber,
+      periodEnd,
+      originalTransactionId,
     });
-    const data = {
-      tier,
-      status: 'active' as SubscriptionStatus,
-      // Store Apple transaction id in stripeSubscriptionId slot until a dedicated column exists
-      stripeSubscriptionId: `apple:${input.transactionId}`,
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    };
-    if (existing) {
-      await this.prisma.subscription.update({
-        where: { id: existing.id },
-        data,
-      });
-    } else {
-      await this.prisma.subscription.create({
-        data: { userId, ...data },
-      });
-    }
     await this.audit.log({
       action: 'billing.apple_purchase_confirmed',
       entityType: 'subscription',
       userId,
       metadata: {
         productId: input.productId,
-        transactionId: input.transactionId,
-        tier,
+        transactionId,
+        originalTransactionId,
+        tier: mapping.tier,
+        planId: mapping.planId,
+        founderNumber,
       },
     });
     return this.getSubscription(userId);
   }
 
-  private appleProductIdToTier(productId: string): SubscriptionTier | null {
-    const personal =
-      this.config.get<string>('APPLE_PRODUCT_PERSONAL') ??
-      'co.daypilot.personal.monthly';
-    const business =
-      this.config.get<string>('APPLE_PRODUCT_BUSINESS') ??
-      'co.daypilot.business.monthly';
-    const enterprise =
-      this.config.get<string>('APPLE_PRODUCT_ENTERPRISE') ??
-      'co.daypilot.enterprise.monthly';
-    if (productId === personal) return 'Personal';
-    if (productId === business) return 'Business';
-    if (productId === enterprise) return 'Enterprise';
-    return null;
+  optionalAccessUserId(req: {
+    headers?: { authorization?: string; cookie?: string };
+  }): string | null {
+    const header = req.headers?.authorization;
+    const bearer = header?.toLowerCase().startsWith('bearer ')
+      ? header.slice(7).trim()
+      : '';
+    const token =
+      bearer || readCookie(req.headers?.cookie, ACCESS_COOKIE) || '';
+    if (!token) return null;
+    try {
+      const payload = jwt.verify(
+        token,
+        resolveJwtSecret(this.config.get<string>('JWT_SECRET')),
+      ) as { sub?: string; type?: string };
+      if (payload.type !== 'access' || !payload.sub) return null;
+      return payload.sub;
+    } catch {
+      return null;
+    }
   }
 
-  private async getOrCreateStripeCustomerInternal(
-    userId: string,
-    email: string,
-  ): Promise<string> {
-    const sub = await this.prisma.subscription.findFirst({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
+  async joinWaitlist(
+    userId: string | null,
+    input: {
+      email: string;
+      requestedPlan: 'team' | 'enterprise';
+      companyName?: string;
+      teamSize?: string;
+      marketingConsent?: boolean;
+    },
+  ) {
+    const email = input.email.trim().toLowerCase();
+    const requestedPlan = input.requestedPlan;
+    const companyName = input.companyName?.trim() || null;
+    const teamSize = input.teamSize?.trim() || null;
+    const marketingConsent = input.marketingConsent === true;
+    const existing = await this.prisma.planWaitlistEntry.findUnique({
+      where: { email_requestedPlan: { email, requestedPlan } },
     });
-    const stripe = this.ensureStripe();
-    if (sub?.stripeCustomerId) return sub.stripeCustomerId;
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length > 0) {
-      const customerId = customers.data[0].id;
-      if (sub) {
-        await this.prisma.subscription.update({
-          where: { id: sub.id },
-          data: { stripeCustomerId: customerId },
-        });
-      } else {
-        await this.prisma.subscription.create({
-          data: { userId, stripeCustomerId: customerId },
-        });
-      }
-      return customerId;
-    }
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { user_id: userId },
-    });
-    if (sub) {
-      await this.prisma.subscription.update({
-        where: { id: sub.id },
-        data: { stripeCustomerId: customer.id },
+    if (existing) {
+      await this.prisma.planWaitlistEntry.update({
+        where: { id: existing.id },
+        data: {
+          companyName,
+          teamSize,
+          marketingConsent,
+          ...(userId ? { userId } : {}),
+        },
       });
     } else {
-      await this.prisma.subscription.create({
-        data: { userId, stripeCustomerId: customer.id },
+      await this.prisma.planWaitlistEntry.create({
+        data: {
+          email,
+          requestedPlan,
+          companyName,
+          teamSize,
+          marketingConsent,
+          userId,
+        },
       });
     }
-    return customer.id;
+    return { ok: true, requestedPlan };
+  }
+
+  private appleProductMapping(productId: string): AppleProductMapping | null {
+    return mapAppleProduct(productId, {
+      founding: this.config.get<string>('APPLE_PRODUCT_FOUNDING'),
+      pro: this.config.get<string>('APPLE_PRODUCT_PRO'),
+      personal: this.config.get<string>('APPLE_PRODUCT_PERSONAL'),
+      business: this.config.get<string>('APPLE_PRODUCT_BUSINESS'),
+      enterprise: this.config.get<string>('APPLE_PRODUCT_ENTERPRISE'),
+    });
+  }
+
+  /**
+   * Locks founding rows, then applies decideFoundingClaim. A repeat confirm
+   * for the same original transaction renews. A 26th new transaction is
+   * rejected. An expired claim stays in the table.
+   */
+  private async reserveFoundingSpot(input: {
+    userId: string;
+    originalTransactionId: string;
+    latestTransactionId: string;
+    productId: string;
+    periodEnd: Date;
+  }) {
+    const offerEnabled = foundingOfferEnabled(
+      this.config.get<string>('FOUNDING_OFFER_ENABLED'),
+    );
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(21480025)`;
+      const rows = await tx.foundingClaim.findMany();
+      const decision = decideFoundingClaim({
+        claims: rows.map((row) => ({
+          id: row.id,
+          founderNumber: row.founderNumber,
+          originalTransactionId: row.originalTransactionId,
+          userId: row.userId,
+          periodEnd: row.periodEnd,
+        })),
+        userId: input.userId,
+        originalTransactionId: input.originalTransactionId,
+        now: new Date(),
+        offerEnabled,
+      });
+      if (decision.action === 'reject') {
+        const message =
+          decision.reason === 'closed'
+            ? 'Founding 25 is closed. Pro is the paid plan.'
+            : decision.reason === 'lost'
+              ? 'The founding rate ended with that subscription and cannot be reclaimed.'
+              : 'That App Store transaction is already linked to another DayPilot account.';
+        throw new BadRequestException(message);
+      }
+      if (decision.action === 'renew') {
+        await tx.foundingClaim.update({
+          where: { id: decision.claimId },
+          data: {
+            latestTransactionId: input.latestTransactionId,
+            productId: input.productId,
+            periodEnd: input.periodEnd,
+            userId: input.userId,
+          },
+        });
+        return { founderNumber: decision.founderNumber };
+      }
+      await tx.foundingClaim.create({
+        data: {
+          founderNumber: decision.founderNumber,
+          originalTransactionId: input.originalTransactionId,
+          latestTransactionId: input.latestTransactionId,
+          userId: input.userId,
+          productId: input.productId,
+          periodEnd: input.periodEnd,
+        },
+      });
+      return { founderNumber: decision.founderNumber };
+    });
+  }
+
+  private async upsertAppleSubscription(input: {
+    userId: string;
+    tier: SubscriptionTier;
+    planId: string;
+    founderNumber: number | null;
+    periodEnd: Date;
+    originalTransactionId: string;
+  }) {
+    const existing = await this.prisma.subscription.findFirst({
+      where: { userId: input.userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const data = {
+      tier: input.tier,
+      planId: input.planId,
+      founderNumber: input.founderNumber,
+      status: 'active' as SubscriptionStatus,
+      stripeSubscriptionId: `apple:${input.originalTransactionId}`,
+      currentPeriodEnd: input.periodEnd,
+    };
+    if (existing) {
+      await this.prisma.subscription.update({
+        where: { id: existing.id },
+        data,
+      });
+      return;
+    }
+    await this.prisma.subscription.create({
+      data: { userId: input.userId, ...data },
+    });
   }
 
   async createCheckoutSession(
-    userId: string,
-    userEmail: string,
-    priceId: string,
-  ) {
-    const stripe = this.ensureStripe();
-    const customerId = await this.getOrCreateStripeCustomerInternal(
-      userId,
-      userEmail,
+    _userId: string,
+    _userEmail: string,
+    _priceId: string,
+  ): Promise<{ url: string | null }> {
+    throw new BadRequestException(
+      'Subscriptions are purchased in the DayPilot iOS app.',
     );
-    const frontendUrl =
-      this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { user_id: userId },
-      success_url: `${frontendUrl}/billing?success=true`,
-      cancel_url: `${frontendUrl}/billing?canceled=true`,
-    });
-    return { url: session.url };
   }
 
   async createPortalSession(userId: string) {

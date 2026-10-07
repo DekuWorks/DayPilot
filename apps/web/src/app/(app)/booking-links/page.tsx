@@ -6,6 +6,8 @@ import { Button } from "@/components/Button";
 import { useAuth } from "@/providers/AuthProvider";
 import * as bookingApi from "@/lib/booking-supabase";
 import type { BookingLink } from "@/lib/booking-supabase";
+import * as billingApi from "@/lib/billing-api";
+import { isPaidSubscription } from "@/lib/billing-api";
 
 export default function BookingLinksPage() {
   const { user } = useAuth();
@@ -15,6 +17,7 @@ export default function BookingLinksPage() {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("Book time with me");
   const [creating, setCreating] = useState(false);
+  const [paid, setPaid] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState("");
   const slugPlaceholder = "your-slug";
 
@@ -23,7 +26,12 @@ export default function BookingLinksPage() {
     setLoading(true);
     setError("");
     try {
-      setLinks(await bookingApi.listMyBookingLinks(user.id));
+      const [nextLinks, sub] = await Promise.all([
+        bookingApi.listMyBookingLinks(user.id),
+        billingApi.getSubscription().catch(() => null),
+      ]);
+      setLinks(nextLinks);
+      setPaid(isPaidSubscription(sub));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -51,6 +59,12 @@ export default function BookingLinksPage() {
       .replace(/[^a-z0-9-]/g, "");
     if (clean.length < 3) {
       setError("Slug must be at least 3 characters (a-z, 0-9, -)");
+      return;
+    }
+    if (!paid && links.length >= 1) {
+      setError(
+        "Free includes one booking link. Subscribe in the DayPilot iOS app for more.",
+      );
       return;
     }
     setCreating(true);
@@ -111,36 +125,49 @@ export default function BookingLinksPage() {
 
       {error && <p className="text-sm text-[var(--error)]">{error}</p>}
 
-      <form
-        onSubmit={handleCreate}
-        className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4"
-      >
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">
-          New link
-        </h2>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
-          className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
-        />
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[var(--text-tertiary)]">/book/</span>
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder={slugPlaceholder}
-            aria-label="Booking link slug"
-            className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
-          />
-          <Button type="submit" disabled={creating}>
-            {creating ? "Creating…" : "Create"}
-          </Button>
-        </div>
-        <p className="text-xs text-[var(--text-tertiary)]">
-          Defaults to Mon–Fri 9:00–17:00 availability.
+      {!paid && links.length >= 1 ? (
+        <p className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4 text-sm text-[var(--text-secondary)]">
+          Free includes one booking link.{" "}
+          <Link
+            href="/billing"
+            className="font-medium text-[var(--brand-500)] hover:underline"
+          >
+            Subscribe in the iOS app
+          </Link>{" "}
+          for more. The plan applies here too.
         </p>
-      </form>
+      ) : (
+        <form
+          onSubmit={handleCreate}
+          className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4"
+        >
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+            New link
+          </h2>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[var(--text-tertiary)]">/book/</span>
+            <input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder={slugPlaceholder}
+              aria-label="Booking link slug"
+              className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
+            />
+            <Button type="submit" disabled={creating}>
+              {creating ? "Creating…" : "Create"}
+            </Button>
+          </div>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Defaults to Mon–Fri 9:00–17:00 availability.
+          </p>
+        </form>
+      )}
 
       <ul className="space-y-2">
         {loading ? (

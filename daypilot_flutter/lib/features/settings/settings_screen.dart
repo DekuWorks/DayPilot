@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/providers/repository_providers.dart';
@@ -254,6 +255,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                 ),
                 const SizedBox(height: 8),
+                Text(
+                  'Founding 25 and Pro are bought in this app. Team and Enterprise are coming soon.',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => context.push('/billing'),
+                  child: const Text('View plan'),
+                ),
+                const SizedBox(height: 24),
                 Text(
                   'Permanently delete your DayPilot account and associated data. This cannot be undone.',
                   style: TextStyle(

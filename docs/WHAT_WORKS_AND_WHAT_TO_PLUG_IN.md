@@ -8,36 +8,36 @@ Overview of what’s **implemented and working** vs what **you must configure** 
 
 ### Backend (NestJS API — `apps/api`)
 
-| Area | Status | Notes |
-|------|--------|--------|
-| **Auth** | ✅ | Signup, login, logout, refresh token, JWT, `GET /auth/me`. |
-| **Billing** | ✅ | Stripe: get subscription, list plans, checkout session, billing portal, webhook (checkout/subscription created/updated/deleted). App Store: `POST /billing/apple/confirm` maps IAP product IDs → tiers (StoreKit testing via `APPLE_IAP_SKIP_VERIFY`). |
-| **Events** | ✅ | CRUD events (create, list, update, delete), JWT-protected. |
-| **AI** | ✅ | `POST /ai/suggest-schedule` (OpenAI or Anthropic or OpenAI-compatible). |
-| **Calendar connections** | ✅ | Google OAuth: connect, disconnect, list calendars, discover. Outlook/Microsoft wired in code. |
-| **Real-time** | ✅ | WebSocket gateway (events/team presence). |
-| **Health** | ✅ | `GET /health` (DB check), `GET /metrics` (uptime, request count). |
-| **Observability** | ✅ | Request logging, Sentry (optional), audit logs (auth, billing, events). |
-| **Production** | ✅ | Rate limiting, CORS (comma-separated origins), validation, env schema (JWT_SECRET in prod). |
+| Area                     | Status | Notes                                                                                                                                                 |
+| ------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**                 | ✅     | Signup, login, logout, refresh token, JWT, `GET /auth/me`.                                                                                            |
+| **Billing**              | ✅     | Plans and Founding spot count are public. Purchases are StoreKit in the iOS app (`POST /billing/apple/confirm`). The website does not start checkout. |
+| **Events**               | ✅     | CRUD events (create, list, update, delete), JWT-protected.                                                                                            |
+| **AI**                   | ✅     | `POST /ai/suggest-schedule` (OpenAI or Anthropic or OpenAI-compatible).                                                                               |
+| **Calendar connections** | ✅     | Google OAuth: connect, disconnect, list calendars, discover. Outlook/Microsoft wired in code.                                                         |
+| **Real-time**            | ✅     | WebSocket gateway (events/team presence).                                                                                                             |
+| **Health**               | ✅     | `GET /health` (DB check), `GET /metrics` (uptime, request count).                                                                                     |
+| **Observability**        | ✅     | Request logging, Sentry (optional), audit logs (auth, billing, events).                                                                               |
+| **Production**           | ✅     | Rate limiting, CORS (comma-separated origins), validation, env schema (JWT_SECRET in prod).                                                           |
 
 ### Frontend (Next.js — `apps/web`)
 
-| Area | Status | Notes |
-|------|--------|--------|
-| **Auth** | ✅ | Login, signup, logout; token in localStorage; refresh; `AuthProvider` + `RequireAuth`. |
-| **App shell** | ✅ | Dashboard, Calendar, Integrations, Billing, Settings; protected routes. |
-| **Billing UI** | ✅ | Subscription status, “Upgrade” (Stripe Checkout), “Manage billing” (Stripe Portal). |
-| **Integrations** | ✅ | Connect Google, disconnect, discover calendars (uses API when `NEXT_PUBLIC_API_URL` set). |
-| **Calendar** | ✅ | Calendar view; events from API. |
-| **Pricing / Features** | ✅ | Marketing pages. |
-| **Error handling** | ✅ | Global error boundary; optional Sentry. |
+| Area                   | Status | Notes                                                                                                    |
+| ---------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| **Auth**               | ✅     | Login, signup, logout; token in localStorage; refresh; `AuthProvider` + `RequireAuth`.                   |
+| **App shell**          | ✅     | Dashboard, Calendar, Integrations, Billing, Settings; protected routes.                                  |
+| **Billing UI**         | ✅     | Plan status and Founding spots. Paid buttons open the DayPilot Daily App Store listing. No web checkout. |
+| **Integrations**       | ✅     | Connect Google, disconnect, discover calendars (uses API when `NEXT_PUBLIC_API_URL` set).                |
+| **Calendar**           | ✅     | Calendar view; events from API.                                                                          |
+| **Pricing / Features** | ✅     | Marketing pages.                                                                                         |
+| **Error handling**     | ✅     | Global error boundary; optional Sentry.                                                                  |
 
 ### Database (Prisma + PostgreSQL)
 
-| Area | Status | Notes |
-|------|--------|--------|
-| **Schema** | ✅ | Users, RefreshToken, Subscription, Event, Task, Organization, Team, CalendarConnection, AuditLog. |
-| **Migrations** | ✅ | `prisma/migrations`; run `pnpm db:migrate` (dev) or `pnpm db:migrate:deploy` (prod). |
+| Area           | Status | Notes                                                                                             |
+| -------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| **Schema**     | ✅     | Users, RefreshToken, Subscription, Event, Task, Organization, Team, CalendarConnection, AuditLog. |
+| **Migrations** | ✅     | `prisma/migrations`; run `pnpm db:migrate` (dev) or `pnpm db:migrate:deploy` (prod).              |
 
 So: **auth, billing, events, AI, calendar connections, real-time, health, metrics, audit, and production hardening are all implemented.** They work once the right env and external services are set.
 
@@ -78,15 +78,15 @@ So: **auth, billing, events, AI, calendar connections, real-time, health, metric
 **Webhook:**
 
 - In Stripe Dashboard: add endpoint `https://<your-api>/billing/webhook`, events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
-- App Store (Flutter): create products `co.daypilot.personal.monthly` (etc.), see SETUP_WALKTHROUGH Part 2b; optional `APPLE_PRODUCT_*` / `APPLE_IAP_*` env.
+- App Store (Flutter): create `daypilot.pro.founding.monthly` (USD 5/month) and `daypilot.pro.monthly` (USD 10/month). Do not delete `co.daypilot.personal.monthly`, `co.daypilot.business.monthly`, or `co.daypilot.enterprise.monthly`. See SETUP_WALKTHROUGH Part 2b. Website checkout stays iOS-only.
 - Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 - **Important:** Your API must send the **raw body** to the webhook (already done in `main.ts` with `rawBody`).
 
 **Web (`apps/web`):**
 
-- `NEXT_PUBLIC_STRIPE_PRICE_ID` — One Stripe Price ID to show “Upgrade” and redirect to Checkout (optional; omit to hide button).
+- Do not set a public Stripe price for website checkout. Purchases are in the iOS app.
 
-**Result:** Upgrade button, Checkout, Portal, and subscription sync after payment all work.
+**Result:** The website shows the plan bought on iOS. Stripe Checkout is not the purchase path.
 
 ---
 
@@ -140,21 +140,21 @@ So: **auth, billing, events, AI, calendar connections, real-time, health, metric
 
 ## 3. Env checklist (quick reference)
 
-| Variable | Where | Required? | Purpose |
-|----------|--------|-----------|---------|
-| `DATABASE_URL` | API | ✅ Yes | Postgres connection string. |
-| `JWT_SECRET` | API | ✅ Yes (prod: strong, not default) | Sign/verify JWTs. |
-| `PORT` | API | No (default 3001) | API server port. |
-| `CORS_ORIGIN` | API | ✅ Recommended in prod | Allowed frontend origin(s), comma-separated. |
-| `NEXT_PUBLIC_API_URL` | Web | ✅ Yes | API base URL (no trailing slash). |
-| `FRONTEND_URL` | API | For Stripe/OAuth | Frontend base URL for redirects. |
-| `STRIPE_SECRET_KEY` | API | For billing | Stripe secret key. |
-| `STRIPE_WEBHOOK_SECRET` | API | For subscription sync | Webhook signing secret. |
-| `STRIPE_PRICE_*` | API | For tiered checkout | Personal/Business/Enterprise price IDs. |
-| `NEXT_PUBLIC_STRIPE_PRICE_ID` | Web | Optional | Single price for “Upgrade” button. |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | API | For Google Calendar | OAuth credentials. |
-| `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` | API | For AI | AI provider keys; optional. |
-| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | API / Web | Optional | Error tracking. |
+| Variable                                    | Where     | Required?                          | Purpose                                                            |
+| ------------------------------------------- | --------- | ---------------------------------- | ------------------------------------------------------------------ |
+| `DATABASE_URL`                              | API       | ✅ Yes                             | Postgres connection string.                                        |
+| `JWT_SECRET`                                | API       | ✅ Yes (prod: strong, not default) | Sign/verify JWTs.                                                  |
+| `PORT`                                      | API       | No (default 3001)                  | API server port.                                                   |
+| `CORS_ORIGIN`                               | API       | ✅ Recommended in prod             | Allowed frontend origin(s), comma-separated.                       |
+| `NEXT_PUBLIC_API_URL`                       | Web       | ✅ Yes                             | API base URL (no trailing slash).                                  |
+| `FRONTEND_URL`                              | API       | For Stripe/OAuth                   | Frontend base URL for redirects.                                   |
+| `STRIPE_SECRET_KEY`                         | API       | For billing                        | Stripe secret key.                                                 |
+| `STRIPE_WEBHOOK_SECRET`                     | API       | For subscription sync              | Webhook signing secret.                                            |
+| `STRIPE_PRICE_*`                            | API       | For tiered checkout                | Personal/Business/Enterprise price IDs.                            |
+| `FOUNDING_OFFER_ENABLED`                    | API       | Optional                           | Unset keeps Founding 25 open. `false` closes it for new customers. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | API       | For Google Calendar                | OAuth credentials.                                                 |
+| `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`     | API       | For AI                             | AI provider keys; optional.                                        |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`     | API / Web | Optional                           | Error tracking.                                                    |
 
 ---
 

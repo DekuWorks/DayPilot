@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/config/daypilot_env.dart';
 import '../../core/providers/api_session_sync_provider.dart';
@@ -9,13 +8,14 @@ import '../../core/providers/calendar_connection_providers.dart';
 import '../../core/providers/calendar_refresh_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../data/repositories/calendar_connections_repository.dart';
-import '../../data/services/apple_calendar_service.dart';
 import '../../data/services/calendar_sync_service.dart';
+import '../billing/entitlements.dart';
 
-/// After sign-in, connect the obvious calendar once per session.
+/// After sign-in, refresh a calendar that is already connected.
 ///
-/// Google identity / expired Google token: silent refresh, or OAuth if missing.
-/// iOS: EventKit flow if not already connected and permission was not denied.
+/// Google or Outlook: silent refresh, or OAuth if the account is missing.
+/// Apple Calendar is not opened here. The system permission is requested
+/// only when the user taps Connect on Sync.
 class CalendarAutoConnectHost extends ConsumerStatefulWidget {
   const CalendarAutoConnectHost({super.key, required this.child});
 
@@ -91,15 +91,6 @@ class _CalendarAutoConnectHostState
       // Non-fatal — Profile/Sync still show honest status.
     }
 
-    if (!mounted) return;
-    await _maybeStartAppleEventKit(
-      userId: userId,
-      alreadyOffered:
-          prefs.getBool('calendar_autoconnect_apple_$userId') == true,
-      markOffered: () =>
-          prefs.setBool('calendar_autoconnect_apple_$userId', true),
-      repo: repo,
-    );
   }
 
   Future<void> _maybeRefreshOrConnectGoogle({
@@ -131,6 +122,13 @@ class _CalendarAutoConnectHostState
         ? hasGoogleIdentity
         : google.status == ConnectionValidationStatus.needsReconnect;
     if (!needsOauth || prefsOffered) return;
+    if (google == null &&
+        !await canAddCalendarConnection(
+          ref.read(nestApiSessionProvider),
+          connections.length,
+        )) {
+      return;
+    }
 
     await markOffered();
     try {
@@ -168,6 +166,13 @@ class _CalendarAutoConnectHostState
         ? hasMicrosoftIdentity
         : outlook.status == ConnectionValidationStatus.needsReconnect;
     if (!needsOauth || prefsOffered) return;
+    if (outlook == null &&
+        !await canAddCalendarConnection(
+          ref.read(nestApiSessionProvider),
+          connections.length,
+        )) {
+      return;
+    }
 
     await markOffered();
     final session =
@@ -189,33 +194,4 @@ class _CalendarAutoConnectHostState
     } catch (_) {}
   }
 
-  Future<void> _maybeStartAppleEventKit({
-    required String userId,
-    required bool alreadyOffered,
-    required Future<bool> Function() markOffered,
-    required CalendarConnectionsRepository repo,
-  }) async {
-    if (!AppleCalendarService.isSupported || alreadyOffered) return;
-
-    final apple = AppleCalendarService();
-    final permission = await apple.getCalendarPermissionStatus();
-    if (permission == CalendarPermissionState.denied ||
-        permission == CalendarPermissionState.restricted ||
-        permission == CalendarPermissionState.unavailable) {
-      await markOffered();
-      return;
-    }
-
-    try {
-      final status = await repo.getEventKitStatus();
-      final connections = (status['connections'] as List?) ?? const [];
-      if (connections.isNotEmpty) return;
-    } catch (_) {
-      return;
-    }
-
-    await markOffered();
-    if (!mounted) return;
-    context.push('/integrations/apple-calendar');
-  }
 }

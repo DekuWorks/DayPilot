@@ -1,162 +1,76 @@
-import { Button } from "@/components/Button";
+import type { Metadata } from "next";
+import { plansForWeb } from "@daypilot/lib";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { MarketingNav } from "@/components/MarketingNav";
+import { PlanCatalog } from "@/components/pricing/PlanCatalog";
 
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "Perfect for individuals getting started",
-    features: [
-      "Personal calendar",
-      "Basic event management",
-      "Recurring events",
-      "1 booking link",
-      "AI suggestions",
-    ],
-    cta: "Get Started",
-    href: "/signup",
-    highlight: false,
+const description =
+  "Free forever. Founding 25 is $5/month for the first 25 paid members. Pro is $10/month. Team is planned at $20/month and Enterprise is custom. Team and Enterprise are coming soon.";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description,
+  openGraph: {
+    title: "DayPilot pricing",
+    description,
   },
-  {
-    name: "Pro",
-    price: "$12",
-    period: "per month",
-    description: "For professionals who need more",
-    features: [
-      "Everything in Free",
-      "Unlimited booking links",
-      "Calendar sync (Google, Outlook, Apple)",
-      "Advanced AI scheduling",
-      "Priority support",
-      "Custom branding",
-    ],
-    cta: "Get started",
-    href: "/signup",
-    highlight: true,
-  },
-  {
-    name: "Team",
-    price: "$29",
-    period: "per month",
-    description: "For teams and small businesses",
-    features: [
-      "Everything in Pro",
-      "Team collaboration",
-      "Shared calendars",
-      "Organization management",
-      "Multi-location support",
-      "Admin controls",
-    ],
-    cta: "Contact Sales",
-    href: "mailto:sales@daypilot.co?subject=DayPilot%20Team%20plan",
-    highlight: false,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    description: "For large organizations",
-    features: [
-      "Everything in Team",
-      "Unlimited users",
-      "Custom integrations",
-      "Dedicated support",
-      "SLA guarantee",
-      "Custom training",
-    ],
-    cta: "Contact Sales",
-    href: "mailto:sales@daypilot.co?subject=DayPilot%20Enterprise%20plan",
-    highlight: false,
-  },
-];
+};
+
+function offerCatalog() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    name: "DayPilot plans",
+    itemListElement: plansForWeb().map((plan) => ({
+      "@type": "Offer",
+      name: plan.name,
+      description: plan.description,
+      priceCurrency: "USD",
+      ...(plan.marketingPrice === "Custom"
+        ? {}
+        : { price: plan.marketingPrice.replace("$", "") }),
+      availability:
+        plan.availability === "available"
+          ? "https://schema.org/InStock"
+          : "https://schema.org/PreOrder",
+    })),
+  };
+}
 
 export default function PricingPage() {
   return (
     <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(offerCatalog()) }}
+      />
       <MarketingNav />
-      <section className="container-width section-padding py-16 md:py-24 lg:py-32 text-center">
-        <div className="max-w-3xl mx-auto space-y-4 md:space-y-6">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--text-primary)] leading-tight px-4">
+      <section className="container-width section-padding py-16 text-center md:py-24 lg:py-32">
+        <div className="mx-auto max-w-3xl space-y-4 md:space-y-6">
+          <h1 className="px-4 text-3xl font-bold leading-tight text-[var(--text-primary)] sm:text-4xl md:text-5xl lg:text-6xl">
             Simple, Transparent <span className="gradient-text">Pricing</span>
           </h1>
-          <p className="text-base md:text-lg lg:text-xl text-[var(--text-secondary)] leading-relaxed px-4">
-            Choose a plan. Free stays free. Paid plans are billed after you sign
-            in.
+          <p className="px-4 text-base leading-relaxed text-[var(--text-secondary)] md:text-lg lg:text-xl">
+            Free stays free. Founding 25 and Pro are bought in the DayPilot iOS
+            app. Team and Enterprise are coming soon.
           </p>
         </div>
       </section>
       <section className="container-width section-padding pb-16 md:pb-24 lg:pb-32">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`glass-effect rounded-2xl p-6 md:p-8 flex flex-col ${
-                plan.highlight
-                  ? "border-2 border-[var(--brand-500)] shadow-xl scale-105 md:scale-110 relative"
-                  : "border border-[var(--border-subtle)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              }`}
-            >
-              {plan.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-[var(--brand-400)] to-[var(--brand-500)] text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">
-                    POPULAR
-                  </span>
-                </div>
-              )}
-              <div className="flex-1">
-                <h3 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-2">
-                  {plan.name}
-                </h3>
-                <div className="mb-2">
-                  <span className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-                    {plan.price}
-                  </span>
-                  {plan.period && (
-                    <span className="text-[var(--text-secondary)] ml-2 text-base md:text-lg">
-                      /{plan.period}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-[var(--text-secondary)] mb-6">
-                  {plan.description}
-                </p>
-                <ul className="space-y-2.5 md:space-y-3 mb-8">
-                  {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-start">
-                      <span className="text-[var(--brand-500)] mr-2 mt-0.5 font-bold">
-                        ✓
-                      </span>
-                      <span className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <Button
-                href={plan.href}
-                variant={plan.highlight ? "primary" : "outline"}
-                className="mt-auto w-full"
-              >
-                {plan.cta}
-              </Button>
-            </div>
-          ))}
-        </div>
+        <PlanCatalog />
       </section>
-      <section className="container-width section-padding pb-16 md:pb-24 lg:pb-32 text-center">
-        <div className="max-w-2xl mx-auto space-y-3 md:space-y-4 px-4">
-          <p className="text-base md:text-lg text-[var(--text-secondary)]">
-            Prices are shown in US dollars. A paid plan starts when you choose
-            it after sign-in. There is no separate 14-day trial.
+      <section className="container-width section-padding pb-16 text-center md:pb-24 lg:pb-32">
+        <div className="mx-auto max-w-2xl space-y-3 px-4 md:space-y-4">
+          <p className="text-base text-[var(--text-secondary)] md:text-lg">
+            Prices shown are the intended US dollar prices. The App Store shows
+            the price for your country. Paid plans are bought in the DayPilot
+            iOS app, and they apply on the website too.
           </p>
           <p className="text-sm text-[var(--text-secondary)]">
             Questions?{" "}
             <a
               href="mailto:hello@daypilot.co?subject=DayPilot%20question"
-              className="text-[var(--brand-500)] hover:underline font-medium"
+              className="font-medium text-[var(--brand-500)] hover:underline"
             >
               Contact us
             </a>

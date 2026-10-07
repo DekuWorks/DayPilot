@@ -11,6 +11,8 @@ import '../../core/widgets/feature_scaffold.dart';
 import '../../core/widgets/sso_brand_button.dart';
 import '../../data/services/apple_calendar_service.dart';
 import '../../domain/calendar/calendar_connection_ui.dart';
+import '../billing/entitlements.dart';
+import '../../core/providers/bootstrap_providers.dart';
 
 /// Profile → Sync: one status per provider, one Sync all button.
 class SyncScreen extends ConsumerStatefulWidget {
@@ -58,6 +60,25 @@ class _SyncScreenState extends ConsumerState<SyncScreen>
   }
 
   Future<void> _connect(String provider) async {
+    final connections =
+        ref.read(calendarConnectionsProvider).asData?.value ?? [];
+    final already = connections.any((c) => c.provider == provider);
+    if (!already) {
+      final allowed = await canAddCalendarConnection(
+        ref.read(nestApiSessionProvider),
+        connections.length,
+      );
+      if (!allowed) {
+        if (!mounted) return;
+        setState(
+          () => _error =
+              'Free includes 1 external calendar connection. Upgrade to Pro in Billing to connect more.',
+        );
+        context.push('/billing');
+        return;
+      }
+    }
+    if (!mounted) return;
     if (provider == 'apple') {
       if (!AppleCalendarService.isSupported) {
         setState(
