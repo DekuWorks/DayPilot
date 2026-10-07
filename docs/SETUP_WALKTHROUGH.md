@@ -237,7 +237,7 @@ Do this by hand in App Store Connect. This repo does not submit builds or change
    | `daypilot.pro.monthly`          | Pro         | USD 10.00 / month |
 
 4. Set localization, a review screenshot, and the Paid Apps agreement.
-5. Set availability to the United States and the United Kingdom only. Do not add other territories. Do not change the live 1.0 app, and do not resubmit the rejected 1.0.1 build 16. Create the new products so they are not attached to that rejected submission.
+5. Make the new subscriptions available in every App Store storefront, not only the United States and the United Kingdom. Do not change the live 1.0 app, and do not resubmit the rejected 1.0.1 build 16. Do not attach the new products to that rejected submission.
 6. Leave these existing products in place. Do not delete them. Current subscribers keep access:
 
    | Product ID                       | Legacy plan |
