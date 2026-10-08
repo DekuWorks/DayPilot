@@ -211,7 +211,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  'Manage your plan. Paid plans are bought with Apple.',
+                  'Subscriptions are bought in the DayPilot iOS app.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: DayPilotScheme.of(context).textSecondary,
                       ),
