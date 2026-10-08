@@ -14,8 +14,6 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
 import {
   AttachmentDto,
   BetaEnabledDto,
@@ -40,7 +38,7 @@ function run<T>(work: Promise<T>): Promise<T> {
 }
 
 @Controller('founder-hub')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 export class FounderHubController {
   constructor(private readonly hub: FounderHubService) {}
 
@@ -152,13 +150,11 @@ export class FounderHubController {
   }
 
   @Get('inbox/alerts')
-  @Roles('ADMIN')
   alerts(@Req() req: Authed) {
     return run(this.hub.alerts(req.user.id));
   }
 
   @Get('inbox')
-  @Roles('ADMIN')
   inbox(
     @Req() req: Authed,
     @Query('category') category?: string,
@@ -177,13 +173,11 @@ export class FounderHubController {
   }
 
   @Get('inbox/:id')
-  @Roles('ADMIN')
   inboxOne(@Req() req: Authed, @Param('id') id: string) {
     return run(this.hub.readInbox(req.user.id, id));
   }
 
   @Post('inbox/:id/reply')
-  @Roles('ADMIN')
   inboxReply(
     @Req() req: Authed,
     @Param('id') id: string,
@@ -193,7 +187,6 @@ export class FounderHubController {
   }
 
   @Post('inbox/:id/notes')
-  @Roles('ADMIN')
   inboxNote(
     @Req() req: Authed,
     @Param('id') id: string,
@@ -203,7 +196,6 @@ export class FounderHubController {
   }
 
   @Patch('inbox/:id')
-  @Roles('ADMIN')
   inboxStatus(
     @Req() req: Authed,
     @Param('id') id: string,
@@ -213,19 +205,16 @@ export class FounderHubController {
   }
 
   @Post('inbox/:id/read')
-  @Roles('ADMIN')
   markRead(@Req() req: Authed, @Param('id') id: string) {
     return run(this.hub.setInboxRead(req.user.id, id, true));
   }
 
   @Post('inbox/:id/unread')
-  @Roles('ADMIN')
   markUnread(@Req() req: Authed, @Param('id') id: string) {
     return run(this.hub.setInboxRead(req.user.id, id, false));
   }
 
   @Get('admin/suggestions')
-  @Roles('ADMIN')
   adminList(
     @Req() req: Authed,
     @Query('category') category?: string,
@@ -244,13 +233,11 @@ export class FounderHubController {
   }
 
   @Get('admin/beta')
-  @Roles('ADMIN')
   adminBeta(@Req() req: Authed) {
     return run(this.hub.listFeatureAdmin(req.user.id));
   }
 
   @Patch('admin/beta/:key')
-  @Roles('ADMIN')
   adminBetaToggle(
     @Req() req: Authed,
     @Param('key') key: string,
