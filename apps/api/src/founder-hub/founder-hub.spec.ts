@@ -109,14 +109,17 @@ describe('founder hub', () => {
     await expect(flow.accountFlags('admin-1')).resolves.toEqual({
       isOwner: true,
       unreadCount: 0,
+      isFoundingMember: false,
     });
     await expect(flow.accountFlags('founder-1')).resolves.toEqual({
       isOwner: false,
       unreadCount: 0,
+      isFoundingMember: true,
     });
     await expect(flow.accountFlags('org-1')).resolves.toEqual({
       isOwner: false,
       unreadCount: 0,
+      isFoundingMember: false,
     });
     expect(
       resolveHubOwner({
@@ -157,10 +160,12 @@ describe('founder hub', () => {
     await expect(flow.accountFlags('owner-user')).resolves.toEqual({
       isOwner: true,
       unreadCount: 0,
+      isFoundingMember: false,
     });
     await expect(flow.accountFlags('member')).resolves.toEqual({
       isOwner: false,
       unreadCount: 0,
+      isFoundingMember: false,
     });
     await expect(flow.listInbox('owner-user', {})).resolves.toEqual([]);
     await expect(flow.listInbox('member', {})).rejects.toMatchObject({
@@ -197,7 +202,11 @@ describe('founder hub', () => {
       created.suggestion.messages.some((m) => m.kind === 'internal_note'),
     ).toBe(false);
     const flags = await flow.accountFlags('admin-1');
-    expect(flags).toEqual({ isOwner: true, unreadCount: 1 });
+    expect(flags).toEqual({
+      isOwner: true,
+      unreadCount: 1,
+      isFoundingMember: false,
+    });
     const alerts = await flow.alerts('admin-1');
     expect(alerts.alerts[0].body).toContain('Week view density');
     expect(alerts.alerts[0].suggestionId).toBe(created.suggestion.id);
@@ -291,6 +300,39 @@ describe('founder hub', () => {
       }),
       400,
     );
+  });
+
+  it('exposes a current Founding 25 subscription on account flags', async () => {
+    const { db, flow } = setup();
+    await expect(flow.accountFlags('founder-1')).resolves.toMatchObject({
+      isFoundingMember: true,
+    });
+    await expect(flow.accountFlags('pro-1')).resolves.toMatchObject({
+      isFoundingMember: false,
+    });
+
+    const row = db.subscriptions.find((item) => item.userId === 'founder-1')!;
+    row.status = 'canceled';
+    await expect(flow.accountFlags('founder-1')).resolves.toMatchObject({
+      isFoundingMember: true,
+    });
+
+    row.status = 'past_due';
+    await expect(flow.accountFlags('founder-1')).resolves.toMatchObject({
+      isFoundingMember: true,
+    });
+
+    row.currentPeriodEnd = PAST;
+    await expect(flow.accountFlags('founder-1')).resolves.toMatchObject({
+      isFoundingMember: false,
+    });
+
+    db.claims.push({ userId: 'pro-1', founderNumber: 3 });
+    await expect(flow.accountFlags('pro-1')).resolves.toMatchObject({
+      isFoundingMember: false,
+    });
+    expect((await flow.summary('pro-1')).phase).toBe('expired');
+    expect((await flow.summary('pro-1')).canRead).toBe(true);
   });
 
   it('keeps write access while active, canceled-until-period-end, or past_due grace, then read-only', async () => {
