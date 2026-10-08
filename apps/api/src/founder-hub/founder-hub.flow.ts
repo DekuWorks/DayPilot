@@ -87,9 +87,12 @@ export class FounderHubFlow {
 
   private async owner() {
     const admins = await this.db.listAdmins();
+    const envUserId = this.env.ownerUserId?.trim() || '';
+    const envUser = envUserId ? await this.db.getUser(envUserId) : null;
     return resolveHubOwner({
       admins,
       envUserId: this.env.ownerUserId,
+      envUserExists: Boolean(envUser),
     });
   }
 
@@ -290,9 +293,8 @@ export class FounderHubFlow {
   async readMine(actorId: string, suggestionId: string) {
     const snap = await this.snapshot(actorId);
     const suggestion = await this.requireSuggestion(suggestionId);
-    const user = await this.actor(actorId);
     if (suggestion.userId !== actorId) {
-      if (user.role !== 'ADMIN')
+      if (!(await this.canModerate(actorId)))
         throw new HubError(403, 'Not your suggestion.');
       return this.adminView(suggestionId);
     }
@@ -308,8 +310,7 @@ export class FounderHubFlow {
     const attachment = await this.db.getAttachment(attachmentId);
     if (!attachment) throw new HubError(404, 'Screenshot not found.');
     const suggestion = await this.requireSuggestion(attachment.suggestionId);
-    const user = await this.actor(actorId);
-    if (suggestion.userId !== actorId && user.role !== 'ADMIN') {
+    if (suggestion.userId !== actorId && !(await this.canModerate(actorId))) {
       throw new HubError(403, 'You cannot open this screenshot.');
     }
     if (suggestion.userId === actorId) {
@@ -622,9 +623,19 @@ export class FounderHubFlow {
     }
   }
 
+  /** ADMIN, or the user named by FOUNDER_HUB_OWNER_USER_ID. */
+  private async canModerate(actorId: string): Promise<boolean> {
+    const user = await this.actor(actorId);
+    if (user.role === 'ADMIN') return true;
+    const resolved = await this.owner();
+    return resolved.userId === user.id;
+  }
+
   private async assertAdmin(actorId: string): Promise<UserRow> {
     const user = await this.actor(actorId);
-    if (user.role !== 'ADMIN') throw new HubError(403, 'Admin only.');
+    if (!(await this.canModerate(actorId))) {
+      throw new HubError(403, 'Admin only.');
+    }
     return user;
   }
 

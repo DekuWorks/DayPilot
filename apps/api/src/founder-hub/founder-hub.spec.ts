@@ -143,6 +143,45 @@ describe('founder hub', () => {
     ).toBeNull();
   });
 
+  it('treats the configured owner as the hub owner when their role is still USER', async () => {
+    const db = new MemoryHubDb();
+    db.users.push(
+      { id: 'owner-user', role: 'USER', email: 'owner@example.com' },
+      { id: 'member', role: 'USER', email: 'member@example.com' },
+    );
+    const flow = new FounderHubFlow(db, {
+      ownerUserId: 'owner-user',
+      apnsReady: false,
+      resendReady: false,
+    });
+    await expect(flow.accountFlags('owner-user')).resolves.toEqual({
+      isOwner: true,
+      unreadCount: 0,
+    });
+    await expect(flow.accountFlags('member')).resolves.toEqual({
+      isOwner: false,
+      unreadCount: 0,
+    });
+    await expect(flow.listInbox('owner-user', {})).resolves.toEqual([]);
+    await expect(flow.listInbox('member', {})).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(
+      resolveHubOwner({
+        admins: [],
+        envUserId: 'owner-user',
+        envUserExists: true,
+      }),
+    ).toEqual({ userId: 'owner-user', source: 'env' });
+    expect(
+      resolveHubOwner({
+        admins: [],
+        envUserId: 'missing',
+        envUserExists: false,
+      }).userId,
+    ).toBeNull();
+  });
+
   it('delivers a new suggestion and a follow-up to the owner immediately', async () => {
     const { db, flow } = setup();
     const created = await flow.submit('founder-1', {
