@@ -55,7 +55,7 @@ export class FounderHubService {
           : '';
       // Migration not applied yet. Do not take down GET /auth/me.
       if (code === 'P2021' || code === 'P2022') {
-        return { isOwner: false, unreadCount: 0 };
+        return { isOwner: false, unreadCount: 0, isFoundingMember: false };
       }
       throw err;
     });

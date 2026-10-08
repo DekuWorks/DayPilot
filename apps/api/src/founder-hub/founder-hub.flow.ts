@@ -99,17 +99,42 @@ export class FounderHubFlow {
   async accountFlags(userId: string): Promise<{
     isOwner: boolean;
     unreadCount: number;
+    /** Current Founding 25 subscriber (phase active or grace). */
+    isFoundingMember: boolean;
   }> {
     const resolved = await this.owner();
-    const isOwner = resolved.userId === userId;
-    if (!isOwner || !resolved.userId) {
-      return { isOwner: false, unreadCount: 0 };
+    const ownerId = resolved.userId;
+    const isOwner = Boolean(ownerId) && ownerId === userId;
+    const unreadCount =
+      isOwner && ownerId
+        ? await this.db.countUnreadNotices(ownerId, 'founder_message')
+        : 0;
+    return {
+      isOwner,
+      unreadCount,
+      isFoundingMember: await this.currentFoundingMember(userId),
+    };
+  }
+
+  /**
+   * Founding 25 (`founding_pro` / `FoundingPro`, StoreKit
+   * `daypilot.pro.founding.monthly`) while access is still open: active,
+   * canceled until period end, or past_due grace. Pro, free, and expired
+   * founding access are false. Same gate as hub writes.
+   * A missing hub table must not wipe the owner flag on GET /auth/me.
+   */
+  private async currentFoundingMember(userId: string): Promise<boolean> {
+    try {
+      const snap = await this.snapshot(userId);
+      return snap.access.canWrite;
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === 'object' && 'code' in err
+          ? String((err as { code?: string }).code)
+          : '';
+      if (code === 'P2021' || code === 'P2022') return false;
+      throw err;
     }
-    const unreadCount = await this.db.countUnreadNotices(
-      resolved.userId,
-      'founder_message',
-    );
-    return { isOwner: true, unreadCount };
   }
 
   private async snapshot(userId: string) {

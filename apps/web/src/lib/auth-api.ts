@@ -3,6 +3,8 @@ import { getApiUrl, getApiErrorMessage, nestFetch } from "./api";
 export type FounderHubAccount = {
   isOwner: boolean;
   unreadCount: number;
+  /** Current Founding 25 subscriber. From Nest GET /auth/me. */
+  isFoundingMember?: boolean;
 };
 
 export type User = {
