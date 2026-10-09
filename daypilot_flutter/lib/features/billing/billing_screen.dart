@@ -13,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import 'iap_billing_service.dart';
 import 'iap_products.dart';
+import 'subscription_disclosure.dart';
 
 /// Billing — App Store subscriptions on iOS. The website does not sell plans.
 class BillingScreen extends ConsumerStatefulWidget {
@@ -80,7 +81,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
         _notice = 'App Store purchases are unavailable on this device.';
       } else if (_storeProducts.isEmpty) {
         _notice =
-            'App Store prices are still loading. Comparison prices below are the intended USD prices.';
+            'The App Store price is not loaded yet. You can still start the purchase. The payment sheet shows Apple’s price.';
       }
     });
   }
@@ -142,18 +143,32 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   }
 
   Future<void> _openLink(String url) async {
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final uri = Uri.parse(url);
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+      if (await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) return;
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _error = 'Could not open $url');
   }
 
-  Future<void> _buy(ProductDetails product) async {
+  Future<void> _buy(String productId) async {
+    final service = _iap;
+    if (service == null) {
+      setState(() {
+        _error = 'App Store purchases are unavailable on this device.';
+      });
+      return;
+    }
     setState(() {
       _actionBusy = true;
       _error = null;
     });
     try {
-      await _iap?.buy(product);
+      await service.buyProduct(productId);
     } catch (e) {
-      setState(() => _error = '$e');
+      if (storeKitErrorIsCancellation(e)) return;
+      if (mounted) setState(() => _error = storeKitErrorText(e));
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
@@ -174,7 +189,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
         });
       }
     } catch (e) {
-      setState(() => _error = '$e');
+      setState(() => _error = storeKitErrorText(e));
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
@@ -185,6 +200,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       if (product.id == id) return product;
     }
     return null;
+  }
+
+  String _priceLine(String productId) {
+    final price = _product(productId)?.price;
+    if (price != null && price.isNotEmpty) return price;
+    final intended = DayPilotIapProducts.intendedMarketingPrice(productId);
+    if (intended != null) return '$intended per month';
+    return 'App Store price';
   }
 
   String _spotsLine() {
@@ -245,25 +268,30 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 if (_foundingOpen) ...[
                   _OfferCard(
                     kicker: 'FOUNDING 25',
-                    title: 'Help shape the future of DayPilot.',
+                    title: 'Founding 25',
                     body:
-                        'Join the first 25 paid members and unlock every Pro feature for only \$5/month. '
-                        'Everything in Pro, plus a private Founder Hub to share ideas and talk directly with DayPilot, and early access to every new feature as it enters founder beta. '
-                        'Your founding rate remains active while you stay subscribed.',
+                        'Help shape the future of DayPilot. '
+                        'Join the first 25 paid members and unlock every Pro feature, plus a private Founder Hub and early access to new features.',
                     detail: _spotsLine(),
                     featured: true,
                     trailing: _isIos
-                        ? _PurchaseButton(
-                            label: 'Become a Founding Member',
-                            product: _product(DayPilotIapProducts.foundingMonthly),
+                        ? _SubscriptionPurchase(
+                            offer: autoRenewOfferFor(
+                              DayPilotIapProducts.foundingMonthly,
+                            )!,
+                            price: _priceLine(
+                              DayPilotIapProducts.foundingMonthly,
+                            ),
+                            product: _product(
+                              DayPilotIapProducts.foundingMonthly,
+                            ),
                             busy: _actionBusy || !_iapReady,
+                            buttonLabel: 'Become a Founding Member',
                             onBuy: _buy,
+                            onOpenLink: _openLink,
                           )
                         : null,
                   ),
-                  if (_isIos &&
-                      _product(DayPilotIapProducts.foundingMonthly) == null)
-                    _IntendedPriceNote(r'$5/month until the App Store price loads.'),
                   const SizedBox(height: 12),
                 ],
                 _OfferCard(
@@ -271,15 +299,17 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                   title: 'Pro',
                   body:
                       'Manage and optimize your time with advanced scheduling, booking and AI tools.',
-                  detail: _product(DayPilotIapProducts.proMonthly) == null
-                      ? r'Intended price $10/month.'
-                      : null,
                   trailing: _isIos
-                      ? _PurchaseButton(
-                          label: 'Upgrade to Pro',
+                      ? _SubscriptionPurchase(
+                          offer: autoRenewOfferFor(
+                            DayPilotIapProducts.proMonthly,
+                          )!,
+                          price: _priceLine(DayPilotIapProducts.proMonthly),
                           product: _product(DayPilotIapProducts.proMonthly),
                           busy: _actionBusy || !_iapReady,
+                          buttonLabel: 'Upgrade to Pro',
                           onBuy: _buy,
+                          onOpenLink: _openLink,
                         )
                       : null,
                 ),
@@ -337,14 +367,11 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                     spacing: 12,
                     children: [
                       TextButton(
-                        onPressed: () =>
-                            _openLink('https://www.daypilot.co/privacy'),
+                        onPressed: () => _openLink(dayPilotPrivacyPolicyUrl),
                         child: const Text('Privacy Policy'),
                       ),
                       TextButton(
-                        onPressed: () => _openLink(
-                          'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
-                        ),
+                        onPressed: () => _openLink(dayPilotTermsOfUseUrl),
                         child: const Text('Terms of Use'),
                       ),
                     ],
@@ -489,45 +516,63 @@ class _OfferCard extends StatelessWidget {
   }
 }
 
-class _PurchaseButton extends StatelessWidget {
-  const _PurchaseButton({
-    required this.label,
+class _SubscriptionPurchase extends StatelessWidget {
+  const _SubscriptionPurchase({
+    required this.offer,
+    required this.price,
     required this.product,
     required this.busy,
+    required this.buttonLabel,
     required this.onBuy,
+    required this.onOpenLink,
   });
 
-  final String label;
+  final AutoRenewOffer offer;
+  final String price;
   final ProductDetails? product;
   final bool busy;
-  final Future<void> Function(ProductDetails product) onBuy;
+  final String buttonLabel;
+  final Future<void> Function(String productId) onBuy;
+  final Future<void> Function(String url) onOpenLink;
 
   @override
   Widget build(BuildContext context) {
-    final price = product?.price;
-    return FilledButton(
-      onPressed: product == null || busy ? null : () => onBuy(product!),
-      child: Text(price == null ? label : '$label — $price'),
-    );
-  }
-}
-
-class _IntendedPriceNote extends StatelessWidget {
-  const _IntendedPriceNote(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: DayPilotScheme.of(context).textSecondary,
-          fontSize: 12,
+    final secondary = DayPilotScheme.of(context).textSecondary;
+    final buttonPrice = product?.price;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${offer.title} · ${offer.period}',
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-      ),
+        Text('Length: ${offer.period}'),
+        Text('Price: $price'),
+        const SizedBox(height: 4),
+        Text(
+          offer.benefits,
+          style: TextStyle(color: secondary, height: 1.35),
+        ),
+        Wrap(
+          spacing: 4,
+          children: [
+            TextButton(
+              onPressed: () => onOpenLink(dayPilotPrivacyPolicyUrl),
+              child: const Text('Privacy Policy'),
+            ),
+            TextButton(
+              onPressed: () => onOpenLink(dayPilotTermsOfUseUrl),
+              child: const Text('Terms of Use'),
+            ),
+          ],
+        ),
+        FilledButton(
+          onPressed: busy ? null : () => onBuy(offer.productId),
+          child: Text(
+            buttonPrice == null ? buttonLabel : '$buttonLabel — $buttonPrice',
+          ),
+        ),
+      ],
     );
   }
 }
