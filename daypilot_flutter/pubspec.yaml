@@ -52,6 +52,9 @@ dependencies:
   sign_in_with_apple: ^7.0.1
   crypto: ^3.0.6
   in_app_purchase: ^3.2.3
+  # Pinned. 0.4.13+1 requires Flutter 3.41. StoreKit 2 in 0.4.11 is what the
+  # billing purchase path calls directly.
+  in_app_purchase_storekit: 0.4.11
   device_calendar: ^3.9.0
   flutter_secure_storage: ^11.0.0
   image_picker: ^1.2.0
