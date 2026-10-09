@@ -713,7 +713,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = DayPilotWidgets/DayPilotWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
@@ -907,7 +907,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = DayPilotWidgets/DayPilotWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
@@ -939,7 +939,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = KR52VK4ZKR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = DayPilotWidgets/Info.plist;
