@@ -17,8 +17,9 @@ import '../calendar/empty_schedule_hint.dart';
 import '../founder_hub/founder_hub_home_button.dart';
 import '../profile/profile_providers.dart';
 
-final _homeNextEventProvider =
-    FutureProvider.autoDispose<EventRecord?>((ref) async {
+final _homeNextEventProvider = FutureProvider.autoDispose<EventRecord?>((
+  ref,
+) async {
   ref.watch(calendarDataVersionProvider);
   final now = DateTime.now();
   final start = DateTime(now.year, now.month, now.day);
@@ -100,7 +101,10 @@ class HomeScreen extends ConsumerWidget {
                   IconButton(
                     tooltip: 'Notifications',
                     visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                     padding: EdgeInsets.zero,
                     onPressed: () => context.push('/notifications'),
                     icon: const Icon(Icons.notifications_outlined, size: 20),
@@ -109,18 +113,25 @@ class HomeScreen extends ConsumerWidget {
                   IconButton(
                     tooltip: 'New event',
                     visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                     padding: EdgeInsets.zero,
                     onPressed: () => context.push('/events/new'),
                     icon: const Icon(Icons.add_circle_rounded, size: 22),
                     color: colors.accent,
                   ),
-                  GestureDetector(
-                    onTap: () => context.go('/profile'),
-                    child: ProfileAvatar(
-                      initials: initials,
-                      imageUrl: avatarUrl,
-                      radius: 14,
+                  Semantics(
+                    button: true,
+                    label: 'Open profile',
+                    child: GestureDetector(
+                      onTap: () => context.go('/profile'),
+                      child: ProfileAvatar(
+                        initials: initials,
+                        imageUrl: avatarUrl,
+                        radius: 14,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -128,21 +139,25 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             if (next != null)
-              GestureDetector(
-                onTap: () => context.push('/events/${next.id}'),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
-                  child: Text(
-                    '${DateFormat.jm().format(next.startsAt)} · ${next.title}',
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      height: 1.2,
-                      color: colors.accent,
+              Semantics(
+                button: true,
+                label: 'Open ${next.title}',
+                child: GestureDetector(
+                  onTap: () => context.push('/events/${next.id}'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
+                    child: Text(
+                      '${DateFormat.jm().format(next.startsAt)} · ${next.title}',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        height: 1.2,
+                        color: colors.accent,
+                      ),
                     ),
                   ),
                 ),
@@ -171,9 +186,8 @@ class HomeScreen extends ConsumerWidget {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton(
-                        onPressed: () => ref
-                            .read(apiSessionSyncProvider.notifier)
-                            .sync(),
+                        onPressed: () =>
+                            ref.read(apiSessionSyncProvider.notifier).sync(),
                         child: const Text('Retry'),
                       ),
                     ),
@@ -183,9 +197,7 @@ class HomeScreen extends ConsumerWidget {
             if (upcomingEmpty && user != null)
               _TodayPlanPrompt(userId: user.id),
             const FounderHubHomeButton(),
-            Expanded(
-              child: CalendarPanel(initialView: view),
-            ),
+            Expanded(child: CalendarPanel(initialView: view)),
           ],
         ),
       ),
@@ -212,7 +224,7 @@ class _TodayPlanPromptState extends ConsumerState<_TodayPlanPrompt> {
     super.initState();
     _hidden =
         ref.read(sharedPreferencesProvider).getBool(_key(widget.userId)) ==
-            true;
+        true;
   }
 
   @override

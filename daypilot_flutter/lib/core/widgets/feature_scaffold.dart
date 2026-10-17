@@ -28,6 +28,7 @@ class FeatureScaffold extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
             if (context.canPop()) {
@@ -40,7 +41,7 @@ class FeatureScaffold extends StatelessWidget {
         actions: actions,
       ),
       floatingActionButton: floatingActionButton,
-      body: body,
+      body: SafeArea(top: false, child: body),
     );
   }
 }
@@ -100,10 +101,7 @@ class NavTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colors.textTertiary,
-              ),
+              Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
             ],
           ),
         ),
