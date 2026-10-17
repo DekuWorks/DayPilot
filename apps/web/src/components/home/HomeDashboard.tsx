@@ -58,7 +58,7 @@ export function HomeDashboard() {
   const [dueTasks, setDueTasks] = useState<DueTask[]>([]);
   const [tasksLookup, setTasksLookup] = useState<
     "loading" | "ready" | "unavailable"
-  >("loading");
+  >(isSupabaseConfigured() ? "loading" : "unavailable");
   const planDismissed = useSyncExternalStore(
     subscribePlanDismiss,
     readPlanDismissed,
@@ -97,10 +97,7 @@ export function HomeDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setTasksLookup("unavailable");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
     let cancelled = false;
     const start = new Date();
     start.setHours(0, 0, 0, 0);
