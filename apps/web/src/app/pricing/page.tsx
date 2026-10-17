@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { plansForWeb } from "@daypilot/lib";
+import { AppStoreBadge } from "@/components/AppStoreBadge";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { MarketingNav } from "@/components/MarketingNav";
 import { PlanCatalog } from "@/components/pricing/PlanCatalog";
+import { publicOfferCatalog } from "@/lib/site-metadata";
 
 const description =
   "Free forever. Founding 25 is $5/month for the first 25 paid members. Pro is $10/month. Team is planned at $20/month and Enterprise is custom. Team and Enterprise are coming soon.";
@@ -10,39 +12,21 @@ const description =
 export const metadata: Metadata = {
   title: "Pricing",
   description,
+  alternates: { canonical: "/pricing" },
   openGraph: {
     title: "DayPilot pricing",
     description,
   },
 };
 
-function offerCatalog() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    name: "DayPilot plans",
-    itemListElement: plansForWeb().map((plan) => ({
-      "@type": "Offer",
-      name: plan.name,
-      description: plan.description,
-      priceCurrency: "USD",
-      ...(plan.marketingPrice === "Custom"
-        ? {}
-        : { price: plan.marketingPrice.replace("$", "") }),
-      availability:
-        plan.availability === "available"
-          ? "https://schema.org/InStock"
-          : "https://schema.org/PreOrder",
-    })),
-  };
-}
-
 export default function PricingPage() {
   return (
     <div className="min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(offerCatalog()) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(publicOfferCatalog(plansForWeb())),
+        }}
       />
       <MarketingNav />
       <section className="container-width section-padding py-16 text-center md:py-24 lg:py-32">
@@ -54,6 +38,9 @@ export default function PricingPage() {
             Free stays free. Founding 25 and Pro are bought in the DayPilot iOS
             app. Team and Enterprise are coming soon.
           </p>
+          <div className="flex justify-center pt-2">
+            <AppStoreBadge />
+          </div>
         </div>
       </section>
       <section className="container-width section-padding pb-16 md:pb-24 lg:pb-32">

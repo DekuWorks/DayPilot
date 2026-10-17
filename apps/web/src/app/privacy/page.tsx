@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
     "How DayPilot collects, uses, and protects your data — including calendar sync, Supabase, Google, and Apple sign-in.",
+  alternates: { canonical: "/privacy" },
 };
 
 const updated = "5 August 2026";
@@ -28,9 +29,10 @@ export default function PrivacyPage() {
               Last updated: {updated}
             </p>
             <p className="text-base md:text-lg text-[var(--text-secondary)] leading-relaxed">
-              DayPilot (&quot;we&quot;, &quot;us&quot;) is a calendar and planning product
-              operated by DekuWorks. This policy explains what we collect, why we
-              collect it, and the choices you have. It covers the website at{" "}
+              DayPilot (&quot;we&quot;, &quot;us&quot;) is a calendar and
+              planning product operated by DekuWorks. This policy explains what
+              we collect, why we collect it, and the choices you have. It covers
+              the website at{" "}
               <a
                 href="https://www.daypilot.co"
                 className="text-[var(--brand-500)] hover:underline"
@@ -44,18 +46,25 @@ export default function PrivacyPage() {
           <Section title="What we collect">
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong className="text-[var(--text-primary)]">Account data</strong>{" "}
-                — email address, display name, and authentication identifiers when
-                you sign up with email/password or Sign in with Google / Apple.
+                <strong className="text-[var(--text-primary)]">
+                  Account data
+                </strong>{" "}
+                — email address, display name, and authentication identifiers
+                when you sign up with email/password or Sign in with Google /
+                Apple.
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">Calendar data</strong>{" "}
+                <strong className="text-[var(--text-primary)]">
+                  Calendar data
+                </strong>{" "}
                 — event titles, times, locations, descriptions, and calendar
                 metadata you sync or create in DayPilot (for example via Google
                 Calendar OAuth or Apple EventKit ingest from iOS).
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">App usage</strong>{" "}
+                <strong className="text-[var(--text-primary)]">
+                  App usage
+                </strong>{" "}
                 — basic product analytics and diagnostics (for example crash
                 reports) to keep the service reliable. We do not sell this data.
               </li>
@@ -81,7 +90,9 @@ export default function PrivacyPage() {
                 Brief summaries grounded in your schedule.
               </li>
               <li>Authenticate you and keep your session secure.</li>
-              <li>Respond to support requests and improve product reliability.</li>
+              <li>
+                Respond to support requests and improve product reliability.
+              </li>
             </ul>
             <p className="mt-4">
               We do not sell your personal data. We do not use your calendar
@@ -97,17 +108,18 @@ export default function PrivacyPage() {
                 data.
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">Google</strong>{" "}
-                — Sign in with Google (optional) and Google Calendar sync when you
-                connect a Google account. Google receives only what is needed for
-                OAuth and the calendar scopes you approve.
+                <strong className="text-[var(--text-primary)]">Google</strong> —
+                Sign in with Google (optional) and Google Calendar sync when you
+                connect a Google account. Google receives only what is needed
+                for OAuth and the calendar scopes you approve.
               </li>
               <li>
-                <strong className="text-[var(--text-primary)]">Apple</strong>{" "}
-                — Sign in with Apple (optional). Apple Calendar sync uses on-device
-                EventKit on iOS, which uploads a cloud copy to DayPilot so web can
-                show those events. DayPilot does not use your Apple ID password for
-                calendar access on the live product path.
+                <strong className="text-[var(--text-primary)]">Apple</strong> —
+                Sign in with Apple (optional). Apple Calendar sync uses
+                on-device EventKit on iOS, which uploads a cloud copy to
+                DayPilot so web can show those events. DayPilot does not use
+                your Apple ID password for calendar access on the live product
+                path.
               </li>
               <li>
                 Hosting and infrastructure providers that process data solely to
@@ -123,19 +135,21 @@ export default function PrivacyPage() {
 
           <Section title="Retention and security">
             <p>
-              We retain account and synced data while your account is active, and
-              for a limited period afterwards if needed for backups, security, or
-              legal obligations. We use industry-standard transport security
-              (HTTPS) and access controls. No method of transmission or storage is
-              perfectly secure; please use a strong password and protect your
-              account sign-in methods.
+              We retain account and synced data while your account is active,
+              and for a limited period afterwards if needed for backups,
+              security, or legal obligations. We use industry-standard transport
+              security (HTTPS) and access controls. No method of transmission or
+              storage is perfectly secure; please use a strong password and
+              protect your account sign-in methods.
             </p>
           </Section>
 
           <Section title="Your choices">
             <ul className="list-disc pl-5 space-y-2">
               <li>Update or delete calendar events you created in DayPilot.</li>
-              <li>Disconnect Google, Outlook, or Apple Calendar sync in the app.</li>
+              <li>
+                Disconnect Google, Outlook, or Apple Calendar sync in the app.
+              </li>
               <li>
                 Delete your account in the app under{" "}
                 <strong className="text-[var(--text-primary)]">
@@ -148,8 +162,8 @@ export default function PrivacyPage() {
                 >
                   daypilot.co/settings
                 </a>
-                ). Deletion removes your DayPilot profile and associated data; it
-                is not a temporary deactivation. You can also email{" "}
+                ). Deletion removes your DayPilot profile and associated data;
+                it is not a temporary deactivation. You can also email{" "}
                 <a
                   href="mailto:hello@daypilot.co?subject=Privacy%20request"
                   className="text-[var(--brand-500)] hover:underline"
@@ -159,8 +173,8 @@ export default function PrivacyPage() {
                 to request a copy of your data.
               </li>
               <li>
-                For Sign in with Apple, you can also manage the app under Apple ID
-                settings on your device.
+                For Sign in with Apple, you can also manage the app under Apple
+                ID settings on your device.
               </li>
             </ul>
           </Section>
@@ -168,26 +182,26 @@ export default function PrivacyPage() {
           <Section title="Children">
             <p>
               DayPilot is not directed at children under 13. We do not knowingly
-              collect personal data from children under 13. If you believe a child
-              has provided data, contact us and we will delete it.
+              collect personal data from children under 13. If you believe a
+              child has provided data, contact us and we will delete it.
             </p>
           </Section>
 
           <Section title="International users">
             <p>
-              DayPilot may be hosted in the United States or other regions. If you
-              access the service from the UK, EEA, or elsewhere, your data may be
-              processed outside your country. By using DayPilot you acknowledge
-              that transfer. Where required by law, we take steps to protect
-              transfers appropriately.
+              DayPilot may be hosted in the United States or other regions. If
+              you access the service from the UK, EEA, or elsewhere, your data
+              may be processed outside your country. By using DayPilot you
+              acknowledge that transfer. Where required by law, we take steps to
+              protect transfers appropriately.
             </p>
           </Section>
 
           <Section title="Changes">
             <p>
               We may update this policy from time to time. The &quot;Last
-              updated&quot; date at the top will change when we do. Continued use
-              after an update means you accept the revised policy.
+              updated&quot; date at the top will change when we do. Continued
+              use after an update means you accept the revised policy.
             </p>
           </Section>
 
@@ -218,13 +232,7 @@ export default function PrivacyPage() {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3 text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
       <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)]">

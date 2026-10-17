@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AppStoreBadge } from "@/components/AppStoreBadge";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/Button";
 
@@ -54,6 +55,7 @@ export function MarketingNav({
               {l.label}
             </Link>
           ))}
+          <AppStoreBadge />
           {ctaAsButton ? (
             <Button href={ctaHref} size="lg">
               {ctaLabel}
@@ -139,6 +141,9 @@ export function MarketingNav({
               {ctaLabel}
             </Link>
           )}
+          <div className="px-3 pt-3">
+            <AppStoreBadge />
+          </div>
         </div>
       )}
     </nav>
