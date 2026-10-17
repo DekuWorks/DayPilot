@@ -7,20 +7,23 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/bootstrap_providers.dart';
 import '../billing/entitlements.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/dp_cards.dart';
 import '../../core/widgets/feature_scaffold.dart';
 
 final myBookingLinksProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final client = ref.watch(supabaseClientProvider);
-  final uid = client.auth.currentUser?.id;
-  if (uid == null) return [];
-  final rows = await client
-      .from('booking_links')
-      .select('id, slug, title, duration, is_active, description')
-      .eq('owner_user_id', uid)
-      .order('created_at', ascending: false);
-  return (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-});
+      final client = ref.watch(supabaseClientProvider);
+      final uid = client.auth.currentUser?.id;
+      if (uid == null) return [];
+      final rows = await client
+          .from('booking_links')
+          .select('id, slug, title, duration, is_active, description')
+          .eq('owner_user_id', uid)
+          .order('created_at', ascending: false);
+      return (rows as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    });
 
 /// Owner booking-link setup (create / toggle / open public page).
 class BookingLinksScreen extends ConsumerStatefulWidget {
@@ -131,24 +134,28 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
       await client.from('availability_rules').insert(rules);
       ref.invalidate(myBookingLinksProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created /book/$slug')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Created /book/$slug')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
 
   Future<void> _toggle(Map<String, dynamic> link) async {
-    await ref.read(supabaseClientProvider).from('booking_links').update({
-      'is_active': !(link['is_active'] as bool? ?? true),
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', link['id']);
+    await ref
+        .read(supabaseClientProvider)
+        .from('booking_links')
+        .update({
+          'is_active': !(link['is_active'] as bool? ?? true),
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', link['id']);
     ref.invalidate(myBookingLinksProvider);
   }
 
@@ -164,9 +171,9 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
       ClipboardData(text: 'https://www.daypilot.co/book/$slug'),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link copied')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Link copied')));
     }
   }
 
@@ -246,51 +253,95 @@ class _BookingLinksScreenState extends ConsumerState<BookingLinksScreen> {
               ),
             );
           }
+          final colors = DayPilotScheme.of(context);
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+            itemCount: list.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
-              final link = list[i];
+              if (i == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                    'People open your link in a browser and pick a time from the hours you set.',
+                    style: TextStyle(fontSize: 13, color: colors.textSecondary),
+                  ),
+                );
+              }
+              final link = list[i - 1];
               final slug = '${link['slug']}';
               final active = link['is_active'] as bool? ?? false;
-              return Container(
-                decoration: BoxDecoration(
-                  color: DayPilotScheme.of(context).surfacePrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: DayPilotScheme.of(context).borderSubtle),
-                ),
-                child: ListTile(
-                  title: Text(
-                    '${link['title'] ?? slug}',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: Text(
-                    '/book/$slug · ${link['duration'] ?? 30} min · '
-                    '${active ? 'Active' : 'Paused'}',
-                    style: TextStyle(
-                      color: DayPilotScheme.of(context).textSecondary,
-                      fontSize: 12,
+              return DpCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        DpIconTile(
+                          icon: Icons.link_rounded,
+                          tint: active ? colors.accent : colors.textTertiary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${link['title'] ?? slug}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '/book/$slug',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        DpPill(
+                          label: active ? 'Active' : 'Paused',
+                          tint: active ? colors.accent : colors.textTertiary,
+                        ),
+                      ],
                     ),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (v) {
-                      if (v == 'copy') _copy(slug);
-                      if (v == 'open') _openPublic(slug);
-                      if (v == 'toggle') _toggle(link);
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(value: 'copy', child: Text('Copy link')),
-                      const PopupMenuItem(
-                        value: 'open',
-                        child: Text('Open public page'),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${link['duration'] ?? 30} min',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12,
                       ),
-                      PopupMenuItem(
-                        value: 'toggle',
-                        child: Text(active ? 'Pause' : 'Activate'),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _copy(slug),
+                          icon: const Icon(Icons.copy_rounded, size: 16),
+                          label: const Text('Copy link'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => _openPublic(slug),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                          label: const Text('Open'),
+                        ),
+                        TextButton(
+                          onPressed: () => _toggle(link),
+                          child: Text(active ? 'Pause' : 'Activate'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               );
             },
