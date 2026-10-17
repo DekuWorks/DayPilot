@@ -110,7 +110,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (mounted) setState(() => _hits = results);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -141,6 +143,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               autofocus: true,
               decoration: const InputDecoration(
                 hintText: 'Search tasks, notes, contacts…',
+                labelText: 'Search',
                 prefixIcon: Icon(Icons.search),
                 isDense: true,
               ),
@@ -157,7 +160,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       _query.text.trim().length < 2
                           ? 'Type at least 2 characters'
                           : 'No matches',
-                      style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
+                      style: TextStyle(
+                        color: DayPilotScheme.of(context).textSecondary,
+                      ),
                     ),
                   )
                 : ListView.separated(

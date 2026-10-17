@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/Button";
+import { StatusMessage } from "@/components/StatusMessage";
 import { useAuth } from "@/providers/AuthProvider";
 import * as notesApi from "@/lib/notes-supabase";
 import type { Note } from "@/lib/notes-supabase";
@@ -66,9 +67,7 @@ export default function NotesPage() {
     setError("");
     try {
       const updated = await notesApi.updateNote(selectedId, { title, content });
-      setNotes((prev) =>
-        prev.map((n) => (n.id === updated.id ? updated : n))
-      );
+      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -91,19 +90,21 @@ export default function NotesPage() {
     <div className="flex h-[calc(100vh-8rem)] min-h-[420px] flex-col gap-4 lg:flex-row">
       <aside className="flex w-full shrink-0 flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] lg:w-72">
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
-          <h1 className="text-lg font-bold text-[var(--text-primary)]">Notes</h1>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">
+            Notes
+          </h1>
           <Button size="sm" onClick={handleCreate}>
             New
           </Button>
         </div>
         <ul className="flex-1 overflow-y-auto p-2">
           {loading ? (
-            <li className="px-2 py-3 text-sm text-[var(--text-tertiary)]">
-              Loading…
+            <li className="px-2 py-3">
+              <StatusMessage tone="loading">Loading notes…</StatusMessage>
             </li>
           ) : notes.length === 0 ? (
-            <li className="px-2 py-3 text-sm text-[var(--text-tertiary)]">
-              No notes yet.
+            <li className="px-2 py-3">
+              <StatusMessage tone="empty">No notes yet.</StatusMessage>
             </li>
           ) : (
             notes.map((note) => (

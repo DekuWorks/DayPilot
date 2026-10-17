@@ -83,15 +83,27 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen">
       <MarketingNav ctaAsButton={false} ctaLabel="Get Started" />
-      <section className="container-width section-padding py-16 md:py-24 max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Get started</h1>
+      <section
+        id="main"
+        className="container-width section-padding py-16 md:py-24 max-w-md mx-auto"
+      >
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-4">
+          Get started
+        </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <p className="text-[var(--error)] text-sm bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] rounded-lg px-3 py-2">{error}</p>
+            <p className="text-[var(--error)] text-sm bg-[color-mix(in_srgb,var(--error)_12%,transparent)] border border-[color-mix(in_srgb,var(--error)_35%,transparent)] rounded-lg px-3 py-2">
+              {error}
+            </p>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">First name</label>
+              <label
+                htmlFor="firstName"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+              >
+                First name
+              </label>
               <input
                 id="firstName"
                 type="text"
@@ -103,7 +115,12 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Last name</label>
+              <label
+                htmlFor="lastName"
+                className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+              >
+                Last name
+              </label>
               <input
                 id="lastName"
                 type="text"
@@ -116,9 +133,16 @@ export default function SignupPage() {
             </div>
           </div>
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Username</label>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+            >
+              Username
+            </label>
             <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">@</span>
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">
+                @
+              </span>
               <input
                 id="username"
                 type="text"
@@ -136,7 +160,12 @@ export default function SignupPage() {
             </p>
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Email</label>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+            >
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -148,7 +177,12 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[var(--text-primary)] mb-1">Password (min 8 characters)</label>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
+            >
+              Password (min 8 characters)
+            </label>
             <div className="relative">
               <input
                 id="password"
@@ -166,12 +200,32 @@ export default function SignupPage() {
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                     <line x1="1" y1="1" x2="23" y2="23" />
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
@@ -201,7 +255,7 @@ export default function SignupPage() {
                 await loginWithGoogle();
               } catch (err) {
                 setError(
-                  err instanceof Error ? err.message : "Google sign-in failed"
+                  err instanceof Error ? err.message : "Google sign-in failed",
                 );
                 setGoogleLoading(false);
               }
@@ -219,7 +273,7 @@ export default function SignupPage() {
                 await loginWithApple({ next: "/sync?apple=sso" });
               } catch (err) {
                 setError(
-                  err instanceof Error ? err.message : "Apple sign-in failed"
+                  err instanceof Error ? err.message : "Apple sign-in failed",
                 );
                 setAppleLoading(false);
               }
@@ -239,7 +293,7 @@ export default function SignupPage() {
                 setError(
                   err instanceof Error
                     ? err.message
-                    : "Microsoft sign-in failed"
+                    : "Microsoft sign-in failed",
                 );
                 setMicrosoftLoading(false);
               }
@@ -248,9 +302,19 @@ export default function SignupPage() {
         </div>
         <p className="mt-6 text-[var(--text-secondary)] text-sm">
           Already have an account?{" "}
-          <Link href="/login" className="text-[var(--brand-500)] font-medium hover:underline">Sign in</Link>
+          <Link
+            href="/login"
+            className="text-[var(--brand-500)] font-medium hover:underline"
+          >
+            Sign in
+          </Link>
         </p>
-        <Link href="/" className="inline-block mt-4 text-[var(--brand-500)] font-medium hover:underline">← Back to home</Link>
+        <Link
+          href="/"
+          className="inline-block mt-4 text-[var(--brand-500)] font-medium hover:underline"
+        >
+          ← Back to home
+        </Link>
       </section>
     </div>
   );

@@ -72,6 +72,12 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} antialiased`}>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-[var(--radius-md)] focus:bg-[var(--surface-primary)] focus:px-3 focus:py-2 focus:text-sm focus:text-[var(--text-primary)]"
+        >
+          Skip to content
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>
