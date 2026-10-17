@@ -14,7 +14,9 @@ final tasksListProvider =
   final rows = await ref
       .watch(supabaseClientProvider)
       .from('tasks')
-      .select('id, title, status, priority, due_at, description, project_id')
+      .select(
+        'id, title, status, priority, due_at, description, project_id, completed_at',
+      )
       .order('created_at', ascending: false);
   return (rows as List).map((r) {
     final m = Map<String, dynamic>.from(r as Map);
@@ -27,6 +29,9 @@ final tasksListProvider =
           m['due_at'] != null ? DateTime.tryParse(m['due_at'] as String) : null,
       description: m['description'] as String?,
       projectId: m['project_id'] as String?,
+      completedAt: m['completed_at'] != null
+          ? DateTime.tryParse(m['completed_at'] as String)
+          : null,
     );
   }).toList();
 });

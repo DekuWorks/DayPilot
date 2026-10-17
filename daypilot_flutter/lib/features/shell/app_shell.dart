@@ -17,12 +17,18 @@ class AppShellDestination {
   final String label;
 }
 
-/// Bottom-nav: Home · Tasks · Insights · Profile.
+/// Bottom-nav: Today · Calendar · Tasks · Insights. Profile opens from the
+/// avatar on Today. Booking and Founders Hub are reached from Today.
 const kAppShellDestinations = [
   AppShellDestination(
     icon: Icons.home_outlined,
     selected: Icons.home_rounded,
-    label: 'Home',
+    label: 'Today',
+  ),
+  AppShellDestination(
+    icon: Icons.calendar_month_outlined,
+    selected: Icons.calendar_month_rounded,
+    label: 'Calendar',
   ),
   AppShellDestination(
     icon: Icons.check_circle_outline_rounded,
@@ -33,11 +39,6 @@ const kAppShellDestinations = [
     icon: Icons.bar_chart_outlined,
     selected: Icons.bar_chart_rounded,
     label: 'Insights',
-  ),
-  AppShellDestination(
-    icon: Icons.person_outline_rounded,
-    selected: Icons.person_rounded,
-    label: 'Profile',
   ),
 ];
 

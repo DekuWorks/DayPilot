@@ -3,18 +3,18 @@ import 'package:daypilot_flutter/features/shell/app_shell.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('bottom nav is Home, Tasks, Insights, Profile', () {
-    expect(
-      kAppShellDestinations.map((d) => d.label).toList(),
-      ['Home', 'Tasks', 'Insights', 'Profile'],
-    );
-    expect(
-      kAppShellDestinations.any((d) => d.label == 'Calendar'),
-      isFalse,
-    );
+  test('bottom nav is Today, Calendar, Tasks, Insights', () {
+    expect(kAppShellDestinations.map((d) => d.label).toList(), [
+      'Today',
+      'Calendar',
+      'Tasks',
+      'Insights',
+    ]);
+    // Profile opens from the avatar on Today, not from a tab.
+    expect(kAppShellDestinations.any((d) => d.label == 'Profile'), isFalse);
   });
 
-  test('home calendar views are Month, Week, Day', () {
+  test('calendar views are Month, Week, Day', () {
     expect(kCalendarViewLabels, ['Month', 'Week', 'Day']);
     expect(parseCalendarViewMode(null), CalendarViewMode.day);
     expect(parseCalendarViewMode('week'), CalendarViewMode.week);

@@ -17,7 +17,7 @@ import '../../domain/calendar/calendar_connection_ui.dart';
 import '../founder_hub/founder_hub_entry.dart';
 import 'profile_providers.dart';
 
-/// Profile tab — hub for the same product areas as daypilot.co.
+/// Profile — hub for the same product areas as daypilot.co.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -36,13 +36,25 @@ class ProfileScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            Text(
-              'Profile',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: colors.textPrimary,
-              ),
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back',
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go('/home'),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  color: colors.textPrimary,
+                ),
+                Text(
+                  'Profile',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             profile.when(
