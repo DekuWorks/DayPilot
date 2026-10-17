@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/Button";
+import { StatusMessage } from "@/components/StatusMessage";
 import {
   createSuggestion,
   getHubSummary,
@@ -122,21 +124,24 @@ export default function FounderHubPage() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Title"
+            aria-label="Suggestion title"
             required
-            className="min-h-11 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+            className="min-h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)]"
           />
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Description"
+            aria-label="Suggestion description"
             required
             rows={4}
-            className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)]"
           />
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="min-h-11 w-full max-w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm"
+            aria-label="Suggestion category"
+            className="min-h-11 w-full max-w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-sm text-[var(--text-primary)]"
           >
             {CATEGORIES.map(([value, label]) => (
               <option key={value} value={value}>
@@ -147,16 +152,13 @@ export default function FounderHubPage() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
-            className="block max-w-full text-sm"
+            aria-label="Screenshot"
+            className="block max-w-full text-sm text-[var(--text-secondary)]"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />
-          <button
-            type="submit"
-            disabled={busy}
-            className="min-h-11 rounded-lg bg-[var(--brand-500)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-60"
-          >
+          <Button type="submit" disabled={busy}>
             {busy ? "Sending…" : "Submit"}
-          </button>
+          </Button>
         </form>
       ) : null}
 
@@ -165,15 +167,13 @@ export default function FounderHubPage() {
           My suggestions
         </h2>
         {items.length === 0 ? (
-          <p className="text-sm text-[var(--text-secondary)]">
-            No suggestions yet.
-          </p>
+          <StatusMessage tone="empty">No suggestions yet.</StatusMessage>
         ) : (
           items.map((item) => (
             <Link
               key={item.id}
               href={`/settings/founder-hub/${item.id}`}
-              className="block rounded-xl border border-[var(--border-subtle)] px-4 py-3"
+              className="block rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-3"
             >
               <p className="font-medium text-[var(--text-primary)]">
                 {item.title}
@@ -192,14 +192,14 @@ export default function FounderHubPage() {
           Early access
         </h2>
         {beta.length === 0 ? (
-          <p className="text-sm text-[var(--text-secondary)]">
+          <StatusMessage tone="empty">
             No founder beta features are available right now.
-          </p>
+          </StatusMessage>
         ) : (
           beta.map((feature) => (
             <div
               key={feature.key}
-              className="rounded-xl border border-[var(--border-subtle)] px-4 py-3"
+              className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-3"
             >
               <p className="font-medium text-[var(--text-primary)]">
                 {feature.name}
