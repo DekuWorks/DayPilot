@@ -91,39 +91,18 @@ button {
   border: 1px solid var(--border-subtle);
 }
 
-/* Marketing bar. Same surface mix as .glass-effect, painted as the solid
-   colour you already see on the bar (that mix over the page background).
-   No side or top border, so the colour meets the viewport edges. */
+/* Marketing bar. Same colour as the page so the top is one surface.
+   Full width and sticky. No border, outline, or shadow. */
 .marketing-header {
-  --marketing-header-bg: color-mix(
-    in srgb,
-    var(--surface-primary) 80%,
-    var(--background-primary)
-  );
   position: sticky;
   top: 0;
   z-index: 50;
   width: 100%;
   margin: 0;
-  background: var(--marketing-header-bg);
-  border-bottom: 1px solid var(--border-subtle);
-  /* Fill any strip beside the bar. Shadows do not widen the page. */
-  box-shadow:
-    -100vw 0 0 0 var(--marketing-header-bg),
-    100vw 0 0 0 var(--marketing-header-bg);
-}
-
-/* Same colour into any strip above the bar (overscroll or a subpixel gap). */
-.marketing-header::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 100vh;
-  background: var(--marketing-header-bg);
-  pointer-events: none;
+  background: var(--background-primary);
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .section-padding {
