@@ -7,6 +7,9 @@ import { CalendarApp } from "@/components/calendar/CalendarApp";
 import { FounderHubHomeButton } from "@/components/founder-hub/FounderHubHomeButton";
 import * as eventsApi from "@/lib/events";
 import type { CalendarEvent } from "@/lib/events";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
+type DueTask = { id: string; title: string };
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, {
@@ -52,6 +55,10 @@ export function HomeDashboard() {
   const [lookup, setLookup] = useState<"loading" | "ready" | "error">(
     "loading",
   );
+  const [dueTasks, setDueTasks] = useState<DueTask[]>([]);
+  const [tasksLookup, setTasksLookup] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const planDismissed = useSyncExternalStore(
     subscribePlanDismiss,
     readPlanDismissed,
@@ -89,6 +96,41 @@ export function HomeDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setTasksLookup("unavailable");
+      return;
+    }
+    let cancelled = false;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const supabase = createClient();
+    void supabase
+      .from("tasks")
+      .select("id, title, status, due_at")
+      .neq("status", "completed")
+      .neq("status", "cancelled")
+      .gte("due_at", start.toISOString())
+      .lt("due_at", end.toISOString())
+      .order("due_at", { ascending: true })
+      .limit(3)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setDueTasks([]);
+          setTasksLookup("unavailable");
+          return;
+        }
+        setDueTasks((data as DueTask[]) ?? []);
+        setTasksLookup("ready");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const showPlanPrompt =
     lookup === "ready" && nextEvent == null && !planDismissed;
 
@@ -116,6 +158,32 @@ export function HomeDashboard() {
             <p className="mt-1 text-sm text-[var(--text-tertiary)]">
               Nothing in the next two days
             </p>
+          )}
+          {tasksLookup === "loading" ? (
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+              Checking tasks due today…
+            </p>
+          ) : tasksLookup === "unavailable" ? (
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+              Tasks due today are unavailable.
+            </p>
+          ) : dueTasks.length === 0 ? (
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+              No tasks due today.
+            </p>
+          ) : (
+            <ul className="mt-1 space-y-0.5">
+              {dueTasks.map((task) => (
+                <li key={task.id}>
+                  <Link
+                    href={`/tasks/${task.id}`}
+                    className="text-sm text-[var(--text-primary)] hover:underline"
+                  >
+                    Due today: {task.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
         <Link
