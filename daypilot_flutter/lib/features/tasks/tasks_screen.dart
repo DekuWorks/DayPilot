@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/dp_cards.dart';
 import 'task_models.dart';
 
 export 'task_models.dart';
@@ -72,6 +73,21 @@ final taskProjectsProvider =
     );
   }).toList();
 });
+
+/// Today, Upcoming and Completed first, matching the mockup. All stays last.
+const _filterOrder = [
+  TaskFilter.today,
+  TaskFilter.upcoming,
+  TaskFilter.completed,
+  TaskFilter.all,
+];
+
+String _priorityLabel(String p) => switch (p) {
+  'urgent' => 'Urgent',
+  'high' => 'High',
+  'low' => 'Low',
+  _ => 'Medium',
+};
 
 /// Tasks tab — All/Today/Upcoming/Completed, projects, subtasks.
 class TasksScreen extends ConsumerStatefulWidget {
@@ -345,7 +361,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (final f in TaskFilter.values)
+                    for (final f in _filterOrder)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
@@ -480,13 +496,36 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               child: async.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('$e')),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Unavailable. Tasks could not be loaded.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: context.dp.textSecondary),
+                        ),
+                        TextButton(
+                          onPressed: () => ref.invalidate(tasksListProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 data: (all) {
                   final list = _visible(all);
                   if (list.isEmpty) {
                     return Center(
                       child: Text(
-                        'No tasks here yet.',
+                        switch (_filter) {
+                          TaskFilter.today => 'Nothing due today.',
+                          TaskFilter.upcoming => 'Nothing coming up.',
+                          TaskFilter.completed => 'No completed tasks yet.',
+                          TaskFilter.all => 'No tasks here yet.',
+                        },
                         style: TextStyle(color: DayPilotScheme.of(context).textSecondary),
                       ),
                     );
@@ -512,7 +551,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         return Container(
                           decoration: BoxDecoration(
                             color: DayPilotScheme.of(context).surfacePrimary,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: DayPilotScheme.of(context).borderSubtle,
                             ),
@@ -548,7 +587,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                   [
                                     if (t.dueAt != null)
                                       DateFormat.MMMd().format(t.dueAt!),
-                                    t.priority,
                                     ?proj,
                                     if (kids.isNotEmpty)
                                       '${kids.where((k) => k.isDone).length}/${kids.length} sub',
@@ -608,8 +646,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                                       ],
                                       child: Padding(
                                         padding: const EdgeInsets.all(8),
-                                        child: PriorityDot(
-                                          priority: t.priority,
+                                        child: DpPill(
+                                          label: _priorityLabel(t.priority),
+                                          tint: switch (t.priority) {
+                                            'urgent' => DayPilotColors.error,
+                                            'high' => DayPilotColors.warning,
+                                            'low' => context.dp.textTertiary,
+                                            _ => context.dp.accent,
+                                          },
                                         ),
                                       ),
                                     ),

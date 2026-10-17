@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/dp_cards.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import 'founder_hub_api.dart';
 
@@ -38,8 +39,7 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
   bool _loading = true;
   bool _busy = false;
 
-  FounderHubApi get _api =>
-      FounderHubApi(ref.read(nestApiSessionProvider));
+  FounderHubApi get _api => FounderHubApi(ref.read(nestApiSessionProvider));
 
   @override
   void initState() {
@@ -122,126 +122,259 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
   Widget build(BuildContext context) {
     final colors = context.dp;
     final summary = _summary;
+    final canRead = summary?['canRead'] == true;
+    final replies = (summary?['unreadReplyCount'] as num?)?.toInt() ?? 0;
     return FeatureScaffold(
       title: 'Founder Hub',
       fallbackRoute: '/settings',
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: DayPilotColors.error)),
-                if (summary != null && summary['canRead'] != true)
-                  const Text('Founder Hub is available to founding members.'),
-                if (summary?['canRead'] == true) ...[
-                  Text(
-                    '${summary?['label'] ?? 'Founding Member'}'
-                    '${summary?['phase'] == 'expired' ? ' · read only' : ''}',
-                    style: TextStyle(color: colors.textSecondary),
-                  ),
-                  if ((summary?['unreadReplyCount'] as num?) != null &&
-                      (summary?['unreadReplyCount'] as num) > 0)
-                    Text('${summary!['unreadReplyCount']} unread replies'),
-                  const SizedBox(height: 16),
-                  if (summary?['canWrite'] == true) ...[
-                    const Text('Submit a suggestion'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _title,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                    ),
-                    TextField(
-                      controller: _description,
-                      minLines: 3,
-                      maxLines: 6,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                    ),
-                    DropdownButton<String>(
-                      value: _category,
-                      items: [
-                        for (final item in _categories)
-                          DropdownMenuItem(value: item.$1, child: Text(item.$2)),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) setState(() => _category = value);
-                      },
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        final picked = await ImagePicker().pickImage(
-                          source: ImageSource.gallery,
-                          imageQuality: 80,
-                        );
-                        if (picked != null) setState(() => _shot = picked);
-                      },
-                      child: Text(_shot == null ? 'Add screenshot' : _shot!.name),
-                    ),
-                    FilledButton(
-                      onPressed: _busy ? null : _submit,
-                      child: Text(_busy ? 'Sending…' : 'Submit'),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  const Text('My suggestions'),
-                  for (final item in _items)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('${item['title']}'),
-                      subtitle: Text(
-                        '${item['categoryLabel']} · ${item['statusLabel']}'
-                        '${item['unread'] == true ? ' · unread' : ''}',
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: DpCard(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: DayPilotColors.error),
                       ),
-                      onTap: () => context.push('/settings/founder-hub/${item['id']}'),
                     ),
-                  const SizedBox(height: 20),
-                  const Text('Early access'),
+                  ),
+                if (summary != null && !canRead)
+                  DpCard(
+                    child: Row(
+                      children: [
+                        DpIconTile(
+                          icon: Icons.lock_outline_rounded,
+                          tint: colors.textTertiary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Founder Hub is available to founding members.',
+                            style: TextStyle(color: colors.textPrimary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (canRead) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      DpPill(
+                        label:
+                            '${summary?['label'] ?? 'Founding Member'}'
+                            '${summary?['phase'] == 'expired' ? ' · read only' : ''}',
+                        tint: colors.accent,
+                      ),
+                      if (replies > 0)
+                        DpPill(
+                          label:
+                              '$replies unread ${replies == 1 ? 'reply' : 'replies'}',
+                          tint: DayPilotColors.warning,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const DpSectionTitle(title: 'Early access'),
+                  const SizedBox(height: 8),
                   if (_beta.isEmpty)
-                    Text(
-                      'No founder beta features are available right now.',
-                      style: TextStyle(color: colors.textSecondary),
+                    DpCard(
+                      child: Text(
+                        'No founder beta features are available right now.',
+                        style: TextStyle(color: colors.textSecondary),
+                      ),
                     ),
                   for (final feature in _beta)
-                    _BetaTile(
-                      feature: feature,
-                      onFeedback: () {
-                        setState(() {
-                          _title.text = '${feature['name']}';
-                          _description.text = 'Feedback on ${feature['name']}.';
-                          _category = 'improvement';
-                        });
-                      },
-                      onOpt: feature['changesScheduling'] == true
-                          ? () async {
-                              final next = await _api.setOptOut(
-                                '${feature['key']}',
-                                feature['optedOut'] != true,
-                              );
-                              if (mounted) setState(() => _beta = next);
-                            }
-                          : null,
-                    ),
-                  if (_prefs != null) ...[
-                    const SizedBox(height: 20),
-                    const Text('Hub notifications'),
-                    for (final entry in const [
-                      ('inApp', 'In the app'),
-                      ('push', 'Phone alerts'),
-                      ('email', 'Email'),
-                    ])
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(entry.$2),
-                        value: _prefs![entry.$1] == true,
-                        onChanged: (value) async {
-                          final next = {..._prefs!, entry.$1: value};
-                          setState(() => _prefs = next);
-                          await _api.savePrefs(next);
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _BetaTile(
+                        feature: feature,
+                        canWrite: summary?['canWrite'] == true,
+                        onFeedback: () {
+                          setState(() {
+                            _title.text = '${feature['name']}';
+                            _description.text =
+                                'Feedback on ${feature['name']}.';
+                            _category = 'improvement';
+                          });
                         },
+                        onOpt: feature['changesScheduling'] == true
+                            ? () async {
+                                final next = await _api.setOptOut(
+                                  '${feature['key']}',
+                                  feature['optedOut'] != true,
+                                );
+                                if (mounted) setState(() => _beta = next);
+                              }
+                            : null,
                       ),
-                    Text(
-                      'Email stays off until you turn it on.',
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    ),
+                  const SizedBox(height: 14),
+                  const DpSectionTitle(title: 'Your suggestions'),
+                  const SizedBox(height: 8),
+                  if (_items.isEmpty)
+                    DpCard(
+                      child: Text(
+                        'You have not sent a suggestion yet.',
+                        style: TextStyle(color: colors.textSecondary),
+                      ),
+                    ),
+                  for (final item in _items)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: DpCard(
+                        onTap: () =>
+                            context.push('/settings/founder-hub/${item['id']}'),
+                        child: Row(
+                          children: [
+                            DpIconTile(
+                              icon: Icons.lightbulb_outline_rounded,
+                              tint: colors.accent,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${item['title']}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item['categoryLabel']} · ${item['statusLabel']}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (item['unread'] == true)
+                              const DpPill(
+                                label: 'Unread',
+                                tint: DayPilotColors.warning,
+                              ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: colors.textTertiary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (summary?['canWrite'] == true) ...[
+                    const SizedBox(height: 14),
+                    const DpSectionTitle(title: 'Submit a suggestion'),
+                    const SizedBox(height: 8),
+                    DpCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _title,
+                            decoration: const InputDecoration(
+                              labelText: 'Title',
+                            ),
+                          ),
+                          TextField(
+                            controller: _description,
+                            minLines: 3,
+                            maxLines: 6,
+                            decoration: const InputDecoration(
+                              labelText: 'Description',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButton<String>(
+                            value: _category,
+                            items: [
+                              for (final item in _categories)
+                                DropdownMenuItem(
+                                  value: item.$1,
+                                  child: Text(item.$2),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _category = value);
+                              }
+                            },
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await ImagePicker().pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 80,
+                              );
+                              if (picked != null) {
+                                setState(() => _shot = picked);
+                              }
+                            },
+                            child: Text(
+                              _shot == null ? 'Add screenshot' : _shot!.name,
+                            ),
+                          ),
+                          FilledButton(
+                            onPressed: _busy ? null : _submit,
+                            child: Text(_busy ? 'Sending…' : 'Submit'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_prefs != null) ...[
+                    const SizedBox(height: 14),
+                    const DpSectionTitle(title: 'Hub notifications'),
+                    const SizedBox(height: 8),
+                    DpCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      child: Column(
+                        children: [
+                          for (final entry in const [
+                            ('inApp', 'In the app'),
+                            ('push', 'Phone alerts'),
+                            ('email', 'Email'),
+                          ])
+                            SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(entry.$2),
+                              value: _prefs![entry.$1] == true,
+                              onChanged: (value) async {
+                                final next = {..._prefs!, entry.$1: value};
+                                setState(() => _prefs = next);
+                                await _api.savePrefs(next);
+                              },
+                            ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Email stays off until you turn it on.',
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],
@@ -254,33 +387,67 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
 class _BetaTile extends StatelessWidget {
   const _BetaTile({
     required this.feature,
+    required this.canWrite,
     required this.onFeedback,
     this.onOpt,
   });
 
   final Map<String, dynamic> feature;
+  final bool canWrite;
   final VoidCallback onFeedback;
   final VoidCallback? onOpt;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    final colors = context.dp;
+    final label = feature['label'] as String?;
+    return DpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${feature['name']}${feature['label'] == null ? '' : ' · ${feature['label']}'}'),
-          Text('${feature['description']}'),
-          TextButton(onPressed: onFeedback, child: const Text('Send feedback')),
-          if (onOpt != null)
-            TextButton(
-              onPressed: onOpt,
-              child: Text(
-                feature['optedOut'] == true
-                    ? 'Use this beta behaviour'
-                    : 'Turn off this beta behaviour',
+          Row(
+            children: [
+              DpIconTile(
+                icon: Icons.rocket_launch_outlined,
+                tint: colors.accent,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${feature['name']}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              if (label != null && label.isNotEmpty)
+                DpPill(label: label, tint: colors.accent),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${feature['description']}',
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+          ),
+          Wrap(
+            children: [
+              if (canWrite)
+                TextButton(
+                  onPressed: onFeedback,
+                  child: const Text('Send feedback'),
+                ),
+              if (onOpt != null)
+                TextButton(
+                  onPressed: onOpt,
+                  child: Text(
+                    feature['optedOut'] == true
+                        ? 'Use this beta behaviour'
+                        : 'Turn off this beta behaviour',
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -293,7 +460,8 @@ class FounderThreadScreen extends ConsumerStatefulWidget {
   final String id;
 
   @override
-  ConsumerState<FounderThreadScreen> createState() => _FounderThreadScreenState();
+  ConsumerState<FounderThreadScreen> createState() =>
+      _FounderThreadScreenState();
 }
 
 class _FounderThreadScreenState extends ConsumerState<FounderThreadScreen> {
@@ -315,8 +483,9 @@ class _FounderThreadScreenState extends ConsumerState<FounderThreadScreen> {
 
   Future<void> _load() async {
     try {
-      final item = await FounderHubApi(ref.read(nestApiSessionProvider))
-          .suggestion(widget.id);
+      final item = await FounderHubApi(
+        ref.read(nestApiSessionProvider),
+      ).suggestion(widget.id);
       if (mounted) setState(() => _item = item);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -350,7 +519,10 @@ class _FounderThreadScreenState extends ConsumerState<FounderThreadScreen> {
                   decoration: const InputDecoration(labelText: 'Follow up'),
                 ),
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: DayPilotColors.error)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: DayPilotColors.error),
+                  ),
                 FilledButton(
                   onPressed: () async {
                     try {
