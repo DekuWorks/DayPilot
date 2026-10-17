@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { primaryNav, secondaryNav } from "./nav-config";
+import { footerNav, moreNav, primaryNav, secondaryNav } from "./nav-config";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import * as eventsApi from "@/lib/events";
 
@@ -36,14 +36,14 @@ const quickActions: PaletteItem[] = [
   {
     id: "action-create-event",
     label: "Create an event",
-    href: "/dashboard",
+    href: "/calendar?create=1",
     group: "Actions",
-    hint: "Opens the home calendar",
+    hint: "Opens the calendar",
   },
   {
     id: "action-open-calendar",
     label: "Open calendar",
-    href: "/dashboard",
+    href: "/calendar",
     group: "Actions",
   },
   {
@@ -55,13 +55,13 @@ const quickActions: PaletteItem[] = [
 ];
 
 const navActions: PaletteItem[] = [
-  ...primaryNav.map((n) => ({
+  ...[...primaryNav, ...moreNav].map((n) => ({
     id: `nav-${n.href}`,
     label: n.label,
     href: n.href,
     group: "Navigate",
   })),
-  ...secondaryNav.map((n) => ({
+  ...[...footerNav, ...secondaryNav].map((n) => ({
     id: `nav-${n.href}`,
     label: n.label,
     href: n.href,
