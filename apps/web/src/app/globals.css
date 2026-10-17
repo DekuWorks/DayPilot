@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
-/* DayPilot — dark + electric green (Tailwind 4 theme bridge) */
+/* DayPilot — dark sage brand (Tailwind 4 theme bridge) */
 @theme {
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);
