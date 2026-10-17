@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        "bg-[var(--brand-500)] text-[var(--text-inverse)] hover:bg-[var(--brand-400)] active:bg-[var(--brand-600)] shadow-sm hover:shadow-[0_0_24px_rgba(66,232,95,0.25)] active:scale-[0.98]",
+        "bg-[var(--brand-500)] text-[var(--text-inverse)] hover:bg-[var(--brand-400)] active:bg-[var(--brand-600)] shadow-sm hover:shadow-[0_0_24px_color-mix(in_srgb,var(--brand-500)_25%,transparent)] active:scale-[0.98]",
       secondary:
         "bg-[var(--surface-secondary)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--brand-500)] hover:text-[var(--brand-500)] active:scale-[0.98]",
       outline:
