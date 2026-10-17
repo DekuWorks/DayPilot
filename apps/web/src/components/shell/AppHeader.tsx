@@ -1,25 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
-import {
-  CalendarDays,
-  Menu,
-  Search,
-  Command,
-} from "lucide-react";
+import { Menu, Search, Command } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarStore } from "@/stores/sidebar-store";
+import { NewMenu } from "./NewMenu";
 import { NotificationsMenu } from "./NotificationsMenu";
 
-function greetingForHour(hour: number) {
-  // Late night / early morning should not say "Good morning"
-  if (hour < 5) return "Good evening";
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
+/**
+ * Top bar: search, New, notifications, profile.
+ * The greeting lives on the Today page, not here.
+ */
 export function AppHeader({
   title,
   subtitle,
@@ -32,29 +23,9 @@ export function AppHeader({
   const { user } = useAuth();
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
 
-  const { greeting, shortGreeting, dateLabel, shortDateLabel } = useMemo(() => {
-    const now = new Date();
-    const name = user?.firstName || "there";
-    return {
-      greeting: `${greetingForHour(now.getHours())}, ${name}`,
-      shortGreeting: `Hi, ${name}`,
-      dateLabel: now.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-      shortDateLabel: now.toLocaleDateString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }),
-    };
-  }, [user?.firstName]);
-
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--background-primary)_88%,transparent)] backdrop-blur-md">
-      <div className="flex items-center gap-2 sm:gap-3 px-3 py-3 sm:px-4 md:px-6 md:py-4">
+      <div className="flex items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4 md:px-6">
         <button
           type="button"
           className="md:hidden shrink-0 rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
@@ -64,56 +35,37 @@ export function AppHeader({
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="min-w-0 flex-1 basis-0 md:max-w-xs lg:max-w-sm">
-          <h1 className="truncate text-base font-semibold text-[var(--text-primary)] md:text-lg">
-            {title ?? (
-              <>
-                <span className="sm:hidden">{shortGreeting}!</span>
-                <span className="hidden sm:inline">{greeting}!</span>
-              </>
-            )}
-          </h1>
-          <p className="truncate text-xs text-[var(--text-tertiary)] md:text-sm">
-            {subtitle ?? (
-              <>
-                <span className="sm:hidden">{shortDateLabel}</span>
-                <span className="hidden sm:inline">{dateLabel}</span>
-              </>
-            )}
-          </p>
-        </div>
+        {title ? (
+          <div className="min-w-0 md:max-w-xs">
+            <h1 className="truncate text-base font-semibold text-[var(--text-primary)] md:text-lg">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="truncate text-xs text-[var(--text-tertiary)] md:text-sm">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <button
           type="button"
-          className="sm:hidden rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
-          aria-label="Search"
-          onClick={() => onOpenSearch?.()}
-        >
-          <Search className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
-          className="hidden sm:flex flex-1 max-w-md items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 text-left text-sm text-[var(--text-tertiary)] hover:border-[var(--border-strong)] transition-colors"
+          className="flex min-w-0 max-w-md flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 text-left text-sm text-[var(--text-tertiary)] transition-colors hover:border-[var(--border-strong)]"
           aria-label="Search (Command K)"
           onClick={() => onOpenSearch?.()}
         >
           <Search className="h-4 w-4 shrink-0" />
-          <span className="flex-1 truncate">Search anything...</span>
+          <span className="flex-1 truncate">
+            Search tasks, events, or people…
+          </span>
           <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
             <Command className="h-3 w-3" />K
           </kbd>
         </button>
 
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="ml-auto flex items-center gap-1 md:gap-2">
+          <NewMenu />
           <NotificationsMenu />
-          <Link
-            href="/dashboard"
-            className="rounded-[var(--radius-md)] p-2 text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
-            aria-label="Home calendar"
-          >
-            <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
-          </Link>
           <Link
             href="/settings"
             className="ml-1 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--brand-500)_18%,transparent)]"

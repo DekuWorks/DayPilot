@@ -258,7 +258,7 @@ export default function SyncPage() {
 
       <p className="text-sm text-[var(--text-secondary)]">
         <Link
-          href="/dashboard"
+          href="/calendar"
           className="text-[var(--brand-500)] font-medium hover:underline"
         >
           Calendar

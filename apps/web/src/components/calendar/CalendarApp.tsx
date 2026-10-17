@@ -57,10 +57,28 @@ export function CalendarApp() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [readModel, setReadModel] = useState<eventsApi.EventReadModel>("nest");
   const [loading, setLoading] = useState(true);
+  // The top-bar "New > Event" entry links here with ?create=1.
   const [createModal, setCreateModal] = useState<{
     date: Date;
     hour?: number;
-  } | null>(null);
+  } | null>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("create") === "1"
+      ? { date: new Date() }
+      : null,
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("create") !== "1") return;
+    params.delete("create");
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`,
+    );
+  }, []);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null,
   );
