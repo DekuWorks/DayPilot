@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
+import { StatusMessage } from "@/components/StatusMessage";
 import { useAuth } from "@/providers/AuthProvider";
 import * as eventsApi from "@/lib/events";
 import type { CalendarEvent } from "@/lib/events";
@@ -20,7 +21,7 @@ function formatWhen(iso: string) {
 function durationMins(start: string, end: string) {
   return Math.max(
     0,
-    Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000)
+    Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000),
   );
 }
 
@@ -72,8 +73,7 @@ export default function MeetingsPage() {
         return true;
       })
       .sort((a, b) => {
-        const diff =
-          new Date(a.start).getTime() - new Date(b.start).getTime();
+        const diff = new Date(a.start).getTime() - new Date(b.start).getTime();
         return filter === "past" ? -diff : diff;
       });
   }, [events, filter]);
@@ -211,10 +211,15 @@ export default function MeetingsPage() {
 
       <ul className="space-y-2">
         {loading ? (
-          <li className="text-sm text-[var(--text-tertiary)] p-2">Loading…</li>
+          <li className="p-2">
+            <StatusMessage tone="loading">Loading meetings…</StatusMessage>
+          </li>
         ) : visible.length === 0 ? (
-          <li className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 text-sm text-[var(--text-secondary)]">
-            No meetings in this view. Schedule one or add events on the calendar.
+          <li className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6">
+            <StatusMessage tone="empty">
+              No meetings in this view. Schedule one or add events on the
+              calendar.
+            </StatusMessage>
           </li>
         ) : (
           visible.map((m) => (

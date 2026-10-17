@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusMessage } from "@/components/StatusMessage";
 import type { CalendarEvent } from "@/lib/events";
 import { calendarChipStyle } from "@/lib/event-color";
 import {
@@ -35,8 +36,8 @@ export function DayTimeline({
   return (
     <div className="glass-effect rounded-2xl overflow-hidden border border-[var(--border-subtle)]">
       {loading ? (
-        <div className="py-24 text-center text-[var(--text-secondary)]">
-          Loading…
+        <div className="py-24 text-center">
+          <StatusMessage tone="loading">Loading this day…</StatusMessage>
         </div>
       ) : (
         <div className="flex overflow-x-auto">

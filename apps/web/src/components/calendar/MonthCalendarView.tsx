@@ -1,12 +1,9 @@
 "use client";
 
+import { StatusMessage } from "@/components/StatusMessage";
 import type { CalendarEvent } from "@/lib/events";
 import { calendarChipStyle } from "@/lib/event-color";
-import {
-  WEEKDAYS,
-  dateKey,
-  formatTime,
-} from "./calendar-utils";
+import { WEEKDAYS, dateKey, formatTime } from "./calendar-utils";
 
 type DayCell = {
   date: Date;
@@ -94,8 +91,8 @@ export function MonthCalendarView({
       </div>
       <div className="divide-y divide-[var(--border-subtle)]">
         {loading ? (
-          <div className="py-24 text-center text-[var(--text-secondary)]">
-            Loading…
+          <div className="py-24 text-center">
+            <StatusMessage tone="loading">Loading this month…</StatusMessage>
           </div>
         ) : (
           grid.map((week, wi) => (
@@ -144,19 +141,19 @@ export function MonthCalendarView({
                           source: ev.source,
                         });
                         return (
-                        <button
-                          key={ev.id}
-                          type="button"
-                          onClick={() => onSelectEvent(ev)}
-                          className="w-full text-left px-2 py-1 rounded-lg text-xs font-medium truncate border-l-2"
-                          style={{
-                            borderLeftColor: chip.accent,
-                            background: chip.fill,
-                            color: chip.foreground,
-                          }}
-                        >
-                          {formatTime(ev.start)} {ev.title}
-                        </button>
+                          <button
+                            key={ev.id}
+                            type="button"
+                            onClick={() => onSelectEvent(ev)}
+                            className="w-full text-left px-2 py-1 rounded-lg text-xs font-medium truncate border-l-2"
+                            style={{
+                              borderLeftColor: chip.accent,
+                              background: chip.fill,
+                              color: chip.foreground,
+                            }}
+                          >
+                            {formatTime(ev.start)} {ev.title}
+                          </button>
                         );
                       })}
                       {cell.events.length > 3 && (

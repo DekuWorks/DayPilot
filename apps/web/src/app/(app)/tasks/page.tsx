@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/Button";
+import { StatusMessage } from "@/components/StatusMessage";
 import { useAuth } from "@/providers/AuthProvider";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -44,7 +45,8 @@ export default function TasksPage() {
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [filter, setFilter] = useState<(typeof filters)[number]>("today");
   const [title, setTitle] = useState("");
-  const [priority, setPriority] = useState<(typeof priorities)[number]>("medium");
+  const [priority, setPriority] =
+    useState<(typeof priorities)[number]>("medium");
   const [projectId, setProjectId] = useState("");
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
@@ -85,7 +87,7 @@ export default function TasksPage() {
         supabase
           .from("tasks")
           .select(
-            "id, title, status, priority, due_at, description, project_id"
+            "id, title, status, priority, due_at, description, project_id",
           )
           .order("created_at", { ascending: false }),
         supabase
@@ -165,7 +167,7 @@ export default function TasksPage() {
     const due_at = dueAtFromInput(day);
     await supabase.from("tasks").update({ due_at }).eq("id", task.id);
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, due_at } : t))
+      prev.map((t) => (t.id === task.id ? { ...t, due_at } : t)),
     );
   }
   async function toggle(task: Task) {
@@ -184,13 +186,13 @@ export default function TasksPage() {
 
   async function cyclePriority(task: Task) {
     const idx = priorities.indexOf(
-      task.priority as (typeof priorities)[number]
+      task.priority as (typeof priorities)[number],
     );
     const next = priorities[(idx + 1) % priorities.length];
     const supabase = createClient();
     await supabase.from("tasks").update({ priority: next }).eq("id", task.id);
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, priority: next } : t))
+      prev.map((t) => (t.id === task.id ? { ...t, priority: next } : t)),
     );
   }
 
@@ -229,8 +231,8 @@ export default function TasksPage() {
               ...x,
               status: s.status === "completed" ? "pending" : "completed",
             }
-          : x
-      )
+          : x,
+      ),
     );
   }
 
@@ -315,10 +317,12 @@ export default function TasksPage() {
 
       <ul className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
         {loading ? (
-          <li className="text-sm text-[var(--text-tertiary)] p-2">Loading…</li>
+          <li className="p-2">
+            <StatusMessage tone="loading">Loading tasks…</StatusMessage>
+          </li>
         ) : visible.length === 0 ? (
-          <li className="text-sm text-[var(--text-secondary)] p-2">
-            No tasks here yet.
+          <li className="p-2">
+            <StatusMessage tone="empty">No tasks here yet.</StatusMessage>
           </li>
         ) : (
           visible.map((task) => {

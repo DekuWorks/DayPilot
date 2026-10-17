@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/Button";
+import { StatusMessage } from "@/components/StatusMessage";
 import { useAuth } from "@/providers/AuthProvider";
 import * as projectsApi from "@/lib/projects-supabase";
 import type { Project } from "@/lib/projects-supabase";
@@ -64,13 +65,13 @@ export default function ProjectsPage() {
   }
 
   async function patchSelected(
-    patch: Parameters<typeof projectsApi.updateProject>[1]
+    patch: Parameters<typeof projectsApi.updateProject>[1],
   ) {
     if (!selectedId) return;
     try {
       const updated = await projectsApi.updateProject(selectedId, patch);
       setProjects((prev) =>
-        prev.map((p) => (p.id === updated.id ? updated : p))
+        prev.map((p) => (p.id === updated.id ? updated : p)),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update");
@@ -132,7 +133,9 @@ export default function ProjectsPage() {
                 type="button"
                 onClick={() => setNewColor(c)}
                 className={`h-7 w-7 rounded-full ${
-                  newColor === c ? "ring-2 ring-[var(--text-primary)] ring-offset-2 ring-offset-[var(--surface-primary)]" : ""
+                  newColor === c
+                    ? "ring-2 ring-[var(--text-primary)] ring-offset-2 ring-offset-[var(--surface-primary)]"
+                    : ""
                 }`}
                 style={{ background: c }}
                 aria-label={`Color ${c}`}
@@ -158,10 +161,12 @@ export default function ProjectsPage() {
       <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
         <ul className="space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
           {loading ? (
-            <li className="p-2 text-sm text-[var(--text-tertiary)]">Loading…</li>
+            <li className="p-2">
+              <StatusMessage tone="loading">Loading projects…</StatusMessage>
+            </li>
           ) : projects.length === 0 ? (
-            <li className="p-2 text-sm text-[var(--text-tertiary)]">
-              No projects yet.
+            <li className="p-2">
+              <StatusMessage tone="empty">No projects yet.</StatusMessage>
             </li>
           ) : (
             projects.map((project) => (
@@ -208,12 +213,14 @@ export default function ProjectsPage() {
                       prev.map((p) =>
                         p.id === selected.id
                           ? { ...p, name: e.target.value }
-                          : p
-                      )
+                          : p,
+                      ),
                     )
                   }
                   onBlur={(e) =>
-                    patchSelected({ name: e.target.value.trim() || selected.name })
+                    patchSelected({
+                      name: e.target.value.trim() || selected.name,
+                    })
                   }
                   className="min-w-0 flex-1 bg-transparent text-xl font-bold text-[var(--text-primary)] outline-none"
                 />
@@ -229,8 +236,8 @@ export default function ProjectsPage() {
                     prev.map((p) =>
                       p.id === selected.id
                         ? { ...p, description: e.target.value }
-                        : p
-                    )
+                        : p,
+                    ),
                   )
                 }
                 onBlur={(e) =>
@@ -278,8 +285,8 @@ export default function ProjectsPage() {
                     const progress = Number(e.target.value);
                     setProjects((prev) =>
                       prev.map((p) =>
-                        p.id === selected.id ? { ...p, progress } : p
-                      )
+                        p.id === selected.id ? { ...p, progress } : p,
+                      ),
                     );
                   }}
                   onMouseUp={(e) =>
