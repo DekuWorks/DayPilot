@@ -88,6 +88,16 @@ export function LaunchPricing() {
             <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
               {body}
             </p>
+            <ul className="mt-4 max-h-64 space-y-1.5 overflow-y-auto pr-1">
+              {plan.features.map((feature) => (
+                <li
+                  key={feature}
+                  className="text-sm leading-relaxed text-[var(--text-secondary)]"
+                >
+                  {feature}
+                </li>
+              ))}
+            </ul>
             {extra ? <div className="mt-3">{extra}</div> : null}
             {plan.planId === "free" ? (
               <Button href="/signup" variant="outline" className="mt-6 w-full">

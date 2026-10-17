@@ -15,6 +15,7 @@ import type {
   UserRow,
 } from './hub-db';
 import { resolveHubOwner } from './hub-owner';
+import { isWaitlistStatus, toPeopleDirectory } from './people-directory';
 import {
   defaultNoticePrefs,
   deliveryPlan,
@@ -465,6 +466,25 @@ export class FounderHubFlow {
     return this.adminView(updated.id);
   }
 
+  async listPeople(actorId: string) {
+    await this.assertOwner(actorId);
+    const [founding, waitlist] = await Promise.all([
+      this.db.listFoundingDirectory(),
+      this.db.listWaitlist(),
+    ]);
+    return toPeopleDirectory({ founding, waitlist });
+  }
+
+  async setWaitlistStatus(actorId: string, id: string, status: string) {
+    await this.assertOwner(actorId);
+    if (!isWaitlistStatus(status)) {
+      throw new HubError(400, 'Unknown waitlist status.');
+    }
+    const updated = await this.db.updateWaitlistStatus(id, status);
+    if (!updated) throw new HubError(404, 'Waitlist row not found.');
+    return { id: updated.id, status: updated.status };
+  }
+
   async alerts(actorId: string) {
     const flags = await this.accountFlags(actorId);
     if (!flags.isOwner) throw new HubError(403, 'Not the hub owner.');
@@ -646,6 +666,12 @@ export class FounderHubFlow {
         err instanceof Error ? err.message : 'Invalid suggestion.',
       );
     }
+  }
+
+  /** Same check as the owner inbox button: designated hub owner only. */
+  private async assertOwner(actorId: string): Promise<void> {
+    const flags = await this.accountFlags(actorId);
+    if (!flags.isOwner) throw new HubError(403, 'Not the hub owner.');
   }
 
   /** ADMIN, or the user named by FOUNDER_HUB_OWNER_USER_ID. */

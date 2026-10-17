@@ -9,6 +9,10 @@ import type {
   SubscriptionRow,
   SuggestionRow,
 } from './hub-db';
+import type {
+  FoundingDirectoryInput,
+  WaitlistDirectoryInput,
+} from './people-directory';
 import { defaultNoticePrefs } from './push-delivery';
 
 function asBuffer(value: Uint8Array | Buffer): Buffer {
@@ -70,6 +74,112 @@ export class PrismaHubDb implements HubDb {
     }));
   }
 
+  async listFoundingDirectory(): Promise<FoundingDirectoryInput[]> {
+    const personSelect = {
+      email: true,
+      firstName: true,
+      lastName: true,
+    } as const;
+    const claims = await this.prisma.foundingClaim.findMany({
+      orderBy: { founderNumber: 'asc' },
+      include: { user: { select: personSelect } },
+    });
+    const subs = await this.prisma.subscription.findMany({
+      where: { OR: [{ tier: 'FoundingPro' }, { planId: 'founding_pro' }] },
+      include: { user: { select: personSelect } },
+      orderBy: { createdAt: 'asc' },
+    });
+    const subsByUser = new Map(subs.map((row) => [row.userId, row]));
+    const seen = new Set<string>();
+    const rows: FoundingDirectoryInput[] = [];
+    for (const claim of claims) {
+      const sub = claim.userId ? subsByUser.get(claim.userId) : undefined;
+      if (claim.userId) seen.add(claim.userId);
+      const user = claim.user ?? sub?.user ?? null;
+      rows.push({
+        email: user?.email ?? null,
+        firstName: user?.firstName ?? null,
+        lastName: user?.lastName ?? null,
+        planId: sub?.planId ?? 'founding_pro',
+        tier: sub?.tier ?? 'FoundingPro',
+        status: sub?.status ?? null,
+        founderNumber: claim.founderNumber,
+        currentPeriodEnd: sub?.currentPeriodEnd ?? claim.periodEnd,
+        subscribedAt: sub?.createdAt ?? null,
+        claimCreatedAt: claim.createdAt,
+      });
+    }
+    for (const sub of subs) {
+      if (seen.has(sub.userId)) continue;
+      rows.push({
+        email: sub.user.email,
+        firstName: sub.user.firstName,
+        lastName: sub.user.lastName,
+        planId: sub.planId,
+        tier: sub.tier,
+        status: sub.status,
+        founderNumber: sub.founderNumber,
+        currentPeriodEnd: sub.currentPeriodEnd,
+        subscribedAt: sub.createdAt,
+      });
+    }
+    return rows;
+  }
+
+  async listWaitlist(): Promise<WaitlistDirectoryInput[]> {
+    const rows = await this.prisma.planWaitlistEntry.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        requestedPlan: true,
+        status: true,
+        companyName: true,
+        teamSize: true,
+        createdAt: true,
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      requestedPlan: row.requestedPlan,
+      status: row.status,
+      companyName: row.companyName,
+      teamSize: row.teamSize,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async updateWaitlistStatus(id: string, status: string) {
+    const existing = await this.prisma.planWaitlistEntry.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return null;
+    const row = await this.prisma.planWaitlistEntry.update({
+      where: { id },
+      data: { status },
+      select: {
+        id: true,
+        email: true,
+        requestedPlan: true,
+        status: true,
+        companyName: true,
+        teamSize: true,
+        createdAt: true,
+      },
+    });
+    return {
+      id: row.id,
+      email: row.email,
+      requestedPlan: row.requestedPlan,
+      status: row.status,
+      companyName: row.companyName,
+      teamSize: row.teamSize,
+      createdAt: row.createdAt,
+    };
+  }
+
   async suggestionsSince(userId: string, since: Date) {
     const rows = await this.prisma.founderSuggestion.findMany({
       where: { userId, createdAt: { gte: since } },
@@ -77,7 +187,9 @@ export class PrismaHubDb implements HubDb {
     return rows.map(mapSuggestion);
   }
 
-  async insertSuggestion(row: Omit<SuggestionRow, 'id' | 'updatedAt'> & { createdAt: Date }) {
+  async insertSuggestion(
+    row: Omit<SuggestionRow, 'id' | 'updatedAt'> & { createdAt: Date },
+  ) {
     const saved = await this.prisma.founderSuggestion.create({
       data: {
         userId: row.userId,
@@ -104,7 +216,9 @@ export class PrismaHubDb implements HubDb {
   }
 
   async getSuggestion(id: string) {
-    const row = await this.prisma.founderSuggestion.findUnique({ where: { id } });
+    const row = await this.prisma.founderSuggestion.findUnique({
+      where: { id },
+    });
     return row ? mapSuggestion(row) : null;
   }
 
@@ -120,9 +234,7 @@ export class PrismaHubDb implements HubDb {
     const saved = await this.prisma.founderSuggestion.update({
       where: { id },
       data: {
-        ...(patch.status
-          ? { status: patch.status as 'submitted' }
-          : {}),
+        ...(patch.status ? { status: patch.status as 'submitted' } : {}),
         ...(patch.founderLastReadAt !== undefined
           ? { founderLastReadAt: patch.founderLastReadAt }
           : {}),
@@ -162,7 +274,9 @@ export class PrismaHubDb implements HubDb {
     });
   }
 
-  async insertAttachment(row: Omit<AttachmentRow, 'id' | 'createdAt'> & { createdAt: Date }) {
+  async insertAttachment(
+    row: Omit<AttachmentRow, 'id' | 'createdAt'> & { createdAt: Date },
+  ) {
     const saved = await this.prisma.founderSuggestionAttachment.create({
       data: {
         suggestionId: row.suggestionId,
@@ -201,7 +315,9 @@ export class PrismaHubDb implements HubDb {
     return row ? mapAttachment(row) : null;
   }
 
-  async insertNotice(row: Omit<NoticeRow, 'id' | 'createdAt'> & { createdAt: Date }) {
+  async insertNotice(
+    row: Omit<NoticeRow, 'id' | 'createdAt'> & { createdAt: Date },
+  ) {
     const saved = await this.prisma.founderNotice.create({
       data: {
         userId: row.userId,
@@ -223,7 +339,10 @@ export class PrismaHubDb implements HubDb {
   async updateNotice(
     id: string,
     patch: Partial<
-      Pick<NoticeRow, 'pushSentAt' | 'pushSkipReason' | 'emailSentAt' | 'readAt'>
+      Pick<
+        NoticeRow,
+        'pushSentAt' | 'pushSkipReason' | 'emailSentAt' | 'readAt'
+      >
     >,
   ) {
     await this.prisma.founderNotice.update({ where: { id }, data: patch });
@@ -294,7 +413,9 @@ export class PrismaHubDb implements HubDb {
   }
 
   async listDevices(userId: string) {
-    const rows = await this.prisma.devicePushToken.findMany({ where: { userId } });
+    const rows = await this.prisma.devicePushToken.findMany({
+      where: { userId },
+    });
     return rows.map((row) => ({
       token: row.token,
       platform: row.platform,
@@ -312,7 +433,10 @@ export class PrismaHubDb implements HubDb {
     return row ? mapFeature(row) : null;
   }
 
-  async updateFeature(key: string, patch: Partial<Pick<BetaRow, 'enabled' | 'stage'>>) {
+  async updateFeature(
+    key: string,
+    patch: Partial<Pick<BetaRow, 'enabled' | 'stage'>>,
+  ) {
     const row = await this.prisma.betaFeature.update({
       where: { key },
       data: {
@@ -324,7 +448,9 @@ export class PrismaHubDb implements HubDb {
   }
 
   async listOptOuts(userId: string) {
-    const rows = await this.prisma.founderBetaOptOut.findMany({ where: { userId } });
+    const rows = await this.prisma.founderBetaOptOut.findMany({
+      where: { userId },
+    });
     return rows.map((row) => row.featureKey);
   }
 

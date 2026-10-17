@@ -35,8 +35,7 @@ export function foundingPhase(
   const end = subscription?.currentPeriodEnd
     ? new Date(subscription.currentPeriodEnd)
     : null;
-  const endMs =
-    end && !Number.isNaN(end.getTime()) ? end.getTime() : null;
+  const endMs = end && !Number.isNaN(end.getTime()) ? end.getTime() : null;
   const periodOpen = endMs == null || endMs > now.getTime();
   if (
     status === 'past_due' &&

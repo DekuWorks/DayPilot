@@ -29,6 +29,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   String? _notice;
   Map<String, dynamic>? _subscription;
   Map<String, dynamic>? _founding;
+  List<Map<String, dynamic>> _catalog = const [];
   bool _actionBusy = false;
   IapBillingService? _iap;
   List<ProductDetails> _storeProducts = const [];
@@ -120,9 +121,23 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
         final decoded = jsonDecode(foundingRes.body);
         if (decoded is Map) founding = Map<String, dynamic>.from(decoded);
       }
+      var catalog = const <Map<String, dynamic>>[];
+      try {
+        final catalogRes = await session.get('/billing/catalog');
+        if (catalogRes.statusCode < 400) {
+          final decoded = jsonDecode(catalogRes.body);
+          if (decoded is Map && decoded['plans'] is List) {
+            catalog = (decoded['plans'] as List)
+                .whereType<Map>()
+                .map((row) => Map<String, dynamic>.from(row))
+                .toList();
+          }
+        }
+      } catch (_) {}
       setState(() {
         _subscription = Map<String, dynamic>.from(jsonDecode(subRes.body) as Map);
         _founding = founding;
+        _catalog = catalog;
         _notice = null;
       });
     } catch (_) {
@@ -210,6 +225,19 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
     return 'App Store price';
   }
 
+  List<String> _features(String planId) {
+    for (final plan in _catalog) {
+      if (plan['planId'] != planId) continue;
+      final features = plan['features'];
+      if (features is! List) return const [];
+      return features
+          .map((item) => '$item')
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
   String _spotsLine() {
     final remaining = _founding?['remainingCount'];
     final limit = _founding?['limit'];
@@ -273,6 +301,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                         'Help shape the future of DayPilot. '
                         'Join the first 25 paid members and unlock every Pro feature, plus a private Founder Hub and early access to new features.',
                     detail: _spotsLine(),
+                    features: _features('founding_pro'),
                     featured: true,
                     trailing: _isIos
                         ? _SubscriptionPurchase(
@@ -299,6 +328,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                   title: 'Pro',
                   body:
                       'Manage and optimize your time with advanced scheduling, booking and AI tools.',
+                  features: _features('pro'),
                   trailing: _isIos
                       ? _SubscriptionPurchase(
                           offer: autoRenewOfferFor(
@@ -314,11 +344,12 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                const _OfferCard(
+                _OfferCard(
                   kicker: 'FREE',
                   title: 'Free',
                   body:
                       r'$0 forever. Day, week, and month views, 1 external calendar connection, and 1 booking link.',
+                  features: _features('free'),
                 ),
                 const SizedBox(height: 12),
                 _OfferCard(
@@ -326,6 +357,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                   title: 'Team',
                   body:
                       r'Coordinate schedules, availability and bookings across your entire team. $20/month planned.',
+                  features: _features('team'),
                   trailing: TextButton(
                     onPressed: () => _openLink(
                       'https://www.daypilot.co/pricing#team-waitlist',
@@ -339,6 +371,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                   title: 'Enterprise',
                   body:
                       'Advanced scheduling, administration and security for large organizations. Custom pricing.',
+                  features: _features('enterprise'),
                   trailing: TextButton(
                     onPressed: () => _openLink(
                       'https://www.daypilot.co/pricing#enterprise-waitlist',
@@ -456,6 +489,7 @@ class _OfferCard extends StatelessWidget {
     required this.title,
     required this.body,
     this.detail,
+    this.features = const [],
     this.featured = false,
     this.trailing,
   });
@@ -464,6 +498,7 @@ class _OfferCard extends StatelessWidget {
   final String title;
   final String body;
   final String? detail;
+  final List<String> features;
   final bool featured;
   final Widget? trailing;
 
@@ -505,6 +540,18 @@ class _OfferCard extends StatelessWidget {
           if (detail != null) ...[
             const SizedBox(height: 8),
             Text(detail!, style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
+          if (features.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final feature in features)
+              Text(
+                feature,
+                style: TextStyle(
+                  color: DayPilotScheme.of(context).textSecondary,
+                  height: 1.3,
+                  fontSize: 13,
+                ),
+              ),
           ],
           if (trailing != null) ...[
             const SizedBox(height: 12),

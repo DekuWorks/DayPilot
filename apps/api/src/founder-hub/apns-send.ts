@@ -117,7 +117,5 @@ export async function sendResendEmail(input: {
       text: input.body,
     }),
   });
-  return res.ok
-    ? { sent: true }
-    : { sent: false, reason: 'send_failed' };
+  return res.ok ? { sent: true } : { sent: false, reason: 'send_failed' };
 }

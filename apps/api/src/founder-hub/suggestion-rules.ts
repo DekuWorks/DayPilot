@@ -47,7 +47,9 @@ export type SuggestionInput = {
 };
 
 /** Drops founder number, badge, entitlement, and feature-flag fields. */
-export function pickSuggestionInput(body: Record<string, unknown>): SuggestionInput {
+export function pickSuggestionInput(
+  body: Record<string, unknown>,
+): SuggestionInput {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const description =
     typeof body.description === 'string' ? body.description.trim() : '';
@@ -86,7 +88,10 @@ export function suggestionHash(title: string, description: string): string {
     .digest('hex');
 }
 
-export function founderMessageAlert(title: string): { title: string; body: string } {
+export function founderMessageAlert(title: string): {
+  title: string;
+  body: string;
+} {
   const clean = title.trim().slice(0, 120) || 'Suggestion';
   return {
     title: 'Founder message',

@@ -169,6 +169,50 @@ export async function saveNoticePrefs(
   return parse(res, "Could not save notification preferences");
 }
 
+export type FoundingPerson = {
+  email: string | null;
+  name: string | null;
+  plan: string;
+  status: string | null;
+  founderNumber: number | null;
+  currentPeriodEnd: string | null;
+  subscribedAt: string | null;
+  claimCreatedAt: string | null;
+};
+
+export type WaitlistPerson = {
+  id: string;
+  email: string;
+  plan: string;
+  status: string;
+  companyName: string | null;
+  teamSize: string | null;
+  createdAt: string;
+};
+
+export async function listFounderPeople(): Promise<{
+  founding: FoundingPerson[];
+  waitlist: WaitlistPerson[];
+}> {
+  const res = await nestFetch(`${getApiUrl()}/founder-hub/people`);
+  return parse(res, "Could not load people");
+}
+
+export async function setWaitlistStatus(
+  id: string,
+  status: "open" | "handled" | "removed",
+): Promise<{ id: string; status: string }> {
+  const res = await nestFetch(
+    `${getApiUrl()}/founder-hub/people/waitlist/${id}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+  );
+  return parse(res, "Could not update the waitlist");
+}
+
 export async function listInbox(query: {
   category?: string;
   status?: string;

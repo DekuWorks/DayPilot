@@ -22,6 +22,7 @@ import {
   RegisterDeviceDto,
   SuggestionMessageDto,
   UpdateStatusDto,
+  WaitlistStatusDto,
 } from './dto/founder-hub.dto';
 import { HubError } from './founder-hub.flow';
 import { FounderHubService } from './founder-hub.service';
@@ -147,6 +148,20 @@ export class FounderHubController {
   @Delete('beta/:key/opt-out')
   optIn(@Req() req: Authed, @Param('key') key: string) {
     return run(this.hub.setOptOut(req.user.id, key, false));
+  }
+
+  @Get('people')
+  people(@Req() req: Authed) {
+    return run(this.hub.listPeople(req.user.id));
+  }
+
+  @Patch('people/waitlist/:id')
+  waitlistStatus(
+    @Req() req: Authed,
+    @Param('id') id: string,
+    @Body() dto: WaitlistStatusDto,
+  ) {
+    return run(this.hub.setWaitlistStatus(req.user.id, id, dto.status));
   }
 
   @Get('inbox/alerts')

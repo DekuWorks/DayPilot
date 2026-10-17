@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FounderOwnerNav } from "@/components/founder-hub/FounderOwnerNav";
 import { listInbox, type HubSuggestion } from "@/lib/founder-hub-api";
 
 const CATEGORIES = [
@@ -55,6 +56,7 @@ export default function FounderInboxPage() {
       <h1 className="text-2xl font-bold text-[var(--text-primary)]">
         Founder messages
       </h1>
+      <FounderOwnerNav current="inbox" />
       <form
         className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap"
         onSubmit={(event) => {

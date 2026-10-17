@@ -390,6 +390,8 @@ model PlanWaitlistEntry {
   companyName      String?  @map("company_name")
   teamSize         String?  @map("team_size")
   marketingConsent Boolean  @default(false) @map("marketing_consent")
+  /// open, handled, or removed. Removed stays in the table so the owner can see it.
+  status           String   @default("open")
   createdAt        DateTime @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)

@@ -33,7 +33,10 @@ export function deliveryPlan(input: {
   resendReady: boolean;
 }): {
   storeInApp: boolean;
-  push: { attempt: boolean; reason?: 'credentials_missing' | 'no_device' | 'opted_out' };
+  push: {
+    attempt: boolean;
+    reason?: 'credentials_missing' | 'no_device' | 'opted_out';
+  };
   email: { attempt: boolean; reason?: 'not_configured' | 'opted_out' };
 } {
   const ownerMessage = input.kind === 'founder_message';
@@ -50,7 +53,8 @@ export function deliveryPlan(input: {
 
   let email: { attempt: boolean; reason?: 'not_configured' | 'opted_out' };
   if (!input.prefs.email) email = { attempt: false, reason: 'opted_out' };
-  else if (!input.resendReady) email = { attempt: false, reason: 'not_configured' };
+  else if (!input.resendReady)
+    email = { attempt: false, reason: 'not_configured' };
   else email = { attempt: true };
 
   return { storeInApp, push, email };

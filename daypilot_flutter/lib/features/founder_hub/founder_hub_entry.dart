@@ -76,6 +76,13 @@ class _FounderHubEntryState extends ConsumerState<FounderHubEntry> {
             onTap: () => context.push('/settings/founder-inbox'),
           ),
           const SizedBox(height: 8),
+          NavTile(
+            icon: Icons.people_outline,
+            title: 'People',
+            subtitle: 'Founding subscribers and waitlist',
+            onTap: () => context.push('/settings/founder-people'),
+          ),
+          const SizedBox(height: 8),
         ],
       ],
     );

@@ -78,6 +78,15 @@ class _FounderHubHomeButtonState extends ConsumerState<FounderHubHomeButton> {
                 child: Text(ownerLabel),
               ),
             ),
+          if (_owner) const SizedBox(height: 8),
+          if (_owner)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => context.push('/settings/founder-people'),
+                child: const Text('People'),
+              ),
+            ),
         ],
       ),
     );
