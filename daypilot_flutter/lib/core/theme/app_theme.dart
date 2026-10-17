@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Brand accents that stay the same in light and dark.
+/// Sage steps match the web tokens and [DayPilotScheme]: brand-400, brand-500, brand-600.
 abstract final class DayPilotColors {
-  static const Color brand400 = Color(0xFF6CFF4A);
-  static const Color brand500 = Color(0xFF39FF14);
-  static const Color brand600 = Color(0xFF16B947);
+  static const Color brand400 = Color(0xFF2E8B57);
+  static const Color brand500 = Color(0xFF3D9B6A);
+  static const Color brand600 = Color(0xFF1B7A4A);
 
   static const Color meetings = Color(0xFF3B82F6);
   static const Color projects = Color(0xFFA855F7);
@@ -15,7 +16,7 @@ abstract final class DayPilotColors {
   static const Color nowLine = Color(0xFFFF4B4B);
 
   static const LinearGradient brandGradient = LinearGradient(
-    colors: [Color(0xFF3D9B6A), Color(0xFF1B7A4A)],
+    colors: [brand500, brand600],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -53,6 +54,7 @@ class DayPilotScheme extends ThemeExtension<DayPilotScheme> {
   final Color textSecondary;
   final Color textTertiary;
   final Color textInverse;
+
   /// Forest sage in both themes. Dark uses a slightly brighter step for contrast.
   final Color accent;
 
@@ -67,7 +69,7 @@ class DayPilotScheme extends ThemeExtension<DayPilotScheme> {
     textSecondary: Color(0xFF8A9A90),
     textTertiary: Color(0xFF6A7A70),
     textInverse: Color(0xFF0C1210),
-    accent: Color(0xFF3D9B6A),
+    accent: DayPilotColors.brand500,
   );
 
   static const DayPilotScheme light = DayPilotScheme(
@@ -81,7 +83,7 @@ class DayPilotScheme extends ThemeExtension<DayPilotScheme> {
     textSecondary: Color(0xFF4A5A50),
     textTertiary: Color(0xFF6E8074),
     textInverse: Color(0xFFF3F7F3),
-    accent: Color(0xFF1B7A4A),
+    accent: DayPilotColors.brand600,
   );
 
   static DayPilotScheme of(BuildContext context) {
@@ -155,7 +157,7 @@ abstract final class AppTheme {
         ? ColorScheme.dark(
             primary: accent,
             onPrimary: Colors.white,
-            secondary: const Color(0xFF2E8B57),
+            secondary: DayPilotColors.brand400,
             onSecondary: Colors.white,
             secondaryContainer: const Color(0xFF163D24),
             onSecondaryContainer: accent,
@@ -172,7 +174,7 @@ abstract final class AppTheme {
         : ColorScheme.light(
             primary: accent,
             onPrimary: Colors.white,
-            secondary: const Color(0xFF2E8B57),
+            secondary: DayPilotColors.brand400,
             onSecondary: Colors.white,
             secondaryContainer: const Color(0xFFD8E8DE),
             onSecondaryContainer: Color(0xFF145C38),
