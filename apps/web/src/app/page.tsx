@@ -1,8 +1,36 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+import { AppStoreBadge } from "@/components/AppStoreBadge";
 import { Button } from "@/components/Button";
 import { MarketingFooter } from "@/components/MarketingFooter";
 import { MarketingNav } from "@/components/MarketingNav";
+import { FeatureGrid } from "@/components/marketing/FeatureGrid";
+import { LaunchPricing } from "@/components/marketing/LaunchPricing";
+import { APP_STORE_NAME, APP_STORE_URL } from "@/lib/app-store";
 import { productPositioning } from "@/lib/product-positioning";
+import { canonicalSiteUrl, publicSiteJsonLd } from "@/lib/site-metadata";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+const reasons = [
+  {
+    title: "The day is already full",
+    description:
+      "DayPilot is for people whose day is already full of meetings and leftover tasks. It shows a plan you can finish.",
+  },
+  {
+    title: "Start without a calendar",
+    description:
+      "Add a task or an event on the first visit. Connect Google, Outlook, or Apple Calendar when you want those events in the plan. Connecting is optional.",
+  },
+  {
+    title: "You decide what gets added",
+    description:
+      "Schedule suggestions stay suggestions until you add them. You stay in control of what goes on the schedule.",
+  },
+];
 
 const steps = [
   {
@@ -23,8 +51,21 @@ const steps = [
 ];
 
 export default function HomePage() {
+  const site = canonicalSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            publicSiteJsonLd({
+              origin: site.origin,
+              appName: APP_STORE_NAME,
+              appUrl: APP_STORE_URL,
+            }),
+          ),
+        }}
+      />
       <MarketingNav ctaLabel="Get started" />
 
       <main>
@@ -58,9 +99,12 @@ export default function HomePage() {
                 Sign in
               </Button>
             </div>
+            <div className="flex justify-center">
+              <AppStoreBadge />
+            </div>
             <p className="text-sm text-[var(--text-tertiary)] px-4">
-              The web app is the way in from this site. The iOS app uses the
-              same account after you sign in.
+              Add a task or an event before you connect a calendar. The web app
+              and the iOS app use the same account after you sign in.
             </p>
           </div>
         </section>
@@ -72,7 +116,7 @@ export default function HomePage() {
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_0_80px_rgba(66,232,95,0.08)]">
             <Image
               src="/brand/dashboard-preview.png"
-              alt="DayPilot calendar with the day's events in one view"
+              alt="Illustrated preview of the DayPilot day view"
               width={1200}
               height={750}
               className="h-auto w-full"
@@ -83,9 +127,44 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="container-width section-padding py-16 md:py-24">
+        <section
+          className="container-width section-padding py-16 md:py-24"
+          aria-labelledby="why-daypilot-heading"
+        >
           <div className="text-center mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 md:mb-4">
+            <h2
+              id="why-daypilot-heading"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 md:mb-4"
+            >
+              Why DayPilot
+            </h2>
+          </div>
+          <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 list-none p-0 m-0">
+            {reasons.map((reason) => (
+              <li
+                key={reason.title}
+                className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6 md:p-8"
+              >
+                <h3 className="text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-2 md:mb-3">
+                  {reason.title}
+                </h3>
+                <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
+                  {reason.description}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section
+          className="container-width section-padding py-16 md:py-24"
+          aria-labelledby="how-it-works-heading"
+        >
+          <div className="text-center mb-12 md:mb-16">
+            <h2
+              id="how-it-works-heading"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 md:mb-4"
+            >
               How a day gets planned
             </h2>
             <p className="text-base md:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto px-4">
@@ -113,6 +192,24 @@ export default function HomePage() {
           </ol>
         </section>
 
+        <section
+          className="container-width section-padding py-16 md:py-24"
+          aria-labelledby="features-heading"
+        >
+          <div className="text-center mb-12 md:mb-16">
+            <h2
+              id="features-heading"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 md:mb-4"
+            >
+              What you can use after you sign in
+            </h2>
+            <p className="text-base md:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto px-4">
+              These are the parts of DayPilot you can use after you sign in.
+            </p>
+          </div>
+          <FeatureGrid />
+        </section>
+
         <section className="container-width section-padding py-16 md:py-24">
           <div className="max-w-3xl mx-auto rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-8 md:p-12 space-y-4 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
@@ -132,10 +229,12 @@ export default function HomePage() {
           </div>
         </section>
 
+        <LaunchPricing />
+
         <section className="container-width section-padding py-16 md:py-24 text-center">
           <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-8 md:p-12 lg:p-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Plan today on the web
+              Plan today on the web, or open the iOS app
             </h2>
             <p className="text-base md:text-lg text-[var(--text-secondary)]">
               Create an account, then add a task or connect a calendar. You stay

@@ -124,6 +124,19 @@ html {
   }
 }
 
+/* Official App Store badges. Dark is the default theme. */
+.app-store-badge-on-light {
+  display: none;
+}
+
+html[data-theme="light"] .app-store-badge-on-dark {
+  display: none;
+}
+
+html[data-theme="light"] .app-store-badge-on-light {
+  display: inline;
+}
+
 *:focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;

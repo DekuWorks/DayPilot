@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Book a time",
   description:
     "Pick a time on a DayPilot booking page. No account or app required.",
+  alternates: { canonical: "/book" },
 };
 
 export default function BookIndexPage() {

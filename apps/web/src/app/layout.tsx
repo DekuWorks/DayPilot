@@ -6,6 +6,7 @@ import {
   productDescription,
   productPositioning,
 } from "@/lib/product-positioning";
+import { canonicalSiteUrl } from "@/lib/site-metadata";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,9 +19,7 @@ const siteTitle = `DayPilot — ${productPositioning}`;
 const siteDescription = productDescription;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://daypilot.co",
-  ),
+  metadataBase: canonicalSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   title: {
     default: siteTitle,
     template: "%s · DayPilot",

@@ -10,13 +10,12 @@ import {
   type PricingPlan,
 } from "@daypilot/lib";
 import { Button } from "@/components/Button";
+import { APP_STORE_URL } from "@/lib/app-store";
 import {
   getFoundingOffer,
   joinPlanWaitlist,
   type FoundingOffer,
 } from "@/lib/billing-api";
-
-const APP_STORE_URL = "https://apps.apple.com/app/id6798407960";
 
 const PRO_SUBSCRIBE =
   "Subscriptions are bought only in the DayPilot iOS app. Open DayPilot Daily, choose Pro, and confirm with Apple. A purchase there unlocks Pro on the website too.";
