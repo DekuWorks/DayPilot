@@ -47,7 +47,7 @@ export function DayTimeline({
               {hours.map((h) => (
                 <div
                   key={h}
-                  className="absolute left-0 right-0 px-1 text-[10px] text-[var(--text-tertiary)] text-right pr-2"
+                  className="absolute left-0 right-0 px-1 text-xs text-[var(--text-tertiary)] text-right pr-2"
                   style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 6 }}
                 >
                   {formatHourLabel(h)}
@@ -104,11 +104,12 @@ export function DayTimeline({
                       background: chip.fill,
                       color: chip.foreground,
                     }}
+                    aria-label={`${ev.title}, ${formatTime(ev.start)} to ${formatTime(ev.end)}`}
                   >
                     <div className="text-xs font-semibold truncate">
                       {ev.title}
                     </div>
-                    <div className="text-[10px] truncate opacity-80">
+                    <div className="text-xs truncate">
                       {formatTime(ev.start)} – {formatTime(ev.end)}
                     </div>
                   </button>

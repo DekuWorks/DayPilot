@@ -89,7 +89,7 @@ export function WeekCalendarView({
                   {hours.map((h) => (
                     <div
                       key={h}
-                      className="absolute left-0 right-0 px-1 text-[10px] text-[var(--text-tertiary)] text-right pr-2"
+                      className="absolute left-0 right-0 px-1 text-xs text-[var(--text-tertiary)] text-right pr-2"
                       style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT - 6 }}
                     >
                       {formatHourLabel(h)}
@@ -145,12 +145,13 @@ export function WeekCalendarView({
                             color: chip.foreground,
                           }}
                           title={`${ev.title} (${formatTime(ev.start)})`}
+                          aria-label={`${ev.title}, ${formatTime(ev.start)} to ${formatTime(ev.end)}`}
                         >
-                          <div className="text-[10px] font-semibold text-[var(--text-primary)] truncate leading-tight">
+                          <div className="text-xs font-semibold truncate leading-tight">
                             {ev.title}
                           </div>
                           {height > 32 && (
-                            <div className="text-[9px] text-[var(--text-secondary)] truncate">
+                            <div className="text-[11px] truncate">
                               {formatTime(ev.start)}
                             </div>
                           )}

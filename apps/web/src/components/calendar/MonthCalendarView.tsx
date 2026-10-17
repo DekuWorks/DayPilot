@@ -126,8 +126,8 @@ export function MonthCalendarView({
                       <button
                         type="button"
                         onClick={() => onCreateOnDate(cell.date)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-[var(--brand-500)] hover:bg-[color-mix(in_srgb,var(--brand-500)_20%,transparent)]"
-                        aria-label="Add event"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-0.5 rounded text-[var(--brand-500)] hover:bg-[color-mix(in_srgb,var(--brand-500)_20%,transparent)]"
+                        aria-label={`Add event on ${cell.date.toLocaleDateString()}`}
                       >
                         +
                       </button>
@@ -151,6 +151,7 @@ export function MonthCalendarView({
                               background: chip.fill,
                               color: chip.foreground,
                             }}
+                            aria-label={`${ev.title}, ${formatTime(ev.start)} to ${formatTime(ev.end)}`}
                           >
                             {formatTime(ev.start)} {ev.title}
                           </button>
