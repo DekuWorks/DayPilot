@@ -9,6 +9,16 @@ export function MarketingFooter() {
           <p className="text-sm text-[var(--text-secondary)]">
             DayPilot plans today from your calendar and tasks.
           </p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Powered by{" "}
+            <a
+              href="https://marcusbr.dev"
+              className="font-medium text-[var(--text-secondary)] hover:text-[var(--brand-500)]"
+            >
+              DekuWorks
+            </a>{" "}
+            LLC
+          </p>
           <AppStoreBadge />
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
