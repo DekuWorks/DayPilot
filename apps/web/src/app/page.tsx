@@ -113,7 +113,7 @@ export default function HomePage() {
           className="container-width section-padding pb-16 md:pb-24"
           aria-label="Product preview"
         >
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_0_80px_rgba(66,232,95,0.08)]">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_0_80px_color-mix(in_srgb,var(--brand-500)_8%,transparent)]">
             <Image
               src="/brand/dashboard-preview.png"
               alt="Illustrated preview of the DayPilot day view"
