@@ -204,7 +204,7 @@ export default function FounderHubPage() {
               <p className="font-medium text-[var(--text-primary)]">
                 {feature.name}
                 {feature.label ? (
-                  <span className="ml-2 rounded-full bg-[var(--brand-500)] px-2 py-0.5 text-xs text-black">
+                  <span className="ml-2 rounded-full bg-[var(--brand-500)] px-2 py-0.5 text-xs text-[var(--text-inverse)]">
                     {feature.label}
                   </span>
                 ) : null}
