@@ -25,6 +25,35 @@ type PaletteItem = {
   hint?: string;
 };
 
+const quickActions: PaletteItem[] = [
+  {
+    id: "action-create-task",
+    label: "Create a task",
+    href: "/tasks",
+    group: "Actions",
+    hint: "Opens Tasks",
+  },
+  {
+    id: "action-create-event",
+    label: "Create an event",
+    href: "/dashboard",
+    group: "Actions",
+    hint: "Opens the home calendar",
+  },
+  {
+    id: "action-open-calendar",
+    label: "Open calendar",
+    href: "/dashboard",
+    group: "Actions",
+  },
+  {
+    id: "action-booking",
+    label: "Open booking settings",
+    href: "/booking-links",
+    group: "Actions",
+  },
+];
+
 const navActions: PaletteItem[] = [
   ...primaryNav.map((n) => ({
     id: `nav-${n.href}`,
@@ -213,8 +242,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const all = [...navActions, ...dynamicItems];
-    if (!q) return navActions;
+    const all = [...quickActions, ...navActions, ...dynamicItems];
+    if (!q) return [...quickActions, ...navActions];
     const people = q.length > 0 ? peopleItems : [];
     const filtered = all.filter(
       (a) =>
