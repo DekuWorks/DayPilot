@@ -205,7 +205,7 @@ export function PublicBookPage() {
           </p>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8 md:py-12">
+      <main id="main" className="mx-auto max-w-5xl px-4 py-8 md:py-12">
         {loading ? (
           <p className="text-[var(--text-secondary)]">
             Loading available times…

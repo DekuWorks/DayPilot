@@ -385,6 +385,11 @@ export default function TasksPage() {
                         <button
                           type="button"
                           onClick={() => void toggle(task)}
+                          aria-label={
+                            task.status === "completed"
+                              ? "Mark task as not done"
+                              : "Mark task as done"
+                          }
                           className={`h-5 w-5 shrink-0 rounded-full border ${
                             task.status === "completed"
                               ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[10px] text-[var(--text-inverse)]"

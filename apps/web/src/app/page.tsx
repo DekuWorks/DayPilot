@@ -68,7 +68,7 @@ export default function HomePage() {
       />
       <MarketingNav ctaLabel="Get started" />
 
-      <main>
+      <main id="main">
         <section className="container-width section-padding pt-16 md:pt-24 lg:pt-28 pb-10 md:pb-14 text-center">
           <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
             <p className="text-sm font-medium tracking-wide text-[var(--brand-500)]">

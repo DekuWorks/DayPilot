@@ -40,7 +40,10 @@ export function AppShell({
           subtitle={subtitle}
           onOpenSearch={() => setPaletteOpen(true)}
         />
-        <main className="flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6">
+        <main
+          id="main"
+          className="flex-1 overflow-auto px-4 py-5 md:px-6 md:py-6"
+        >
           {children}
         </main>
       </div>
