@@ -72,10 +72,10 @@ export default function PrivacyPage() {
                 <strong className="text-[var(--text-primary)]">Support</strong>{" "}
                 — messages you send to us (for example{" "}
                 <a
-                  href="mailto:hello@daypilot.co"
+                  href="mailto:dekuworks1@gmail.com"
                   className="text-[var(--brand-500)] hover:underline"
                 >
-                  hello@daypilot.co
+                  dekuworks1@gmail.com
                 </a>
                 ).
               </li>
@@ -165,10 +165,10 @@ export default function PrivacyPage() {
                 ). Deletion removes your DayPilot profile and associated data;
                 it is not a temporary deactivation. You can also email{" "}
                 <a
-                  href="mailto:hello@daypilot.co?subject=Privacy%20request"
+                  href="mailto:dekuworks1@gmail.com?subject=Privacy%20request"
                   className="text-[var(--brand-500)] hover:underline"
                 >
-                  hello@daypilot.co
+                  dekuworks1@gmail.com
                 </a>{" "}
                 to request a copy of your data.
               </li>
@@ -209,10 +209,10 @@ export default function PrivacyPage() {
             <p>
               Questions about privacy:{" "}
               <a
-                href="mailto:hello@daypilot.co?subject=Privacy%20Policy"
+                href="mailto:dekuworks1@gmail.com?subject=Privacy%20Policy"
                 className="text-[var(--brand-500)] hover:underline"
               >
-                hello@daypilot.co
+                dekuworks1@gmail.com
               </a>
               .
             </p>

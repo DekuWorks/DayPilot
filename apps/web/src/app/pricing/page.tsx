@@ -56,7 +56,7 @@ export default function PricingPage() {
           <p className="text-sm text-[var(--text-secondary)]">
             Questions?{" "}
             <a
-              href="mailto:hello@daypilot.co?subject=DayPilot%20question"
+              href="mailto:dekuworks1@gmail.com?subject=DayPilot%20question"
               className="font-medium text-[var(--brand-500)] hover:underline"
             >
               Contact us
