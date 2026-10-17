@@ -141,7 +141,7 @@ function PlanCard({
             />
             {plan.planId === "enterprise" ? (
               <a
-                href="mailto:hello@daypilot.co?subject=DayPilot%20Enterprise"
+                href="mailto:dekuworks1@gmail.com?subject=DayPilot%20Enterprise"
                 className="block text-center text-sm font-medium text-[var(--brand-500)] hover:underline"
               >
                 Contact DayPilot
