@@ -90,3 +90,8 @@ export class BetaEnabledDto {
   @IsBoolean()
   enabled!: boolean;
 }
+
+export class WaitlistStatusDto {
+  @IsIn(['open', 'handled', 'removed'])
+  status!: 'open' | 'handled' | 'removed';
+}

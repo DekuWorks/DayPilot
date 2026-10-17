@@ -125,6 +125,14 @@ export class FounderHubService {
     return this.flow.setStatus(userId, suggestionId, status);
   }
 
+  listPeople(userId: string) {
+    return this.flow.listPeople(userId);
+  }
+
+  setWaitlistStatus(userId: string, id: string, status: string) {
+    return this.flow.setWaitlistStatus(userId, id, status);
+  }
+
   alerts(userId: string) {
     return this.flow.alerts(userId);
   }

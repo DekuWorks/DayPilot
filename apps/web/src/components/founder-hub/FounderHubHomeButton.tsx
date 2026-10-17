@@ -29,19 +29,22 @@ export function FounderHubHomeButton() {
       {ownerLabel}
     </Link>
   ) : null;
+  const peopleLink = owner ? (
+    <Link href="/settings/founder-people" className={linkClass}>
+      People
+    </Link>
+  ) : null;
   const memberLink = member ? (
     <Link href="/settings/founder-hub" className={linkClass}>
       Founder Hub
     </Link>
   ) : null;
 
-  if (ownerLink && memberLink) {
-    return (
-      <div className="space-y-2">
-        {memberLink}
-        {ownerLink}
-      </div>
-    );
-  }
-  return ownerLink ?? memberLink;
+  return (
+    <div className="space-y-2">
+      {memberLink}
+      {ownerLink}
+      {peopleLink}
+    </div>
+  );
 }

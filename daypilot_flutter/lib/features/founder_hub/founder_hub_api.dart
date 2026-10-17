@@ -125,6 +125,19 @@ class FounderHubApi {
     return _json(await session.get('/founder-hub/inbox/alerts'));
   }
 
+  Future<Map<String, dynamic>> people() async {
+    return _json(await session.get('/founder-hub/people'));
+  }
+
+  Future<void> setWaitlistStatus(String id, String status) async {
+    await _json(
+      await session.patch(
+        '/founder-hub/people/waitlist/$id',
+        body: {'status': status},
+      ),
+    );
+  }
+
   Future<void> registerDevice(String token) async {
     await _json(
       await session.post(

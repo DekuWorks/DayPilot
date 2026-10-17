@@ -61,6 +61,19 @@ export function FounderHubAccountLinks() {
           </p>
         </Link>
       ) : null}
+      {owner ? (
+        <Link
+          href="/settings/founder-people"
+          className="block min-h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-3"
+        >
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            People
+          </p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Founding subscribers and waitlist requests.
+          </p>
+        </Link>
+      ) : null}
     </div>
   );
 }

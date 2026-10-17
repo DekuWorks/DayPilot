@@ -10,12 +10,22 @@ import type {
   SuggestionRow,
   UserRow,
 } from './hub-db';
+import type {
+  FoundingDirectoryInput,
+  WaitlistDirectoryInput,
+} from './people-directory';
 import { defaultNoticePrefs } from './push-delivery';
 
 export class MemoryHubDb implements HubDb {
   users: UserRow[] = [];
   subscriptions: SubscriptionRow[] = [];
-  claims: { userId: string; founderNumber: number }[] = [];
+  claims: {
+    userId: string | null;
+    founderNumber: number;
+    createdAt?: Date;
+    periodEnd?: Date;
+  }[] = [];
+  waitlist: WaitlistDirectoryInput[] = [];
   suggestions: SuggestionRow[] = [];
   messages: MessageRow[] = [];
   attachments: AttachmentRow[] = [];
@@ -50,6 +60,58 @@ export class MemoryHubDb implements HubDb {
     return this.subscriptions.filter(
       (row) => row.tier === 'FoundingPro' || row.planId === 'founding_pro',
     );
+  }
+
+  async listFoundingDirectory(): Promise<FoundingDirectoryInput[]> {
+    const users = new Map(this.users.map((row) => [row.id, row]));
+    const subs = await this.listFoundingSubscriptions();
+    const seen = new Set<string>();
+    const rows: FoundingDirectoryInput[] = [];
+    for (const claim of this.claims) {
+      if (claim.userId) seen.add(claim.userId);
+      const user = claim.userId ? users.get(claim.userId) : undefined;
+      const sub = claim.userId
+        ? subs.find((row) => row.userId === claim.userId)
+        : undefined;
+      rows.push({
+        email: user?.email ?? null,
+        firstName: user?.firstName ?? null,
+        lastName: user?.lastName ?? null,
+        planId: sub?.planId ?? 'founding_pro',
+        tier: sub?.tier ?? 'FoundingPro',
+        status: sub?.status ?? null,
+        founderNumber: claim.founderNumber,
+        currentPeriodEnd: sub?.currentPeriodEnd ?? claim.periodEnd ?? null,
+        claimCreatedAt: claim.createdAt ?? null,
+      });
+    }
+    for (const sub of subs) {
+      if (seen.has(sub.userId)) continue;
+      const user = users.get(sub.userId);
+      rows.push({
+        email: user?.email ?? null,
+        firstName: user?.firstName ?? null,
+        lastName: user?.lastName ?? null,
+        planId: sub.planId,
+        tier: sub.tier,
+        status: sub.status,
+        founderNumber: sub.founderNumber,
+        currentPeriodEnd: sub.currentPeriodEnd,
+      });
+    }
+    rows.sort((a, b) => (a.founderNumber ?? 999) - (b.founderNumber ?? 999));
+    return rows;
+  }
+
+  async listWaitlist() {
+    return [...this.waitlist];
+  }
+
+  async updateWaitlistStatus(id: string, status: string) {
+    const row = this.waitlist.find((item) => item.id === id);
+    if (!row) return null;
+    row.status = status;
+    return row;
   }
 
   async suggestionsSince(userId: string, since: Date) {

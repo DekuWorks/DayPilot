@@ -32,7 +32,10 @@ export type BetaDecision = {
   label: 'Beta' | null;
 };
 
-function versionAtLeast(current: string | null, minimum: string | null): boolean {
+function versionAtLeast(
+  current: string | null,
+  minimum: string | null,
+): boolean {
   if (!minimum) return true;
   if (!current) return false;
   const parse = (value: string) =>

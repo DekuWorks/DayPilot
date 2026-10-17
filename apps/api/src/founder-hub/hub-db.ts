@@ -1,4 +1,15 @@
-export type UserRow = { id: string; role: string; email: string };
+import type {
+  FoundingDirectoryInput,
+  WaitlistDirectoryInput,
+} from './people-directory';
+
+export type UserRow = {
+  id: string;
+  role: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+};
 
 export type SubscriptionRow = {
   userId: string;
@@ -81,6 +92,12 @@ export interface HubDb {
   getSubscription(userId: string): Promise<SubscriptionRow | null>;
   getFoundingClaim(userId: string): Promise<{ founderNumber: number } | null>;
   listFoundingSubscriptions(): Promise<SubscriptionRow[]>;
+  listFoundingDirectory(): Promise<FoundingDirectoryInput[]>;
+  listWaitlist(): Promise<WaitlistDirectoryInput[]>;
+  updateWaitlistStatus(
+    id: string,
+    status: string,
+  ): Promise<WaitlistDirectoryInput | null>;
   suggestionsSince(userId: string, since: Date): Promise<SuggestionRow[]>;
   insertSuggestion(
     row: Omit<SuggestionRow, 'id' | 'createdAt' | 'updatedAt'> & {

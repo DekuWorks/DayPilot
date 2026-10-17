@@ -187,6 +187,93 @@ describe('founder hub', () => {
     ).toBeNull();
   });
 
+  it('shows founding people and the waitlist only to the hub owner', async () => {
+    const db = new MemoryHubDb();
+    db.users.push(
+      {
+        id: 'owner-user',
+        role: 'USER',
+        email: 'owner@example.com',
+        firstName: 'Ada',
+        lastName: 'Owner',
+      },
+      {
+        id: 'member',
+        role: 'USER',
+        email: 'member@example.com',
+        firstName: 'Bea',
+        lastName: 'Member',
+      },
+      { id: 'admin-other', role: 'ADMIN', email: 'admin@example.com' },
+    );
+    db.subscriptions.push({
+      userId: 'member',
+      tier: 'FoundingPro',
+      planId: 'founding_pro',
+      status: 'active',
+      currentPeriodEnd: FUTURE,
+      founderNumber: 3,
+    });
+    db.claims.push({
+      userId: 'member',
+      founderNumber: 3,
+      createdAt: NOW,
+      periodEnd: FUTURE,
+    });
+    db.waitlist.push({
+      id: 'w1',
+      email: 'team@example.com',
+      requestedPlan: 'enterprise',
+      status: 'open',
+      companyName: 'Acme',
+      teamSize: '12',
+      createdAt: NOW,
+    });
+    const flow = new FounderHubFlow(db, {
+      ownerUserId: 'owner-user',
+      apnsReady: false,
+      resendReady: false,
+    });
+
+    await expect(flow.listPeople('member')).rejects.toMatchObject({
+      status: 403,
+    });
+    await expect(flow.listPeople('admin-other')).rejects.toMatchObject({
+      status: 403,
+    });
+    await expect(
+      flow.setWaitlistStatus('member', 'w1', 'handled'),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const people = await flow.listPeople('owner-user');
+    expect(people.founding).toEqual([
+      expect.objectContaining({
+        email: 'member@example.com',
+        name: 'Bea Member',
+        plan: 'founding_pro',
+        status: 'active',
+        founderNumber: 3,
+      }),
+    ]);
+    expect(people.waitlist[0]).toMatchObject({
+      id: 'w1',
+      email: 'team@example.com',
+      plan: 'enterprise',
+      status: 'open',
+    });
+    expect(JSON.stringify(people)).not.toContain('password');
+
+    await expect(
+      flow.setWaitlistStatus('owner-user', 'w1', 'handled'),
+    ).resolves.toEqual({ id: 'w1', status: 'handled' });
+    await expect(
+      flow.setWaitlistStatus('owner-user', 'w1', 'removed'),
+    ).resolves.toEqual({ id: 'w1', status: 'removed' });
+    await expect(
+      flow.setWaitlistStatus('owner-user', 'missing', 'handled'),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+
   it('delivers a new suggestion and a follow-up to the owner immediately', async () => {
     const { db, flow } = setup();
     const created = await flow.submit('founder-1', {
