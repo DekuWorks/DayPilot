@@ -220,7 +220,7 @@ export function CalendarApp() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div
-            className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-0.5"
+            className="inline-flex rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-0.5"
             role="tablist"
             aria-label="Calendar view"
           >
@@ -231,7 +231,7 @@ export function CalendarApp() {
                 role="tab"
                 aria-selected={mode === opt.id}
                 onClick={() => setMode(opt.id)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-[10px] transition-colors ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-[var(--radius-sm)] transition-colors ${
                   mode === opt.id
                     ? "bg-[var(--brand-500)] text-black"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
