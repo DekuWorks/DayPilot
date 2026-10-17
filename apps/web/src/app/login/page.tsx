@@ -86,7 +86,7 @@ export default function LoginPage() {
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           Use your DayPilot account (Supabase Auth).
         </p>
-        <div className="mb-4 inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-0.5">
+        <div className="mb-4 inline-flex rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-0.5">
           <button
             type="button"
             onClick={() => {
@@ -94,7 +94,7 @@ export default function LoginPage() {
               setMagicSent(false);
               setError("");
             }}
-            className={`rounded-[10px] px-3 py-1.5 text-sm font-medium ${
+            className={`rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium ${
               mode === "password"
                 ? "bg-[var(--brand-500)] text-black"
                 : "text-[var(--text-secondary)]"
@@ -109,7 +109,7 @@ export default function LoginPage() {
               setMagicSent(false);
               setError("");
             }}
-            className={`rounded-[10px] px-3 py-1.5 text-sm font-medium ${
+            className={`rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium ${
               mode === "magic"
                 ? "bg-[var(--brand-500)] text-black"
                 : "text-[var(--text-secondary)]"
