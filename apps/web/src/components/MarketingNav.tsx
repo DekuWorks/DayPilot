@@ -46,106 +46,108 @@ export function MarketingNav({
   }
 
   return (
-    <nav className="section-padding py-4 md:py-6 sticky top-0 z-50 glass-effect border-b border-[var(--border-subtle)]">
-      <div className="flex justify-between items-center">
-        <BrandLogo />
-        <div className="hidden md:flex items-center gap-6">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className={linkClass(l.href)}>
-              {l.label}
-            </Link>
-          ))}
-          <AppStoreBadge />
-          {ctaAsButton ? (
-            <Button href={ctaHref} size="lg">
-              {ctaLabel}
-            </Button>
-          ) : (
-            <Link href={ctaHref} className={linkClass(ctaHref)}>
-              {ctaLabel}
-            </Link>
-          )}
-        </div>
-        <button
-          type="button"
-          className="md:hidden p-2 text-[var(--text-primary)]"
-          aria-label={open ? "Close menu" : "Menu"}
-          aria-expanded={open}
-          onClick={() =>
-            setOpenForPath((current) =>
-              current === pathname ? null : pathname,
-            )
-          }
-        >
-          {open ? (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {open && (
-        <div className="md:hidden mt-4 pb-2 flex flex-col gap-1 border-t border-[var(--border-subtle)] pt-4">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpenForPath(null)}
-              className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(l.href)}`}
-            >
-              {l.label}
-            </Link>
-          ))}
-          {ctaAsButton ? (
-            <Button
-              href={ctaHref}
-              size="lg"
-              className="mt-2 w-full"
-              onNavigate={() => setOpenForPath(null)}
-            >
-              {ctaLabel}
-            </Button>
-          ) : (
-            <Link
-              href={ctaHref}
-              onClick={() => setOpenForPath(null)}
-              className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(ctaHref)}`}
-            >
-              {ctaLabel}
-            </Link>
-          )}
-          <div className="px-3 pt-3">
+    <header className="marketing-header">
+      <nav className="section-padding py-4 md:py-6">
+        <div className="flex justify-between items-center">
+          <BrandLogo />
+          <div className="hidden md:flex items-center gap-6">
+            {links.map((l) => (
+              <Link key={l.href} href={l.href} className={linkClass(l.href)}>
+                {l.label}
+              </Link>
+            ))}
             <AppStoreBadge />
+            {ctaAsButton ? (
+              <Button href={ctaHref} size="lg">
+                {ctaLabel}
+              </Button>
+            ) : (
+              <Link href={ctaHref} className={linkClass(ctaHref)}>
+                {ctaLabel}
+              </Link>
+            )}
           </div>
+          <button
+            type="button"
+            className="md:hidden p-2 text-[var(--text-primary)]"
+            aria-label={open ? "Close menu" : "Menu"}
+            aria-expanded={open}
+            onClick={() =>
+              setOpenForPath((current) =>
+                current === pathname ? null : pathname,
+              )
+            }
+          >
+            {open ? (
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            )}
+          </button>
         </div>
-      )}
-    </nav>
+
+        {open && (
+          <div className="md:hidden mt-4 pb-2 flex flex-col gap-1 border-t border-[var(--border-subtle)] pt-4">
+            {links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setOpenForPath(null)}
+                className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(l.href)}`}
+              >
+                {l.label}
+              </Link>
+            ))}
+            {ctaAsButton ? (
+              <Button
+                href={ctaHref}
+                size="lg"
+                className="mt-2 w-full"
+                onNavigate={() => setOpenForPath(null)}
+              >
+                {ctaLabel}
+              </Button>
+            ) : (
+              <Link
+                href={ctaHref}
+                onClick={() => setOpenForPath(null)}
+                className={`rounded-[var(--radius-md)] px-3 py-3 ${linkClass(ctaHref)}`}
+              >
+                {ctaLabel}
+              </Link>
+            )}
+            <div className="px-3 pt-3">
+              <AppStoreBadge />
+            </div>
+          </div>
+        )}
+      </nav>
+    </header>
   );
 }
