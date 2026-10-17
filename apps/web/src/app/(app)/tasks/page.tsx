@@ -142,6 +142,28 @@ export default function TasksPage() {
     return map;
   }, [subtasks]);
 
+  const grouped = useMemo(() => {
+    const buckets = new Map<
+      string,
+      { key: string; name: string; tasks: Task[] }
+    >();
+    for (const task of visible) {
+      const key = task.project_id ?? "";
+      const named = projects.find((p) => p.id === task.project_id)?.name;
+      const name = task.project_id && named ? named : "No project";
+      const bucket = buckets.get(key) ?? { key, name, tasks: [] };
+      bucket.tasks.push(task);
+      buckets.set(key, bucket);
+    }
+    return [...buckets.values()].sort((a, b) => {
+      if (a.name === "No project") return 1;
+      if (b.name === "No project") return -1;
+      return a.name.localeCompare(b.name, "en");
+    });
+  }, [visible, projects]);
+
+  const showProjectGroups = visible.some((task) => Boolean(task.project_id));
+
   async function addTask(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !user || !isSupabaseConfigured()) return;
@@ -315,7 +337,7 @@ export default function TasksPage() {
         </div>
       </form>
 
-      <ul className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
+      <ul className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
         {loading ? (
           <li className="p-2">
             <StatusMessage tone="loading">Loading tasks…</StatusMessage>
@@ -325,141 +347,157 @@ export default function TasksPage() {
             <StatusMessage tone="empty">No tasks here yet.</StatusMessage>
           </li>
         ) : (
-          visible.map((task) => {
-            const kids = subtasksByTask[task.id] ?? [];
-            const isOpen = expanded[task.id];
-            const proj = projectName(task.project_id);
-            return (
-              <li
-                key={task.id}
-                className="rounded-[var(--radius-md)] px-2 py-2 hover:bg-[var(--surface-secondary)]"
-              >
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded((prev) => ({
-                        ...prev,
-                        [task.id]: !prev[task.id],
-                      }))
-                    }
-                    className="text-[var(--text-tertiary)]"
-                    aria-label="Toggle subtasks"
-                  >
-                    {isOpen ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void toggle(task)}
-                    className={`h-5 w-5 shrink-0 rounded-full border ${
-                      task.status === "completed"
-                        ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[10px] text-[var(--text-inverse)]"
-                        : "border-[var(--border-strong)]"
-                    }`}
-                  >
-                    {task.status === "completed" ? "✓" : ""}
-                  </button>
-                  <Link
-                    href={`/tasks/${task.id}`}
-                    className={`min-w-0 flex-1 text-sm hover:underline ${
-                      task.status === "completed"
-                        ? "line-through text-[var(--text-tertiary)]"
-                        : "text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {task.title}
-                    {proj && (
-                      <span className="ml-2 text-[10px] text-[var(--text-tertiary)] no-underline">
-                        {proj}
-                      </span>
-                    )}
-                  </Link>
-                  {kids.length > 0 && (
-                    <span className="text-[10px] text-[var(--text-tertiary)]">
-                      {kids.filter((s) => s.status === "completed").length}/
-                      {kids.length}
-                    </span>
-                  )}
-                  <input
-                    type="date"
-                    value={toDateInput(task.due_at)}
-                    onChange={(e) => void setTaskDue(task, e.target.value)}
-                    className="max-w-[8.5rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[10px] text-[var(--text-tertiary)] hover:border-[var(--border-subtle)] focus:border-[var(--brand-500)] outline-none"
-                    aria-label="Due date"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void cyclePriority(task)}
-                    className={`text-[10px] uppercase font-medium ${
-                      priorityColor[task.priority] ?? priorityColor.medium
-                    }`}
-                    title="Cycle priority"
-                  >
-                    {task.priority}
-                  </button>
-                </div>
-
-                {isOpen && (
-                  <div className="ml-9 mt-2 space-y-1.5 border-l border-[var(--border-subtle)] pl-3">
-                    {kids.map((s) => (
-                      <div key={s.id} className="flex items-center gap-2">
+          grouped.map((group) => (
+            <li key={group.key || "none"} className="space-y-2">
+              {showProjectGroups ? (
+                <h2 className="px-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+                  {group.name}
+                </h2>
+              ) : null}
+              <ul className="space-y-2">
+                {group.tasks.map((task) => {
+                  const kids = subtasksByTask[task.id] ?? [];
+                  const isOpen = expanded[task.id];
+                  const proj = projectName(task.project_id);
+                  return (
+                    <li
+                      key={task.id}
+                      className="rounded-[var(--radius-md)] px-2 py-2 hover:bg-[var(--surface-secondary)]"
+                    >
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => void toggleSubtask(s)}
-                          className={`h-4 w-4 rounded border text-[9px] ${
-                            s.status === "completed"
-                              ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[var(--text-inverse)]"
+                          onClick={() =>
+                            setExpanded((prev) => ({
+                              ...prev,
+                              [task.id]: !prev[task.id],
+                            }))
+                          }
+                          className="text-[var(--text-tertiary)]"
+                          aria-label="Toggle subtasks"
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void toggle(task)}
+                          className={`h-5 w-5 shrink-0 rounded-full border ${
+                            task.status === "completed"
+                              ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[10px] text-[var(--text-inverse)]"
                               : "border-[var(--border-strong)]"
                           }`}
                         >
-                          {s.status === "completed" ? "✓" : ""}
+                          {task.status === "completed" ? "✓" : ""}
                         </button>
-                        <span
-                          className={`text-xs ${
-                            s.status === "completed"
+                        <Link
+                          href={`/tasks/${task.id}`}
+                          className={`min-w-0 flex-1 text-sm hover:underline ${
+                            task.status === "completed"
                               ? "line-through text-[var(--text-tertiary)]"
-                              : "text-[var(--text-secondary)]"
+                              : "text-[var(--text-primary)]"
                           }`}
                         >
-                          {s.title}
-                        </span>
+                          {task.title}
+                          {proj && !showProjectGroups && (
+                            <span className="ml-2 text-[10px] text-[var(--text-tertiary)] no-underline">
+                              {proj}
+                            </span>
+                          )}
+                        </Link>
+                        {kids.length > 0 && (
+                          <span className="text-[10px] text-[var(--text-tertiary)]">
+                            {
+                              kids.filter((s) => s.status === "completed")
+                                .length
+                            }
+                            /{kids.length}
+                          </span>
+                        )}
+                        <input
+                          type="date"
+                          value={toDateInput(task.due_at)}
+                          onChange={(e) =>
+                            void setTaskDue(task, e.target.value)
+                          }
+                          className="max-w-[8.5rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[10px] text-[var(--text-tertiary)] hover:border-[var(--border-subtle)] focus:border-[var(--brand-500)] outline-none"
+                          aria-label="Due date"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void cyclePriority(task)}
+                          className={`text-[10px] uppercase font-medium ${
+                            priorityColor[task.priority] ?? priorityColor.medium
+                          }`}
+                          title="Cycle priority"
+                        >
+                          {task.priority}
+                        </button>
                       </div>
-                    ))}
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void addSubtask(task.id);
-                      }}
-                      className="flex gap-1 pt-1"
-                    >
-                      <input
-                        value={newSubtask[task.id] ?? ""}
-                        onChange={(e) =>
-                          setNewSubtask((prev) => ({
-                            ...prev,
-                            [task.id]: e.target.value,
-                          }))
-                        }
-                        placeholder="Add subtask"
-                        className="min-w-0 flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--brand-500)]"
-                      />
-                      <button
-                        type="submit"
-                        className="rounded-lg p-1 text-[var(--brand-500)] hover:bg-[color-mix(in_srgb,var(--brand-500)_15%,transparent)]"
-                        aria-label="Add subtask"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </form>
-                  </div>
-                )}
-              </li>
-            );
-          })
+
+                      {isOpen && (
+                        <div className="ml-9 mt-2 space-y-1.5 border-l border-[var(--border-subtle)] pl-3">
+                          {kids.map((s) => (
+                            <div key={s.id} className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void toggleSubtask(s)}
+                                className={`h-4 w-4 rounded border text-[9px] ${
+                                  s.status === "completed"
+                                    ? "border-[var(--brand-500)] bg-[var(--brand-500)] text-[var(--text-inverse)]"
+                                    : "border-[var(--border-strong)]"
+                                }`}
+                              >
+                                {s.status === "completed" ? "✓" : ""}
+                              </button>
+                              <span
+                                className={`text-xs ${
+                                  s.status === "completed"
+                                    ? "line-through text-[var(--text-tertiary)]"
+                                    : "text-[var(--text-secondary)]"
+                                }`}
+                              >
+                                {s.title}
+                              </span>
+                            </div>
+                          ))}
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void addSubtask(task.id);
+                            }}
+                            className="flex gap-1 pt-1"
+                          >
+                            <input
+                              value={newSubtask[task.id] ?? ""}
+                              onChange={(e) =>
+                                setNewSubtask((prev) => ({
+                                  ...prev,
+                                  [task.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Add subtask"
+                              className="min-w-0 flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--brand-500)]"
+                            />
+                            <button
+                              type="submit"
+                              className="rounded-lg p-1 text-[var(--brand-500)] hover:bg-[color-mix(in_srgb,var(--brand-500)_15%,transparent)]"
+                              aria-label="Add subtask"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))
         )}
       </ul>
     </div>
