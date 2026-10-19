@@ -75,4 +75,26 @@ describe('decideSupabaseUserLink', () => {
       }),
     ).toEqual({ action: 'create' });
   });
+
+  it('does not attach a Supabase login onto a password account', () => {
+    expect(
+      decideSupabaseUserLink({
+        supabaseUserId: 'sub-google',
+        email: 'user@gmail.com',
+        bySub: null,
+        byEmail: { ...gmail, passwordHash: 'stored-hash' },
+      }),
+    ).toEqual({ action: 'conflict' });
+  });
+
+  it('does not enter an account whose Supabase id is different', () => {
+    expect(
+      decideSupabaseUserLink({
+        supabaseUserId: 'sub-google',
+        email: 'user@gmail.com',
+        bySub: null,
+        byEmail: { ...gmail, supabaseUserId: 'sub-other' },
+      }),
+    ).toEqual({ action: 'conflict' });
+  });
 });

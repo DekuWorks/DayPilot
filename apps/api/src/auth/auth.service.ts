@@ -13,7 +13,6 @@ import { createHash } from 'node:crypto';
 import * as jwt from 'jsonwebtoken';
 import * as jose from 'jose';
 import type { UserRole } from '../generated/prisma';
-import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { decideSupabaseUserLink } from './supabase-user-link';
 import {
@@ -22,7 +21,6 @@ import {
   requireUserForDeletion,
 } from './delete-account';
 
-const SALT_ROUNDS = 10;
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -45,35 +43,6 @@ export class AuthService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
   ) {}
-
-  async signup(dto: SignupDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
-    if (existing) {
-      throw new ConflictException('An account with this email already exists');
-    }
-    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email.toLowerCase(),
-        passwordHash,
-        firstName: dto.firstName.trim(),
-        lastName: dto.lastName.trim(),
-      },
-    });
-    await this.prisma.subscription.create({
-      data: { userId: user.id },
-    });
-    return this.issueTokenPair(
-      user.id,
-      user.email,
-      user.role,
-      user.firstName,
-      user.lastName,
-      user.avatarUrl ?? null,
-    );
-  }
 
   /**
    * Option C (hybrid): Flutter signs in with Supabase; exchanges access token for Nest JWTs.
@@ -152,6 +121,12 @@ export class AuthService {
       byEmail,
     });
 
+    if (decision.action === 'conflict') {
+      throw new ConflictException(
+        'This email already belongs to a different DayPilot login. Sign in with the original method.',
+      );
+    }
+
     let user =
       decision.action === 'use'
         ? ((decision.userId === bySub?.id ? bySub : byEmail) ??
@@ -186,18 +161,31 @@ export class AuthService {
         meta.family_name ??
         (meta.full_name?.split(/\s+/).slice(1).join(' ') || ' ');
       if (lastName.trim().length === 0) lastName = ' ';
-      user = await this.prisma.user.create({
-        data: {
-          email,
-          supabaseUserId,
-          passwordHash: null,
-          firstName: String(firstName).trim() || 'User',
-          lastName: lastName.trim(),
-        },
-      });
-      await this.prisma.subscription.create({
-        data: { userId: user.id },
-      });
+      try {
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            supabaseUserId,
+            passwordHash: null,
+            firstName: String(firstName).trim() || 'User',
+            lastName: lastName.trim(),
+          },
+        });
+        await this.prisma.subscription.create({
+          data: { userId: user.id },
+        });
+      } catch (error) {
+        if (!isUniqueConflict(error)) throw error;
+        const existing = await this.prisma.user.findUnique({
+          where: { supabaseUserId },
+        });
+        if (!existing) {
+          throw new ConflictException(
+            'This email already belongs to a different DayPilot login. Sign in with the original method.',
+          );
+        }
+        user = existing;
+      }
     }
 
     await this.audit.log({
@@ -590,4 +578,13 @@ export class AuthService {
       donorEmail: donor.email,
     };
   }
+}
+
+function isUniqueConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'P2002'
+  );
 }
