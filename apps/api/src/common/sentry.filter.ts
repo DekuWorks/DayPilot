@@ -9,6 +9,8 @@ import {
 import { Response } from 'express';
 import * as Sentry from '@sentry/node';
 
+const GENERIC_SERVER_ERROR = 'Something went wrong. Please try again.';
+
 function payloadTooLargeStatus(exception: unknown): number | null {
   if (!exception || typeof exception !== 'object') return null;
   const err = exception as { status?: number; type?: string };
@@ -16,6 +18,23 @@ function payloadTooLargeStatus(exception: unknown): number | null {
     return HttpStatus.PAYLOAD_TOO_LARGE;
   }
   return null;
+}
+
+/**
+ * JSON returned to clients. Server faults stay generic so a Prisma path,
+ * SQL fragment, or stack never leaves the process. 4xx copy is unchanged.
+ */
+export function clientErrorBody(exception: unknown, status: number): object {
+  if (status >= 500) {
+    return { statusCode: status, message: GENERIC_SERVER_ERROR };
+  }
+  if (exception instanceof HttpException) {
+    const body = exception.getResponse();
+    return typeof body === 'object' && body !== null ? body : { message: body };
+  }
+  const message =
+    exception instanceof Error ? exception.message : 'Internal server error';
+  return { statusCode: status, message };
 }
 
 @Catch()
@@ -60,10 +79,7 @@ export class SentryFilter implements ExceptionFilter {
       this.logger.warn(logLine);
     }
 
-    const body =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : { statusCode: status, message };
+    const body = clientErrorBody(exception, status);
     res
       .status(status)
       .json(typeof body === 'object' ? body : { message: body });
