@@ -8,6 +8,14 @@ import '../../core/widgets/feature_scaffold.dart';
 import 'founder_hub_api.dart';
 import 'founder_owner_message.dart';
 
+/// Short copy for a failed people load or waitlist update.
+/// Callers must not interpolate the exception: it can contain a file path or SQL.
+String founderPeopleErrorMessage({required bool updating}) {
+  return updating
+      ? 'Could not update that request.'
+      : 'Could not load people.';
+}
+
 /// Owner-only list of founding subscribers and waitlist rows.
 /// The screen is routed only from controls that already checked `isOwner`.
 /// The API rejects everyone else with 403.
@@ -65,7 +73,7 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
         _owner = false;
         _founding = const [];
         _waitlist = const [];
-        _error = '$e';
+        _error = founderPeopleErrorMessage(updating: false);
       });
     }
   }
@@ -86,7 +94,9 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
       ).setWaitlistStatus(id, status);
       await _load();
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) {
+        setState(() => _error = founderPeopleErrorMessage(updating: true));
+      }
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
