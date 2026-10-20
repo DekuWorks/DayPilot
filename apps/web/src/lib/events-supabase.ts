@@ -1,3 +1,4 @@
+import { NATIVE_CALENDAR_COLOR } from "@/lib/event-color";
 import { createClient } from "@/lib/supabase/client";
 
 export type CalendarEvent = {
@@ -93,7 +94,7 @@ async function ensureDefaultCalendar(userId: string): Promise<string> {
     .insert({
       owner_id: userId,
       name: "My Calendar",
-      color: "#42E85F",
+      color: NATIVE_CALENDAR_COLOR,
       is_default: true,
     })
     .select("id")

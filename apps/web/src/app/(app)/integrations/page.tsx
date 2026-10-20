@@ -292,7 +292,7 @@ export default function IntegrationsPage() {
         </Link>
         {" · "}
         <Link
-          href="/dashboard"
+          href="/calendar"
           className="text-[var(--brand-500)] font-medium hover:underline"
         >
           ← Back to Calendar

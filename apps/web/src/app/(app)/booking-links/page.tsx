@@ -143,7 +143,7 @@ export default function BookingLinksPage() {
       ) : (
         <form
           onSubmit={handleCreate}
-          className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4"
+          className="space-y-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4"
         >
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             New link
@@ -177,7 +177,7 @@ export default function BookingLinksPage() {
         {loading ? (
           <li className="text-sm text-[var(--text-secondary)]">Loading…</li>
         ) : links.length === 0 ? (
-          <li className="rounded-[var(--radius-lg)] border border-dashed border-[var(--border-subtle)] px-4 py-6 text-sm text-[var(--text-secondary)]">
+          <li className="rounded-2xl border border-dashed border-[var(--border-subtle)] px-4 py-6 text-sm text-[var(--text-secondary)]">
             No booking links yet. Create one above, copy it, and send it to the
             person who needs a time with you.
           </li>
@@ -185,17 +185,42 @@ export default function BookingLinksPage() {
           links.map((link) => (
             <li
               key={link.id}
-              className="flex flex-wrap items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-3"
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-4"
             >
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--brand-500)_16%,transparent)] text-[var(--brand-500)]"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.5 4.43" />
+                  <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.33-1.33" />
+                </svg>
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-[var(--text-primary)]">
                   {link.title || link.slug}
                 </p>
                 <p className="text-xs text-[var(--text-secondary)]">
-                  /book/{link.slug} · {link.duration} min ·{" "}
-                  {link.isActive ? "Active" : "Paused"}
+                  /book/{link.slug} · {link.duration} min
                 </p>
               </div>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  link.isActive
+                    ? "bg-[color-mix(in_srgb,var(--brand-500)_16%,transparent)] text-[var(--brand-500)]"
+                    : "bg-[var(--surface-secondary)] text-[var(--text-secondary)]"
+                }`}
+              >
+                {link.isActive ? "Active" : "Paused"}
+              </span>
               <Button
                 size="sm"
                 variant="outline"
@@ -378,8 +403,14 @@ function MethodRow({
 }) {
   const fieldId = label.toLowerCase().replace(/\s+/g, "-");
   return (
-    <div className="space-y-1">
-      <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+    <div
+      className={`space-y-2 rounded-xl border p-3 ${
+        checked
+          ? "border-[var(--brand-500)] bg-[color-mix(in_srgb,var(--brand-500)_8%,transparent)]"
+          : "border-[var(--border-subtle)] bg-[var(--surface-primary)]"
+      }`}
+    >
+      <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
         <input
           type="checkbox"
           checked={checked}

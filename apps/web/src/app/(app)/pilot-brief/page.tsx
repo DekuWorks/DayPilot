@@ -72,7 +72,9 @@ export default function PilotBriefPage() {
       const result = await sendPilotBriefChat(message);
       setMessages((prev) => [...prev, result.user_message, result.reply]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send that. Try again.");
+      setError(
+        e instanceof Error ? e.message : "Could not send that. Try again.",
+      );
     } finally {
       setAsking(false);
     }
@@ -82,16 +84,15 @@ export default function PilotBriefPage() {
   const lastAssistant = [...messages]
     .reverse()
     .find((m) => m.role === "assistant");
-  const chips =
-    lastAssistant?.follow_ups?.length
-      ? lastAssistant.follow_ups
-      : content
-        ? briefFollowUps(content)
-        : [
-            "What should I tackle first?",
-            "Where can I fit a focus block?",
-            "Any conflicts I should fix?",
-          ];
+  const chips = lastAssistant?.follow_ups?.length
+    ? lastAssistant.follow_ups
+    : content
+      ? briefFollowUps(content)
+      : [
+          "What should I tackle first?",
+          "Where can I fit a focus block?",
+          "Any conflicts I should fix?",
+        ];
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -104,7 +105,8 @@ export default function PilotBriefPage() {
             Today&apos;s brief
           </h1>
           <p className="text-sm text-[var(--text-secondary)]">
-            Chat is grounded in your calendar and tasks. Keys stay on the server.
+            Chat is grounded in your calendar and tasks. Keys stay on the
+            server.
           </p>
         </div>
         <Button
@@ -164,6 +166,10 @@ export default function PilotBriefPage() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              These counts come from this generated brief. They stay as they
+              were until you generate again.
+            </p>
             {content.suggestions?.length > 0 && (
               <ChipSection
                 title="Suggestions"
@@ -186,7 +192,10 @@ export default function PilotBriefPage() {
               />
             )}
             <p className="text-center text-[10px] text-[var(--text-tertiary)]">
-              Source: {content.source === "ai" ? "AI + your data" : "rule-based fallback"}
+              Source:{" "}
+              {content.source === "ai"
+                ? "AI + your data"
+                : "rule-based fallback"}
             </p>
           </div>
         )}
@@ -261,7 +270,11 @@ export default function PilotBriefPage() {
             disabled={asking}
             className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--background-primary)] px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
           />
-          <Button type="submit" variant="outline" disabled={asking || !question.trim()}>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={asking || !question.trim()}
+          >
             <Send className="h-4 w-4" />
             <span className="sr-only">Send</span>
           </Button>

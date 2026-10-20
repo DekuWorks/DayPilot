@@ -38,7 +38,10 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen">
       <MarketingNav ctaAsButton={false} ctaLabel="Sign In" ctaHref="/login" />
-      <section className="container-width section-padding py-16 md:py-24 max-w-md mx-auto">
+      <section
+        id="main"
+        className="container-width section-padding py-16 md:py-24 max-w-md mx-auto"
+      >
         <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
           Reset password
         </h1>

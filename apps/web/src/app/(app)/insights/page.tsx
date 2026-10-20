@@ -26,16 +26,26 @@ export default function InsightsPage() {
   const [focusSeconds, setFocusSeconds] = useState(0);
   const [dayBars, setDayBars] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [activeFocus, setActiveFocus] = useState<focusApi.FocusSession | null>(
-    null
+    null,
   );
   const [elapsed, setElapsed] = useState(0);
   const [focusBusy, setFocusBusy] = useState(false);
+  const [tasksAvailable, setTasksAvailable] = useState(true);
+  const [focusAvailable, setFocusAvailable] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#focus-timer") return;
     const el = document.getElementById("focus-timer");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (el) {
+      el.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "start",
+      });
+    }
   }, [loading]);
 
   const load = useCallback(async () => {
@@ -67,20 +77,27 @@ export default function InsightsPage() {
       if (isSupabaseConfigured()) {
         try {
           const supabase = createClient();
-          const { data: tasks } = await supabase
+          const { data: tasks, error: tasksError } = await supabase
             .from("tasks")
             .select("id, status");
+          if (tasksError) throw new Error(tasksError.message);
           const list = tasks ?? [];
-          setTasksCompleted(list.filter((t) => t.status === "completed").length);
+          setTasksCompleted(
+            list.filter((t) => t.status === "completed").length,
+          );
           setTasksOpen(
             list.filter(
-              (t) => t.status !== "completed" && t.status !== "cancelled"
-            ).length
+              (t) => t.status !== "completed" && t.status !== "cancelled",
+            ).length,
           );
+          setTasksAvailable(true);
         } catch {
           setTasksCompleted(0);
           setTasksOpen(0);
+          setTasksAvailable(false);
         }
+      } else {
+        setTasksAvailable(false);
       }
 
       try {
@@ -92,9 +109,11 @@ export default function InsightsPage() {
           .reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
         setFocusSeconds(completedSecs);
         setActiveFocus(await focusApi.getActiveFocusSession());
+        setFocusAvailable(true);
       } catch {
         setFocusSeconds(0);
         setActiveFocus(null);
+        setFocusAvailable(false);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load insights");
@@ -117,9 +136,9 @@ export default function InsightsPage() {
         Math.max(
           0,
           Math.floor(
-            (Date.now() - new Date(activeFocus.startedAt).getTime()) / 1000
-          )
-        )
+            (Date.now() - new Date(activeFocus.startedAt).getTime()) / 1000,
+          ),
+        ),
       );
     };
     tick();
@@ -127,10 +146,7 @@ export default function InsightsPage() {
     return () => window.clearInterval(id);
   }, [activeFocus]);
 
-  const maxBar = useMemo(
-    () => Math.max(30, ...dayBars),
-    [dayBars]
-  );
+  const maxBar = useMemo(() => Math.max(30, ...dayBars), [dayBars]);
 
   async function toggleFocus() {
     if (!user) return;
@@ -194,13 +210,21 @@ export default function InsightsPage() {
           },
           {
             label: "Tasks done",
-            value: loading ? "…" : String(tasksCompleted),
-            hint: `${tasksOpen} open`,
+            value: loading
+              ? "…"
+              : tasksAvailable
+                ? String(tasksCompleted)
+                : "—",
+            hint: tasksAvailable ? `${tasksOpen} open` : "Unavailable",
           },
           {
             label: "Focus",
-            value: loading ? "…" : formatDuration(focusSeconds),
-            hint: "completed this week",
+            value: loading
+              ? "…"
+              : focusAvailable
+                ? formatDuration(focusSeconds)
+                : "—",
+            hint: focusAvailable ? "completed this week" : "Unavailable",
           },
         ].map((card) => (
           <div
@@ -221,9 +245,13 @@ export default function InsightsPage() {
       </div>
 
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
           Meeting load by day
         </h2>
+        <p className="mb-4 text-xs text-[var(--text-secondary)]">
+          Minutes of events already on the calendar this week. This is not a
+          productivity score.
+        </p>
         <div className="flex h-40 items-end gap-2">
           {dayBars.map((mins, i) => (
             <div key={i} className="flex flex-1 flex-col items-center gap-2">
@@ -255,11 +283,7 @@ export default function InsightsPage() {
           </p>
         </div>
         <Button onClick={toggleFocus} disabled={focusBusy || !user}>
-          {focusBusy
-            ? "…"
-            : activeFocus
-              ? "End session"
-              : "Start focus"}
+          {focusBusy ? "…" : activeFocus ? "End session" : "Start focus"}
         </Button>
       </div>
     </div>

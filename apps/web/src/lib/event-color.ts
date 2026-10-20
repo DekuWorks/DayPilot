@@ -13,7 +13,8 @@ export const CALENDAR_FALLBACK_PALETTE = [
   "#F97316",
 ] as const;
 
-export const NATIVE_CALENDAR_COLOR = "#39FF14";
+/** Sage brand-500. New native calendars, and chips with no stored colour, use this. */
+export const NATIVE_CALENDAR_COLOR = "#3D9B6A";
 
 export type CalendarChipStyle = {
   fill: string;

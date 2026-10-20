@@ -16,7 +16,10 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
       <MarketingNav />
-      <article className="container-width section-padding py-12 md:py-20">
+      <article
+        id="main"
+        className="container-width section-padding py-12 md:py-20"
+      >
         <div className="mx-auto max-w-3xl space-y-10">
           <header className="space-y-3">
             <p className="text-sm font-medium tracking-wide text-[var(--brand-500)]">

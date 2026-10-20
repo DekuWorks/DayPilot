@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { primaryNav, secondaryNav } from "./nav-config";
+import { footerNav, moreNav, primaryNav, secondaryNav } from "./nav-config";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import * as eventsApi from "@/lib/events";
 
@@ -25,14 +25,43 @@ type PaletteItem = {
   hint?: string;
 };
 
+const quickActions: PaletteItem[] = [
+  {
+    id: "action-create-task",
+    label: "Create a task",
+    href: "/tasks",
+    group: "Actions",
+    hint: "Opens Tasks",
+  },
+  {
+    id: "action-create-event",
+    label: "Create an event",
+    href: "/calendar?create=1",
+    group: "Actions",
+    hint: "Opens the calendar",
+  },
+  {
+    id: "action-open-calendar",
+    label: "Open calendar",
+    href: "/calendar",
+    group: "Actions",
+  },
+  {
+    id: "action-booking",
+    label: "Open booking settings",
+    href: "/booking-links",
+    group: "Actions",
+  },
+];
+
 const navActions: PaletteItem[] = [
-  ...primaryNav.map((n) => ({
+  ...[...primaryNav, ...moreNav].map((n) => ({
     id: `nav-${n.href}`,
     label: n.label,
     href: n.href,
     group: "Navigate",
   })),
-  ...secondaryNav.map((n) => ({
+  ...[...footerNav, ...secondaryNav].map((n) => ({
     id: `nav-${n.href}`,
     label: n.label,
     href: n.href,
@@ -213,8 +242,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const all = [...navActions, ...dynamicItems];
-    if (!q) return navActions;
+    const all = [...quickActions, ...navActions, ...dynamicItems];
+    if (!q) return [...quickActions, ...navActions];
     const people = q.length > 0 ? peopleItems : [];
     const filtered = all.filter(
       (a) =>

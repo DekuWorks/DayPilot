@@ -1,7 +1,7 @@
 "use client";
 
-import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { TodayDashboard } from "@/components/home/TodayDashboard";
 
 export default function DashboardPage() {
-  return <HomeDashboard />;
+  return <TodayDashboard />;
 }

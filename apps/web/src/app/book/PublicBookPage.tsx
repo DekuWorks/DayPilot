@@ -169,7 +169,9 @@ export function PublicBookPage() {
     const callback =
       methodId === "phone" ? normalizeCallbackNumber(guestPhone) : null;
     if (methodId === "phone" && guestPhone.trim() && !callback) {
-      setError("Enter a phone number with at least 8 digits, or leave it blank");
+      setError(
+        "Enter a phone number with at least 8 digits, or leave it blank",
+      );
       return;
     }
     setSubmitting(true);
@@ -203,7 +205,7 @@ export function PublicBookPage() {
           </p>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8 md:py-12">
+      <main id="main" className="mx-auto max-w-5xl px-4 py-8 md:py-12">
         {loading ? (
           <p className="text-[var(--text-secondary)]">
             Loading available times…
@@ -346,7 +348,12 @@ export function PublicBookPage() {
                       className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--background-primary)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-500)]"
                     />
                   </label>
-                  {methods.length > 0 ? (
+                  {methods.length === 0 ? (
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      This host has not added a way to meet. You can still book
+                      a time.
+                    </p>
+                  ) : (
                     <fieldset className="space-y-2">
                       <legend className="text-sm font-medium text-[var(--text-primary)]">
                         How do you want to meet?
@@ -381,7 +388,7 @@ export function PublicBookPage() {
                         </label>
                       ))}
                     </fieldset>
-                  ) : null}
+                  )}
                   {methodId === "phone" ? (
                     <label className="block space-y-1">
                       <span className="text-sm font-medium text-[var(--text-primary)]">
@@ -402,11 +409,6 @@ export function PublicBookPage() {
                         Optional. Only the host sees this after you book.
                       </span>
                     </label>
-                  ) : null}
-                  {methodId ? (
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {methods.find((method) => method.id === methodId)?.detail}
-                    </p>
                   ) : null}
                   <p className="text-xs text-[var(--text-tertiary)]">
                     The host uses this to see who booked. After you confirm, you

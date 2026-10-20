@@ -3,7 +3,8 @@
  * Semantic tokens only; avoid raw hex in components.
  */
 
-:root {
+:root,
+[data-theme="dark"] {
   /* Brand scale */
   --brand-50: #e8f5ee;
   --brand-100: #c5e4d2;

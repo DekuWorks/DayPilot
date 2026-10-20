@@ -18,7 +18,8 @@ const kCalendarFallbackPalette = <int>[
   0xFFF97316, // orange
 ];
 
-const kNativeCalendarColor = Color(0xFF39FF14);
+/// Sage brand-500. Matches web `NATIVE_CALENDAR_COLOR`.
+const kNativeCalendarColor = DayPilotColors.brand500;
 
 class CalendarChipStyle {
   const CalendarChipStyle({

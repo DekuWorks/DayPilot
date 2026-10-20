@@ -1,3 +1,4 @@
+import 'package:daypilot_flutter/core/theme/app_theme.dart';
 import 'package:daypilot_flutter/features/calendar/calendar_chip_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,9 +35,14 @@ void main() {
     expect(a.accent, isNot(other.accent));
   });
 
-  test('native events stay brand green', () {
+  test('native events use sage, not electric green', () {
     final chip = calendarChipStyleFor(source: 'native');
+    final booking = calendarChipStyleFor(source: 'booking');
+    expect(chip.accent, DayPilotColors.brand500);
     expect(chip.accent, kNativeCalendarColor);
+    expect(booking.accent, kNativeCalendarColor);
+    expect(chip.accent, isNot(const Color(0xFF39FF14)));
+    expect(chip.accent, isNot(const Color(0xFF42E85F)));
   });
 
   test('parseCalendarHex accepts 6-digit and strips alpha', () {

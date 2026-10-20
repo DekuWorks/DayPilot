@@ -13,6 +13,7 @@ class TaskRow {
     this.dueAt,
     this.description,
     this.projectId,
+    this.completedAt,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class TaskRow {
   final DateTime? dueAt;
   final String? description;
   final String? projectId;
+  final DateTime? completedAt;
 
   bool get isDone => status == 'completed';
 }

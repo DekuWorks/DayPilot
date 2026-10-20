@@ -8,10 +8,11 @@
  * this rail stay in sync. Workspaces load from Supabase (unique colour per owner).
  */
 
-import { useEffect, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Plus,
@@ -20,7 +21,13 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { BrandLogo } from "@/components/BrandLogo";
-import { primaryNav, secondaryNav } from "./nav-config";
+import {
+  footerNav,
+  founderHubNavItem,
+  moreNav,
+  primaryNav,
+  secondaryNav,
+} from "./nav-config";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 function NavLink({
@@ -28,6 +35,7 @@ function NavLink({
   label,
   icon: Icon,
   badge,
+  excludePrefixes,
   collapsed,
   onNavigate,
 }: {
@@ -35,18 +43,21 @@ function NavLink({
   label: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   badge?: string;
+  excludePrefixes?: string[];
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const active =
+    (pathname === href || pathname.startsWith(`${href}/`)) &&
+    !(excludePrefixes ?? []).some((prefix) => pathname.startsWith(prefix));
 
   return (
     <Link
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
-      className={`group flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-[var(--text-nav)] font-medium transition-colors ${
+      className={`group flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[var(--text-nav)] font-medium transition-colors ${
         active
           ? "bg-[color-mix(in_srgb,var(--brand-500)_14%,transparent)] text-[var(--brand-500)]"
           : "text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
@@ -73,6 +84,13 @@ export function AppSidebar() {
   const { collapsed, mobileOpen, toggleCollapsed, setMobileOpen } =
     useSidebarStore();
   const { workspaces } = useWorkspaces();
+  const pathname = usePathname();
+  const hubItem = founderHubNavItem(user?.founderHub);
+  const moreActive = moreNav.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
+  const [moreToggled, setMoreToggled] = useState<boolean | null>(null);
+  const moreOpen = moreToggled ?? moreActive;
 
   const legalName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
@@ -104,7 +122,7 @@ export function AppSidebar() {
   const sidebarInner = (
     <div className="flex h-full flex-col">
       <div
-        className={`flex items-center border-b border-[var(--border-subtle)] px-4 py-4 ${
+        className={`flex items-center px-4 py-4 ${
           collapsed ? "justify-center px-2" : ""
         }`}
       >
@@ -128,7 +146,7 @@ export function AppSidebar() {
         className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5"
         aria-label="Main"
       >
-        {primaryNav.map((item) => (
+        {[...primaryNav, ...(hubItem ? [hubItem] : [])].map((item) => (
           <NavLink
             key={item.href}
             {...item}
@@ -136,6 +154,45 @@ export function AppSidebar() {
             onNavigate={closeMobile}
           />
         ))}
+
+        {!collapsed && (
+          <div className="pt-4">
+            <button
+              type="button"
+              onClick={() => setMoreToggled(!moreOpen)}
+              aria-expanded={moreOpen}
+              className="flex w-full items-center justify-between rounded-[var(--radius-md)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+            >
+              More
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${
+                  moreOpen ? "" : "-rotate-90"
+                }`}
+              />
+            </button>
+            {moreOpen && (
+              <div className="space-y-0.5">
+                {moreNav.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    {...item}
+                    collapsed={collapsed}
+                    onNavigate={closeMobile}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {collapsed &&
+          moreNav.map((item) => (
+            <NavLink
+              key={item.href}
+              {...item}
+              collapsed={collapsed}
+              onNavigate={closeMobile}
+            />
+          ))}
 
         {!collapsed && (
           <div className="pt-5 pb-2 px-3">
@@ -176,7 +233,7 @@ export function AppSidebar() {
         </div>
 
         {!collapsed && (
-          <div className="pt-4 space-y-0.5 border-t border-[var(--border-subtle)] mt-4">
+          <div className="pt-4 space-y-0.5 mt-2">
             {secondaryNav.map((item) => (
               <NavLink
                 key={item.href}
@@ -198,7 +255,15 @@ export function AppSidebar() {
           ))}
       </nav>
 
-      <div className="border-t border-[var(--border-subtle)] p-2 space-y-1">
+      <div className="p-2 space-y-1">
+        {footerNav.map((item) => (
+          <NavLink
+            key={item.href}
+            {...item}
+            collapsed={collapsed}
+            onNavigate={closeMobile}
+          />
+        ))}
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -265,7 +330,7 @@ export function AppSidebar() {
       {/* Desktop */}
       <aside
         className={`hidden md:flex shrink-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--background-secondary)] transition-[width] duration-200 ease-[var(--ease-out)] ${
-          collapsed ? "w-[72px]" : "w-[260px]"
+          collapsed ? "w-[72px]" : "w-[232px]"
         }`}
         aria-label="Sidebar"
       >
