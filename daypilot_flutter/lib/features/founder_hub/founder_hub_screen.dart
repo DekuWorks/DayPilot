@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/dp_cards.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import 'founder_hub_api.dart';
+import 'founder_owner_message.dart';
 
 const _categories = <(String, String)>[
   ('feature_idea', 'Feature Idea'),
@@ -124,6 +125,7 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
     final summary = _summary;
     final canRead = summary?['canRead'] == true;
     final replies = (summary?['unreadReplyCount'] as num?)?.toInt() ?? 0;
+    final threads = threadsForFounderHub(_items);
     return FeatureScaffold(
       title: 'Founder Hub',
       fallbackRoute: '/settings',
@@ -218,14 +220,14 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
                   const SizedBox(height: 14),
                   const DpSectionTitle(title: 'Your suggestions'),
                   const SizedBox(height: 8),
-                  if (_items.isEmpty)
+                  if (threads.isEmpty)
                     DpCard(
                       child: Text(
                         'You have not sent a suggestion yet.',
                         style: TextStyle(color: colors.textSecondary),
                       ),
                     ),
-                  for (final item in _items)
+                  for (final item in threads)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: DpCard(
@@ -252,7 +254,7 @@ class _FounderHubScreenState extends ConsumerState<FounderHubScreen> {
                                     ),
                                   ),
                                   Text(
-                                    '${item['categoryLabel']} · ${item['statusLabel']}',
+                                    hubThreadSubtitle(item),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: colors.textSecondary,
@@ -506,12 +508,11 @@ class _FounderThreadScreenState extends ConsumerState<FounderThreadScreen> {
               children: [
                 Text('${item['categoryLabel']} · ${item['statusLabel']}'),
                 const SizedBox(height: 12),
-                if (messages is List)
-                  for (final message in messages.whereType<Map>())
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text('${message['body']}'),
-                    ),
+                for (final message in founderVisibleMessages(messages))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text('${message['body']}'),
+                  ),
                 TextField(
                   controller: _body,
                   minLines: 2,

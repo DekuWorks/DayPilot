@@ -6,6 +6,7 @@ import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import 'founder_hub_api.dart';
+import 'founder_owner_message.dart';
 
 /// Owner-only list of founding subscribers and waitlist rows.
 /// The screen is routed only from controls that already checked `isOwner`.
@@ -20,6 +21,7 @@ class FounderPeopleScreen extends ConsumerStatefulWidget {
 
 class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
   bool _loading = true;
+  bool _owner = false;
   String? _error;
   List<Map<String, dynamic>> _founding = const [];
   List<Map<String, dynamic>> _waitlist = const [];
@@ -40,6 +42,7 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
         if (!mounted) return;
         setState(() {
           _loading = false;
+          _owner = false;
           _founding = const [];
           _waitlist = const [];
           _error = 'Only the hub owner can open this.';
@@ -49,6 +52,7 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
       final people = await api.people();
       if (!mounted) return;
       setState(() {
+        _owner = true;
         _founding = _maps(people['founding']);
         _waitlist = _maps(people['waitlist']);
         _loading = false;
@@ -58,6 +62,7 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
+        _owner = false;
         _founding = const [];
         _waitlist = const [];
         _error = '$e';
@@ -99,88 +104,27 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
     return '#${value.toInt().toString().padLeft(2, '0')}';
   }
 
-  Future<void> _messageFounder(String userId) async {
-    final subject = TextEditingController();
-    final message = TextEditingController();
-    final threadId = await showDialog<String>(
+  Future<void> _messageFounder({String? userId}) async {
+    final founders = messageableFounders(_founding);
+    if (userId == null &&
+        !showStartThreadControl(isOwner: _owner, founders: founders)) {
+      return;
+    }
+    final threadId = await showOwnerMessageDialog(
       context: context,
-      builder: (dialogContext) {
-        var busy = false;
-        var error = '';
-        return StatefulBuilder(
-          builder: (context, setLocal) {
-            return AlertDialog(
-              title: const Text('New message'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: subject,
-                    decoration: const InputDecoration(labelText: 'Subject'),
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: message,
-                    decoration: const InputDecoration(labelText: 'Message'),
-                    minLines: 3,
-                    maxLines: 6,
-                  ),
-                  if (error.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      error,
-                      style: const TextStyle(color: DayPilotColors.error),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: busy ? null : () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: busy
-                      ? null
-                      : () async {
-                          setLocal(() {
-                            busy = true;
-                            error = '';
-                          });
-                          try {
-                            final thread =
-                                await FounderHubApi(
-                                  ref.read(nestApiSessionProvider),
-                                ).startOwnerThread(
-                                  recipientUserId: userId,
-                                  title: subject.text.trim(),
-                                  body: message.text.trim(),
-                                );
-                            final id = thread['id'];
-                            if (dialogContext.mounted) {
-                              Navigator.pop(
-                                dialogContext,
-                                id is String ? id : '',
-                              );
-                            }
-                          } catch (e) {
-                            setLocal(() {
-                              busy = false;
-                              error = '$e';
-                            });
-                          }
-                        },
-                  child: Text(busy ? 'Sending…' : 'Send'),
-                ),
-              ],
+      founders: founders,
+      recipientUserId: userId,
+      onSubmit: (draft) async {
+        final thread = await FounderHubApi(ref.read(nestApiSessionProvider))
+            .startOwnerThread(
+              recipientUserId: draft.recipientUserId,
+              title: draft.title,
+              body: draft.body,
             );
-          },
-        );
+        final id = thread['id'];
+        return id is String ? id : null;
       },
     );
-    subject.dispose();
-    message.dispose();
     if (!mounted || threadId == null || threadId.isEmpty) return;
     context.push('/settings/founder-inbox/$threadId');
   }
@@ -216,6 +160,20 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                MessageFounderButton(
+                  isOwner: _owner,
+                  founders: messageableFounders(_founding),
+                  onPressed: _messageFounder,
+                ),
+                if (_founding.isNotEmpty &&
+                    messageableFounders(_founding).isEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'No founding members with open access.',
+                    style: TextStyle(color: secondary),
+                  ),
+                ],
+                const SizedBox(height: 8),
                 if (_founding.isEmpty)
                   Text(
                     'No founding subscribers stored yet.',
@@ -232,15 +190,14 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
                         'Subscribed ${_when(person['subscribedAt'])}',
                         'Access until ${_when(person['currentPeriodEnd'])}',
                       ],
-                      action:
-                          person['canMessage'] == true &&
-                              person['userId'] is String
-                          ? TextButton(
-                              onPressed: () =>
-                                  _messageFounder(person['userId'] as String),
+                      action: messageableFounders([person]).isEmpty
+                          ? null
+                          : TextButton(
+                              onPressed: () => _messageFounder(
+                                userId: person['userId'] as String,
+                              ),
                               child: const Text('Message founder'),
-                            )
-                          : null,
+                            ),
                     ),
                 const SizedBox(height: 16),
                 Text(
