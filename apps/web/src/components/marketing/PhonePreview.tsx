@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import {
   BarChart3,
   CalendarDays,
@@ -293,17 +294,25 @@ export function PhoneFrame({
   kind,
   className = "",
   label,
+  shot,
 }: {
   kind: PhoneScreenKind;
   className?: string;
   /** Accessible name. Decorative frames still say what they are. */
   label?: string;
+  /** Real iPhone capture. When set, the drawn layout is not shown. */
+  shot?: string;
 }) {
   const active = activeTab[kind];
   return (
     <div
       role="img"
-      aria-label={label ?? `Layout preview of the ${kind} screen`}
+      aria-label={
+        label ??
+        (shot
+          ? `Screenshot of the ${kind} screen in the DayPilot iPhone app`
+          : `Layout preview of the ${kind} screen`)
+      }
       className={`relative aspect-[9/19] w-full bg-[#0b0f0d] p-[3.2%] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.45)] ring-1 ring-[var(--border-strong)] ${className}`}
       style={{ containerType: "inline-size", borderRadius: "15% / 7.1%" }}
     >
@@ -311,35 +320,48 @@ export function PhoneFrame({
         className="relative flex h-full flex-col overflow-hidden bg-[var(--background-primary)]"
         style={{ borderRadius: "13% / 6.2%" }}
       >
-        <span
-          aria-hidden
-          className="absolute left-1/2 top-[1.6%] z-10 block h-[2.4%] w-[28%] -translate-x-1/2 rounded-full bg-[#0b0f0d]"
-        />
-        <div
-          className="flex-1 overflow-hidden px-[7%] pt-[13%]"
-          style={{ fontSize: "4.3cqw" }}
-        >
-          <Screen kind={kind} />
-        </div>
-        <div
-          aria-hidden
-          className="flex justify-around border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-[3%] pb-[5%] pt-[2.5%]"
-          style={{ fontSize: "3.4cqw" }}
-        >
-          {tabs.map(({ label: tab, icon: Icon }, i) => (
+        {shot ? (
+          <Image
+            src={shot}
+            alt=""
+            fill
+            unoptimized
+            sizes="(max-width: 768px) 40vw, 180px"
+            className="object-cover object-top"
+          />
+        ) : (
+          <>
             <span
-              key={tab}
-              className={`flex flex-col items-center gap-[0.25em] font-medium ${
-                i === active
-                  ? "text-[var(--brand-500)]"
-                  : "text-[var(--text-tertiary)]"
-              }`}
+              aria-hidden
+              className="absolute left-1/2 top-[1.6%] z-10 block h-[2.4%] w-[28%] -translate-x-1/2 rounded-full bg-[#0b0f0d]"
+            />
+            <div
+              className="flex-1 overflow-hidden px-[7%] pt-[13%]"
+              style={{ fontSize: "4.3cqw" }}
             >
-              <Icon className="h-[1.9em] w-[1.9em]" strokeWidth={1.75} />
-              {tab}
-            </span>
-          ))}
-        </div>
+              <Screen kind={kind} />
+            </div>
+            <div
+              aria-hidden
+              className="flex justify-around border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-[3%] pb-[5%] pt-[2.5%]"
+              style={{ fontSize: "3.4cqw" }}
+            >
+              {tabs.map(({ label: tab, icon: Icon }, i) => (
+                <span
+                  key={tab}
+                  className={`flex flex-col items-center gap-[0.25em] font-medium ${
+                    i === active
+                      ? "text-[var(--brand-500)]"
+                      : "text-[var(--text-tertiary)]"
+                  }`}
+                >
+                  <Icon className="h-[1.9em] w-[1.9em]" strokeWidth={1.75} />
+                  {tab}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
