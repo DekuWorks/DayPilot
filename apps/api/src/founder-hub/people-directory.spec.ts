@@ -6,6 +6,7 @@ describe('people directory', () => {
     const directory = toPeopleDirectory({
       founding: [
         {
+          userId: 'member-1',
           email: 'member@example.com',
           firstName: 'Bea',
           lastName: 'Member',
@@ -38,6 +39,7 @@ describe('people directory', () => {
 
     expect(directory.founding).toEqual([
       {
+        userId: 'member-1',
         email: 'member@example.com',
         name: 'Bea Member',
         plan: 'founding_pro',

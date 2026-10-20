@@ -97,6 +97,7 @@ export class PrismaHubDb implements HubDb {
       if (claim.userId) seen.add(claim.userId);
       const user = claim.user ?? sub?.user ?? null;
       rows.push({
+        userId: claim.userId,
         email: user?.email ?? null,
         firstName: user?.firstName ?? null,
         lastName: user?.lastName ?? null,
@@ -112,6 +113,7 @@ export class PrismaHubDb implements HubDb {
     for (const sub of subs) {
       if (seen.has(sub.userId)) continue;
       rows.push({
+        userId: sub.userId,
         email: sub.user.email,
         firstName: sub.user.firstName,
         lastName: sub.user.lastName,

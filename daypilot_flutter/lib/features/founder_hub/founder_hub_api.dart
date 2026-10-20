@@ -129,6 +129,23 @@ class FounderHubApi {
     return _json(await session.get('/founder-hub/people'));
   }
 
+  Future<Map<String, dynamic>> startOwnerThread({
+    required String recipientUserId,
+    required String title,
+    required String body,
+  }) async {
+    return _json(
+      await session.post(
+        '/founder-hub/inbox',
+        body: {
+          'recipientUserId': recipientUserId,
+          'title': title,
+          'body': body,
+        },
+      ),
+    );
+  }
+
   Future<void> setWaitlistStatus(String id, String status) async {
     await _json(
       await session.patch(
@@ -176,7 +193,9 @@ class FounderHubApi {
   }
 
   String _message(Object? body, int status) {
-    if (body is Map && body['message'] is String) return body['message'] as String;
+    if (body is Map && body['message'] is String) {
+      return body['message'] as String;
+    }
     if (body is Map && body['message'] is List) {
       return (body['message'] as List).join(', ');
     }

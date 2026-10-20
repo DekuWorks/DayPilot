@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FounderOwnerNav } from "@/components/founder-hub/FounderOwnerNav";
-import { listInbox, type HubSuggestion } from "@/lib/founder-hub-api";
+import {
+  OwnerMessageForm,
+  type MessageableFounder,
+} from "@/components/founder-hub/OwnerMessageForm";
+import { useAuth } from "@/providers/AuthProvider";
+import {
+  listFounderPeople,
+  listInbox,
+  type HubSuggestion,
+} from "@/lib/founder-hub-api";
 
 const CATEGORIES = [
   "",
@@ -24,7 +33,11 @@ const STATUSES = [
 ];
 
 export default function FounderInboxPage() {
+  const { user } = useAuth();
+  const owner = user?.founderHub?.isOwner === true;
   const [items, setItems] = useState<HubSuggestion[]>([]);
+  const [founders, setFounders] = useState<MessageableFounder[]>([]);
+  const [composing, setComposing] = useState(false);
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
@@ -48,6 +61,27 @@ export default function FounderInboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, status, unread]);
 
+  useEffect(() => {
+    if (!owner) return;
+    void listFounderPeople()
+      .then((people) => {
+        setFounders(
+          people.founding
+            .filter((person) => person.canMessage && person.userId)
+            .map((person) => ({
+              userId: person.userId as string,
+              label:
+                person.name ||
+                person.email ||
+                `Founder ${person.founderNumber ?? ""}`.trim(),
+            })),
+        );
+      })
+      .catch(() => {
+        setFounders([]);
+      });
+  }, [owner]);
+
   return (
     <div className="max-w-3xl space-y-4">
       <Link href="/settings" className="text-sm text-[var(--brand-500)]">
@@ -57,6 +91,18 @@ export default function FounderInboxPage() {
         Founder messages
       </h1>
       <FounderOwnerNav current="inbox" />
+      {owner ? (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setComposing((open) => !open)}
+            className="min-h-11 rounded-lg bg-[var(--brand-500)] px-4 py-2 text-sm font-semibold text-black"
+          >
+            New message
+          </button>
+          {composing ? <OwnerMessageForm founders={founders} /> : null}
+        </div>
+      ) : null}
       <form
         className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap"
         onSubmit={(event) => {

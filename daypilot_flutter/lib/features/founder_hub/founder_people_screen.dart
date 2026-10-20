@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
@@ -13,7 +14,8 @@ class FounderPeopleScreen extends ConsumerStatefulWidget {
   const FounderPeopleScreen({super.key});
 
   @override
-  ConsumerState<FounderPeopleScreen> createState() => _FounderPeopleScreenState();
+  ConsumerState<FounderPeopleScreen> createState() =>
+      _FounderPeopleScreenState();
 }
 
 class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
@@ -74,7 +76,9 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
   Future<void> _setStatus(String id, String status) async {
     setState(() => _busyId = id);
     try {
-      await FounderHubApi(ref.read(nestApiSessionProvider)).setWaitlistStatus(id, status);
+      await FounderHubApi(
+        ref.read(nestApiSessionProvider),
+      ).setWaitlistStatus(id, status);
       await _load();
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -85,12 +89,100 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
 
   String _when(Object? value) {
     if (value is! String || value.isEmpty) return '—';
-    return value.length >= 16 ? value.substring(0, 16).replaceFirst('T', ' ') : value;
+    return value.length >= 16
+        ? value.substring(0, 16).replaceFirst('T', ' ')
+        : value;
   }
 
   String _spot(Object? value) {
     if (value is! num) return '—';
     return '#${value.toInt().toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _messageFounder(String userId) async {
+    final subject = TextEditingController();
+    final message = TextEditingController();
+    final threadId = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        var busy = false;
+        var error = '';
+        return StatefulBuilder(
+          builder: (context, setLocal) {
+            return AlertDialog(
+              title: const Text('New message'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: subject,
+                    decoration: const InputDecoration(labelText: 'Subject'),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: message,
+                    decoration: const InputDecoration(labelText: 'Message'),
+                    minLines: 3,
+                    maxLines: 6,
+                  ),
+                  if (error.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      error,
+                      style: const TextStyle(color: DayPilotColors.error),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: busy ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          setLocal(() {
+                            busy = true;
+                            error = '';
+                          });
+                          try {
+                            final thread =
+                                await FounderHubApi(
+                                  ref.read(nestApiSessionProvider),
+                                ).startOwnerThread(
+                                  recipientUserId: userId,
+                                  title: subject.text.trim(),
+                                  body: message.text.trim(),
+                                );
+                            final id = thread['id'];
+                            if (dialogContext.mounted) {
+                              Navigator.pop(
+                                dialogContext,
+                                id is String ? id : '',
+                              );
+                            }
+                          } catch (e) {
+                            setLocal(() {
+                              busy = false;
+                              error = '$e';
+                            });
+                          }
+                        },
+                  child: Text(busy ? 'Sending…' : 'Send'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    subject.dispose();
+    message.dispose();
+    if (!mounted || threadId == null || threadId.isEmpty) return;
+    context.push('/settings/founder-inbox/$threadId');
   }
 
   @override
@@ -110,16 +202,25 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: DayPilotColors.error)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: DayPilotColors.error),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 Text(
                   'Founding subscribers (${_founding.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (_founding.isEmpty)
-                  Text('No founding subscribers stored yet.', style: TextStyle(color: secondary))
+                  Text(
+                    'No founding subscribers stored yet.',
+                    style: TextStyle(color: secondary),
+                  )
                 else
                   for (final person in _founding)
                     _Card(
@@ -131,15 +232,30 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
                         'Subscribed ${_when(person['subscribedAt'])}',
                         'Access until ${_when(person['currentPeriodEnd'])}',
                       ],
+                      action:
+                          person['canMessage'] == true &&
+                              person['userId'] is String
+                          ? TextButton(
+                              onPressed: () =>
+                                  _messageFounder(person['userId'] as String),
+                              child: const Text('Message founder'),
+                            )
+                          : null,
                     ),
                 const SizedBox(height: 16),
                 Text(
                   'Waitlist (${_waitlist.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (_waitlist.isEmpty)
-                  Text('No waitlist requests stored yet.', style: TextStyle(color: secondary))
+                  Text(
+                    'No waitlist requests stored yet.',
+                    style: TextStyle(color: secondary),
+                  )
                 else
                   for (final row in _waitlist)
                     _WaitlistCard(
@@ -155,10 +271,11 @@ class _FounderPeopleScreenState extends ConsumerState<FounderPeopleScreen> {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.title, required this.lines});
+  const _Card({required this.title, required this.lines, this.action});
 
   final String title;
   final List<String> lines;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +295,7 @@ class _Card extends StatelessWidget {
           Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
           for (final line in lines)
             Text(line, style: TextStyle(color: secondary, height: 1.35)),
+          ?action,
         ],
       ),
     );
@@ -215,8 +333,14 @@ class _WaitlistCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${row['email']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-          Text('${row['plan']} · $status · $when', style: TextStyle(color: secondary)),
+          Text(
+            '${row['email']}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            '${row['plan']} · $status · $when',
+            style: TextStyle(color: secondary),
+          ),
           if (company != null || size != null)
             Text(
               '${company ?? 'No company'}${size != null ? ' · team size $size' : ''}',

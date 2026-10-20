@@ -170,6 +170,8 @@ export async function saveNoticePrefs(
 }
 
 export type FoundingPerson = {
+  userId: string | null;
+  canMessage: boolean;
   email: string | null;
   name: string | null;
   plan: string;
@@ -211,6 +213,19 @@ export async function setWaitlistStatus(
     },
   );
   return parse(res, "Could not update the waitlist");
+}
+
+export async function startOwnerThread(input: {
+  recipientUserId: string;
+  title: string;
+  body: string;
+}): Promise<HubSuggestion> {
+  const res = await nestFetch(`${getApiUrl()}/founder-hub/inbox`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parse(res, "Could not send that message");
 }
 
 export async function listInbox(query: {

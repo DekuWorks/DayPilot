@@ -472,7 +472,96 @@ export class FounderHubFlow {
       this.db.listFoundingDirectory(),
       this.db.listWaitlist(),
     ]);
-    return toPeopleDirectory({ founding, waitlist });
+    const directory = toPeopleDirectory({ founding, waitlist });
+    return {
+      founding: await Promise.all(
+        directory.founding.map(async (person) => ({
+          ...person,
+          canMessage: await this.canMessageFounder(actorId, person.userId),
+        })),
+      ),
+      waitlist: directory.waitlist,
+    };
+  }
+
+  /**
+   * Owner-only thread on the existing suggestion. The recipient is the
+   * suggestion owner, so they see it in Founder Hub and nobody else does.
+   * The first message is an owner reply, not a founder submission.
+   */
+  async startOwnerThread(
+    actorId: string,
+    input: { recipientUserId: string; title: string; body: string },
+  ) {
+    const owner = await this.actor(actorId);
+    await this.assertOwner(owner.id);
+    const recipientUserId = input.recipientUserId.trim();
+    const title = input.title.trim();
+    const text = input.body.trim();
+    if (!recipientUserId || recipientUserId.length > 80) {
+      throw new HubError(400, 'Choose a founding member.');
+    }
+    if (!title || title.length > 120) {
+      throw new HubError(400, 'Subject must be 1–120 characters.');
+    }
+    if (!text || text.length > 4000) {
+      throw new HubError(400, 'Message must be 1–4000 characters.');
+    }
+    if (!(await this.canMessageFounder(owner.id, recipientUserId))) {
+      const recipient = await this.db.getUser(recipientUserId);
+      throw new HubError(
+        recipient ? 403 : 404,
+        recipient
+          ? 'You can only message a founding member whose access is still open.'
+          : 'Founder not found.',
+      );
+    }
+    const hash = suggestionHash(
+      `owner-message:${recipientUserId}:${title}`,
+      text,
+    );
+    const since = new Date(this.now().getTime() - DUPLICATE_WINDOW_MS);
+    const recent = await this.db.suggestionsSince(recipientUserId, since);
+    if (recent.some((row) => row.contentHash === hash)) {
+      throw new HubError(409, 'You already sent this message.');
+    }
+    const createdAt = this.now();
+    const suggestion = await this.db.insertSuggestion({
+      userId: recipientUserId,
+      title,
+      description: text,
+      category: 'other',
+      status: 'submitted',
+      featureKey: null,
+      contentHash: hash,
+      founderLastReadAt: null,
+      ownerLastReadAt: createdAt,
+      createdAt,
+    });
+    await this.db.insertMessage({
+      suggestionId: suggestion.id,
+      authorUserId: owner.id,
+      kind: 'admin_reply',
+      body: text,
+      createdAt,
+    });
+    await this.notifyFounder(suggestion, 'admin_reply', {
+      title: 'Message from DayPilot',
+      body: `DayPilot sent you a message: “${title}”.`,
+    });
+    return this.adminView(suggestion.id);
+  }
+
+  /** Open founding access only. Waitlist rows and other plans stay false. */
+  private async canMessageFounder(
+    actorId: string,
+    recipientUserId: string | null,
+  ): Promise<boolean> {
+    if (!recipientUserId || recipientUserId === actorId) return false;
+    const recipient = await this.db.getUser(recipientUserId);
+    if (!recipient) return false;
+    const snap = await this.snapshot(recipientUserId);
+    return snap.access.canWrite;
   }
 
   async setWaitlistStatus(actorId: string, id: string, status: string) {
