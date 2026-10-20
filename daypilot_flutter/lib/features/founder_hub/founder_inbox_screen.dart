@@ -17,6 +17,8 @@ class FounderInboxScreen extends ConsumerStatefulWidget {
 
 class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
   List<Map<String, dynamic>> _items = const [];
+  List<MessageableFounder> _founders = const [];
+  bool _owner = false;
   String? _error;
   bool _loading = true;
 
@@ -27,13 +29,15 @@ class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
   }
 
   Future<void> _load() async {
+    final api = FounderHubApi(ref.read(nestApiSessionProvider));
     try {
-      final items = await FounderHubApi(
-        ref.read(nestApiSessionProvider),
-      ).inbox();
+      final items = await api.inbox();
+      final access = await _ownerAccess(api);
       if (!mounted) return;
       setState(() {
         _items = items;
+        _owner = access.owner;
+        _founders = access.founders;
         _loading = false;
         _error = null;
       });
@@ -46,6 +50,60 @@ class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
     }
   }
 
+  Future<({bool owner, List<MessageableFounder> founders})> _ownerAccess(
+    FounderHubApi api,
+  ) async {
+    try {
+      final account = await api.account();
+      final hub = account['founderHub'];
+      if (hub is! Map || hub['isOwner'] != true) {
+        return (owner: false, founders: const <MessageableFounder>[]);
+      }
+    } catch (_) {
+      return (owner: false, founders: const <MessageableFounder>[]);
+    }
+    try {
+      final people = await api.people();
+      return (
+        owner: true,
+        founders: messageableFounders(_rows(people['founding'])),
+      );
+    } catch (_) {
+      return (owner: true, founders: const <MessageableFounder>[]);
+    }
+  }
+
+  List<Map<String, dynamic>> _rows(Object? value) {
+    if (value is! List) return const [];
+    return value
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<void> _messageFounder() async {
+    if (!_owner || !mounted) return;
+    final api = FounderHubApi(ref.read(nestApiSessionProvider));
+    final threadId = await showOwnerMessageDialog(
+      context: context,
+      founders: _founders,
+      onSubmit: (draft) async {
+        final thread = await api.startOwnerThread(
+          recipientUserId: draft.recipientUserId,
+          title: draft.title,
+          body: draft.body,
+        );
+        if (mounted) {
+          setState(() => _items = prependInboxThread(_items, thread));
+        }
+        final id = thread['id'];
+        return id is String ? id : null;
+      },
+    );
+    if (!mounted || threadId == null || threadId.isEmpty) return;
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FeatureScaffold(
@@ -53,25 +111,13 @@ class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
       fallbackRoute: '/settings',
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (_error != null)
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: DayPilotColors.error),
-                  ),
-                if (_items.isEmpty && _error == null)
-                  const Text('No founder messages.'),
-                for (final item in _items)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(inboxThreadTitle(item)),
-                    subtitle: Text(inboxThreadSubtitle(item)),
-                    onTap: () =>
-                        context.push('/settings/founder-inbox/${item['id']}'),
-                  ),
-              ],
+          : FounderInboxMessages(
+              isOwner: _owner,
+              items: _items,
+              error: _error,
+              onMessage: _messageFounder,
+              onOpen: (item) =>
+                  context.push('/settings/founder-inbox/${item['id']}'),
             ),
     );
   }
