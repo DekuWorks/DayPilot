@@ -58,10 +58,15 @@ jobs:
             cp CNAME apps/web/out/CNAME
           fi
           touch apps/web/out/.nojekyll
-          # Ensure SPA-style deep-link fallback for /book/* and /tasks/* is present
-          if [ ! -f apps/web/out/404.html ] && [ -f apps/web/public/404.html ]; then
-            cp apps/web/public/404.html apps/web/out/404.html
+          # Next static export always writes its own 404.html ("page not found").
+          # That replaces the /book/:slug and /tasks/:id redirect unless we overwrite it.
+          if [ ! -f apps/web/public/404.html ]; then
+            echo "::error::apps/web/public/404.html is missing — shared booking and task links would 404."
+            exit 1
           fi
+          cp apps/web/public/404.html apps/web/out/404.html
+          grep -F -q '/book?slug=' apps/web/out/404.html
+          grep -F -q '/tasks/_?id=' apps/web/out/404.html
           echo "Pages artifact ready:"
           ls -la apps/web/out/index.html apps/web/out/CNAME apps/web/out/.nojekyll apps/web/out/404.html 2>/dev/null || true
 

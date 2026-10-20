@@ -2,6 +2,8 @@ export type LinkableUser = {
   id: string;
   email: string;
   supabaseUserId: string | null;
+  /** Present on Prisma rows. A non-empty hash means Nest password login still works. */
+  passwordHash?: string | null;
 };
 
 export type SupabaseUserLinkDecision =
@@ -11,12 +13,19 @@ export type SupabaseUserLinkDecision =
       attachSupabaseId?: string;
       updateEmail?: string;
     }
-  | { action: 'create' };
+  | { action: 'create' }
+  | { action: 'conflict' };
+
+function hasPassword(user: LinkableUser): boolean {
+  return typeof user.passwordHash === 'string' && user.passwordHash.length > 0;
+}
 
 /**
  * Prefer the Supabase subject over email so Hide My Email vs a later
  * provider email does not silently attach the wrong Nest user.
- * Never overwrite a supabaseUserId that already belongs to someone else.
+ * Never sign a Supabase user into a Nest row that already belongs to a
+ * different subject, and never attach them to a password account. An open
+ * password signup could otherwise reserve the victim's email.
  */
 export function decideSupabaseUserLink(input: {
   supabaseUserId: string;
@@ -34,17 +43,17 @@ export function decideSupabaseUserLink(input: {
   }
 
   if (byEmail) {
-    if (!byEmail.supabaseUserId) {
+    if (byEmail.supabaseUserId === supabaseUserId) {
+      return { action: 'use', userId: byEmail.id };
+    }
+    if (!byEmail.supabaseUserId && !hasPassword(byEmail)) {
       return {
         action: 'use',
         userId: byEmail.id,
         attachSupabaseId: supabaseUserId,
       };
     }
-    if (byEmail.supabaseUserId === supabaseUserId) {
-      return { action: 'use', userId: byEmail.id };
-    }
-    return { action: 'use', userId: byEmail.id };
+    return { action: 'conflict' };
   }
 
   return { action: 'create' };

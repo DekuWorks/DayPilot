@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Patch,
   Post,
@@ -13,7 +14,6 @@ import {
 import type { Request, Response } from 'express';
 import { FounderHubService } from '../founder-hub/founder-hub.service';
 import { AuthService } from './auth.service';
-import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -48,14 +48,16 @@ export class AuthController {
     return pair;
   }
 
+  /**
+   * Closed. A password row with no Supabase id could be created for any email,
+   * then a later SSO login was attached to it. Web and Flutter sign up through
+   * Supabase. Existing password logins still use POST /auth/login.
+   */
   @Post('signup')
-  async signup(
-    @Body() dto: SignupDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const pair = await this.authService.signup(dto);
-    setAuthCookies(res, pair);
-    return pair;
+  signup() {
+    throw new ForbiddenException(
+      'Password signup is closed. Create the account from the DayPilot sign-up page.',
+    );
   }
 
   @Post('login')
