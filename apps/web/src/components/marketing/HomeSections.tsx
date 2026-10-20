@@ -57,13 +57,21 @@ export function HomeHero() {
 
         <div
           className="relative mx-auto h-[26rem] w-full max-w-[28rem] sm:h-[32rem] lg:h-[36rem] lg:max-w-none"
-          aria-label="Layout previews of the DayPilot iPhone app"
+          aria-label="Screenshots of the DayPilot iPhone app"
         >
           <div className="absolute left-[2%] top-0 z-10 w-[50%] -rotate-3 sm:left-[4%]">
-            <PhoneFrame kind="today" />
+            <PhoneFrame
+              kind="today"
+              shot="/brand/iphone-today.png"
+              label="Screenshot of Today in the DayPilot iPhone app"
+            />
           </div>
           <div className="absolute right-[2%] top-[9%] w-[46%] rotate-3 sm:right-[2%]">
-            <PhoneFrame kind="calendar" />
+            <PhoneFrame
+              kind="calendar"
+              shot="/brand/iphone-calendar.png"
+              label="Screenshot of Calendar in the DayPilot iPhone app"
+            />
           </div>
         </div>
       </div>
@@ -341,12 +349,33 @@ const iosScreens: {
   kind: PhoneScreenKind;
   title: string;
   caption: string;
+  shot?: string;
 }[] = [
-  { kind: "today", title: "Today", caption: "Your day at a glance" },
-  { kind: "calendar", title: "Calendar", caption: "Month, week and day" },
-  { kind: "tasks", title: "Tasks", caption: "Stay organised" },
+  {
+    kind: "today",
+    title: "Today",
+    caption: "Your day at a glance",
+    shot: "/brand/iphone-today.png",
+  },
+  {
+    kind: "calendar",
+    title: "Calendar",
+    caption: "Month, week and day",
+    shot: "/brand/iphone-calendar.png",
+  },
+  {
+    kind: "tasks",
+    title: "Tasks",
+    caption: "Stay organised",
+    shot: "/brand/iphone-tasks.png",
+  },
   { kind: "booking", title: "Booking", caption: "Share your availability" },
-  { kind: "insights", title: "Insights", caption: "Read the week" },
+  {
+    kind: "insights",
+    title: "Insights",
+    caption: "Read the week",
+    shot: "/brand/iphone-insights.png",
+  },
   { kind: "hub", title: "Founders Hub", caption: "For founding members" },
 ];
 
@@ -372,12 +401,17 @@ export function IosScreens() {
               </p>
             </div>
             <ol className="m-0 grid list-none grid-cols-3 gap-x-3 gap-y-6 p-0 md:grid-cols-6">
-              {iosScreens.map(({ kind, title, caption }, i) => (
+              {iosScreens.map(({ kind, title, caption, shot }, i) => (
                 <li key={kind} className="space-y-2 text-center">
                   <PhoneFrame
                     kind={kind}
                     className="shadow-md"
-                    label={`Layout preview of the ${title} screen`}
+                    shot={shot}
+                    label={
+                      shot
+                        ? `Screenshot of ${title} in the DayPilot iPhone app`
+                        : `Layout preview of the ${title} screen`
+                    }
                   />
                   <p className="text-xs font-semibold text-[var(--text-primary)]">
                     {i + 1}. {title}
@@ -390,8 +424,8 @@ export function IosScreens() {
             </ol>
           </div>
           <p className="mt-6 text-xs text-[var(--text-tertiary)]">
-            These are layout previews, not screenshots. They show structure
-            only.
+            Today, Calendar, Tasks, and Insights are screenshots of the DayPilot
+            iPhone app. Booking and Founders Hub are layout previews.
           </p>
         </div>
 
