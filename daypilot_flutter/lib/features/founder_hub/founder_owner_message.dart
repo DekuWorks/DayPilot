@@ -151,6 +151,64 @@ String inboxThreadSubtitle(Map<String, dynamic> item) {
   return detail;
 }
 
+/// Puts a thread the owner just sent at the top of the inbox.
+List<Map<String, dynamic>> prependInboxThread(
+  List<Map<String, dynamic>> items,
+  Map<String, dynamic> thread,
+) {
+  final id = thread['id'];
+  if (id is! String || id.isEmpty) return items;
+  return [
+    thread,
+    for (final row in items)
+      if (row['id'] != id) row,
+  ];
+}
+
+/// Founder messages list. The owner can start a thread when the list is empty.
+class FounderInboxMessages extends StatelessWidget {
+  const FounderInboxMessages({
+    super.key,
+    required this.isOwner,
+    required this.items,
+    required this.onMessage,
+    required this.onOpen,
+    this.error,
+  });
+
+  final bool isOwner;
+  final List<Map<String, dynamic>> items;
+  final VoidCallback onMessage;
+  final ValueChanged<Map<String, dynamic>> onOpen;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (isOwner) ...[
+          FilledButton(
+            onPressed: onMessage,
+            child: const Text('Message founder'),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (error != null)
+          Text(error!, style: const TextStyle(color: DayPilotColors.error)),
+        if (items.isEmpty && error == null) const Text('No founder messages.'),
+        for (final item in items)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(inboxThreadTitle(item)),
+            subtitle: Text(inboxThreadSubtitle(item)),
+            onTap: () => onOpen(item),
+          ),
+      ],
+    );
+  }
+}
+
 /// Founders never see internal notes. The owner inbox still does.
 List<Map<String, dynamic>> founderVisibleMessages(Object? messages) {
   if (messages is! List) return const [];

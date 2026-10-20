@@ -353,6 +353,137 @@ void main() {
     expect(find.text('No founding members with open access.'), findsOneWidget);
     expect(find.text('Send'), findsNothing);
   });
+
+  test('a sent thread is inserted at the top of the inbox', () {
+    final existing = {
+      'id': 'old',
+      'title': 'Older',
+      'categoryLabel': 'Bug',
+      'statusLabel': 'Submitted',
+    };
+    final sent = {
+      'id': 'thread-9',
+      'title': 'Week view',
+      'founderEmail': 'ada@example.com',
+      'categoryLabel': 'Other',
+      'statusLabel': 'Submitted',
+    };
+    expect(prependInboxThread([existing], sent).map((row) => row['id']), [
+      'thread-9',
+      'old',
+    ]);
+    expect(prependInboxThread([sent, existing], sent).map((row) => row['id']), [
+      'thread-9',
+      'old',
+    ]);
+    expect(prependInboxThread([existing], {'title': 'No id'}), [existing]);
+  });
+
+  testWidgets('the empty founder inbox lets the owner start a message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FounderInboxMessages(
+            isOwner: false,
+            items: const [],
+            onMessage: () {},
+            onOpen: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('No founder messages.'), findsOneWidget);
+    expect(find.text('Message founder'), findsNothing);
+
+    var items = <Map<String, dynamic>>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            return Scaffold(
+              body: FounderInboxMessages(
+                isOwner: true,
+                items: items,
+                onOpen: (_) {},
+                onMessage: () {
+                  showOwnerMessageDialog(
+                    context: context,
+                    founders: const [
+                      MessageableFounder(userId: 'ada', label: 'Ada Lovelace'),
+                    ],
+                    onSubmit: (draft) async {
+                      setState(() {
+                        items = prependInboxThread(items, {
+                          'id': 'thread-9',
+                          'title': draft.title,
+                          'ownerUnread': false,
+                          'founderEmail': 'ada@example.com',
+                          'categoryLabel': 'Other',
+                          'statusLabel': 'Submitted',
+                        });
+                      });
+                      return 'thread-9';
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('No founder messages.'), findsOneWidget);
+    expect(find.text('Message founder'), findsOneWidget);
+    await tester.tap(find.text('Message founder'));
+    await tester.pumpAndSettle();
+    expect(find.text('New message'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('owner-message-subject')),
+      'Week view',
+    );
+    await tester.enterText(
+      find.byKey(const Key('owner-message-body')),
+      'Can you try it?',
+    );
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No founder messages.'), findsNothing);
+    expect(find.text('Week view'), findsOneWidget);
+    expect(find.text('ada@example.com · Other · Submitted'), findsOneWidget);
+    expect(find.text('Message founder'), findsOneWidget);
+  });
+
+  testWidgets('Message founder stays on the inbox when threads exist', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FounderInboxMessages(
+            isOwner: true,
+            items: const [
+              {
+                'id': 'old',
+                'title': 'Older note',
+                'founderEmail': 'ada@example.com',
+                'categoryLabel': 'Bug',
+                'statusLabel': 'Submitted',
+              },
+            ],
+            onMessage: () {},
+            onOpen: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Message founder'), findsOneWidget);
+    expect(find.text('No founder messages.'), findsNothing);
+    expect(find.text('Older note'), findsOneWidget);
+  });
 }
 
 Future<void> _unusedSubmit(OwnerThreadDraft draft) async {}
