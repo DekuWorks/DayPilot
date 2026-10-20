@@ -74,6 +74,7 @@ export class MemoryHubDb implements HubDb {
         ? subs.find((row) => row.userId === claim.userId)
         : undefined;
       rows.push({
+        userId: claim.userId,
         email: user?.email ?? null,
         firstName: user?.firstName ?? null,
         lastName: user?.lastName ?? null,
@@ -89,6 +90,7 @@ export class MemoryHubDb implements HubDb {
       if (seen.has(sub.userId)) continue;
       const user = users.get(sub.userId);
       rows.push({
+        userId: sub.userId,
         email: user?.email ?? null,
         firstName: user?.firstName ?? null,
         lastName: user?.lastName ?? null,

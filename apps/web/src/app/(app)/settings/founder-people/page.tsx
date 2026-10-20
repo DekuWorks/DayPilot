@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { FounderOwnerNav } from "@/components/founder-hub/FounderOwnerNav";
+import { OwnerMessageForm } from "@/components/founder-hub/OwnerMessageForm";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   listFounderPeople,
@@ -33,6 +34,7 @@ export default function FounderPeoplePage() {
   const [waitlist, setWaitlist] = useState<WaitlistPerson[]>([]);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [messagingId, setMessagingId] = useState("");
 
   const load = useCallback(async () => {
     setError("");
@@ -121,6 +123,26 @@ export default function FounderPeoplePage() {
                       {when(person.subscribedAt)} · Access until{" "}
                       {when(person.currentPeriodEnd)}
                     </p>
+                    {person.canMessage && person.userId ? (
+                      <div className="mt-3 space-y-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMessagingId((current) =>
+                              current === person.userId
+                                ? ""
+                                : (person.userId ?? ""),
+                            )
+                          }
+                          className="min-h-11 rounded-lg bg-[var(--brand-500)] px-3 py-2 text-sm font-semibold text-black"
+                        >
+                          Message founder
+                        </button>
+                        {messagingId === person.userId ? (
+                          <OwnerMessageForm recipientUserId={person.userId} />
+                        ) : null}
+                      </div>
+                    ) : null}
                   </li>
                 ))}
               </ul>

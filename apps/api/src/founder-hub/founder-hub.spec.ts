@@ -248,11 +248,13 @@ describe('founder hub', () => {
     const people = await flow.listPeople('owner-user');
     expect(people.founding).toEqual([
       expect.objectContaining({
+        userId: 'member',
         email: 'member@example.com',
         name: 'Bea Member',
         plan: 'founding_pro',
         status: 'active',
         founderNumber: 3,
+        canMessage: true,
       }),
     ]);
     expect(people.waitlist[0]).toMatchObject({
@@ -272,6 +274,184 @@ describe('founder hub', () => {
     await expect(
       flow.setWaitlistStatus('owner-user', 'missing', 'handled'),
     ).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('lets the hub owner message a founding member on a private thread', async () => {
+    const db = new MemoryHubDb();
+    db.users.push(
+      { id: 'owner-user', role: 'USER', email: 'owner@example.com' },
+      { id: 'founder-1', role: 'USER', email: 'founder@example.com' },
+      { id: 'founder-2', role: 'USER', email: 'other@example.com' },
+      { id: 'grace-1', role: 'USER', email: 'grace@example.com' },
+      { id: 'ending-1', role: 'USER', email: 'ending@example.com' },
+      { id: 'expired-1', role: 'USER', email: 'expired@example.com' },
+      { id: 'pro-1', role: 'USER', email: 'pro@example.com' },
+      { id: 'admin-other', role: 'ADMIN', email: 'admin@example.com' },
+    );
+    db.subscriptions.push(
+      {
+        userId: 'founder-1',
+        tier: 'FoundingPro',
+        planId: 'founding_pro',
+        status: 'active',
+        currentPeriodEnd: FUTURE,
+        founderNumber: 1,
+      },
+      {
+        userId: 'founder-2',
+        tier: 'FoundingPro',
+        planId: 'founding_pro',
+        status: 'active',
+        currentPeriodEnd: FUTURE,
+        founderNumber: 2,
+      },
+      {
+        userId: 'grace-1',
+        tier: 'FoundingPro',
+        planId: 'founding_pro',
+        status: 'past_due',
+        currentPeriodEnd: FUTURE,
+        founderNumber: 3,
+      },
+      {
+        userId: 'ending-1',
+        tier: 'FoundingPro',
+        planId: 'founding_pro',
+        status: 'canceled',
+        currentPeriodEnd: FUTURE,
+        founderNumber: 4,
+      },
+      {
+        userId: 'expired-1',
+        tier: 'FoundingPro',
+        planId: 'founding_pro',
+        status: 'canceled',
+        currentPeriodEnd: PAST,
+        founderNumber: 5,
+      },
+      {
+        userId: 'pro-1',
+        tier: 'Pro',
+        planId: 'pro',
+        status: 'active',
+        currentPeriodEnd: FUTURE,
+        founderNumber: null,
+      },
+    );
+    const flow = new FounderHubFlow(db, {
+      ownerUserId: 'owner-user',
+      apnsReady: false,
+      resendReady: false,
+      now: () => NOW,
+    });
+
+    await expectStatus(
+      flow.startOwnerThread('founder-1', {
+        recipientUserId: 'founder-2',
+        title: 'Hello',
+        body: 'From another founder.',
+      }),
+      403,
+    );
+    await expectStatus(
+      flow.startOwnerThread('admin-other', {
+        recipientUserId: 'founder-1',
+        title: 'Hello',
+        body: 'An admin is not the owner.',
+      }),
+      403,
+    );
+    await expectStatus(
+      flow.startOwnerThread('owner-user', {
+        recipientUserId: 'pro-1',
+        title: 'Hello',
+        body: 'Pro is not a founder.',
+      }),
+      403,
+    );
+    await expectStatus(
+      flow.startOwnerThread('owner-user', {
+        recipientUserId: 'expired-1',
+        title: 'Hello',
+        body: 'Access has ended.',
+      }),
+      403,
+    );
+    await expectStatus(
+      flow.startOwnerThread('owner-user', {
+        recipientUserId: 'missing-user',
+        title: 'Hello',
+        body: 'Nobody here.',
+      }),
+      404,
+    );
+
+    const created = await flow.startOwnerThread('owner-user', {
+      recipientUserId: 'founder-1',
+      title: 'A question',
+      body: 'Can you try the week view?',
+    });
+    expect(created).toMatchObject({
+      title: 'A question',
+      founderUserId: 'founder-1',
+      ownerUnread: false,
+    });
+    expect(created.messages).toEqual([
+      expect.objectContaining({
+        kind: 'admin_reply',
+        body: 'Can you try the week view?',
+      }),
+    ]);
+    expect(
+      (await flow.listInbox('owner-user', {})).map((row) => row.id),
+    ).toContain(created.id);
+    expect((await flow.listMine('founder-1')).map((row) => row.id)).toContain(
+      created.id,
+    );
+    expect((await flow.listMine('founder-1'))[0]?.unread).toBe(true);
+
+    const mine = await flow.readMine('founder-1', created.id);
+    expect(mine.messages[0]?.body).toBe('Can you try the week view?');
+    expect(mine.messages.some((row) => row.kind === 'internal_note')).toBe(
+      false,
+    );
+
+    await expectStatus(flow.readMine('founder-2', created.id), 403);
+    expect(
+      (await flow.listMine('founder-2')).map((row) => row.id),
+    ).not.toContain(created.id);
+    await expectStatus(flow.readMine('pro-1', created.id), 403);
+
+    const replied = await flow.adminReply(
+      'owner-user',
+      created.id,
+      'One more note.',
+    );
+    expect(replied.messages.map((row) => row.body)).toContain('One more note.');
+
+    await expect(
+      flow.startOwnerThread('owner-user', {
+        recipientUserId: 'grace-1',
+        title: 'Billing grace',
+        body: 'Still open while the period has not ended.',
+      }),
+    ).resolves.toMatchObject({ founderUserId: 'grace-1' });
+    await expect(
+      flow.startOwnerThread('owner-user', {
+        recipientUserId: 'ending-1',
+        title: 'Until the period ends',
+        body: 'Cancellation has not closed access yet.',
+      }),
+    ).resolves.toMatchObject({ founderUserId: 'ending-1' });
+
+    const people = await flow.listPeople('owner-user');
+    expect(
+      people.founding.find((row) => row.userId === 'founder-1'),
+    ).toMatchObject({ canMessage: true });
+    expect(
+      people.founding.find((row) => row.userId === 'expired-1'),
+    ).toMatchObject({ canMessage: false });
+    expect(people.waitlist).toEqual([]);
   });
 
   it('delivers a new suggestion and a follow-up to the owner immediately', async () => {

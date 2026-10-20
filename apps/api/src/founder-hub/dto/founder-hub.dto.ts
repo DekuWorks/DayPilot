@@ -31,6 +31,24 @@ export class CreateSuggestionDto {
   featureKey?: string;
 }
 
+/** Owner starts a private thread with one founding member. */
+export class OwnerThreadDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  recipientUserId!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(4000)
+  body!: string;
+}
+
 export class SuggestionMessageDto {
   @IsString()
   @MinLength(1)

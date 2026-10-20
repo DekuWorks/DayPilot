@@ -129,6 +129,13 @@ export class FounderHubService {
     return this.flow.listPeople(userId);
   }
 
+  startOwnerThread(
+    userId: string,
+    input: { recipientUserId: string; title: string; body: string },
+  ) {
+    return this.flow.startOwnerThread(userId, input);
+  }
+
   setWaitlistStatus(userId: string, id: string, status: string) {
     return this.flow.setWaitlistStatus(userId, id, status);
   }

@@ -19,6 +19,7 @@ import {
   BetaEnabledDto,
   CreateSuggestionDto,
   NotificationPrefsDto,
+  OwnerThreadDto,
   RegisterDeviceDto,
   SuggestionMessageDto,
   UpdateStatusDto,
@@ -167,6 +168,17 @@ export class FounderHubController {
   @Get('inbox/alerts')
   alerts(@Req() req: Authed) {
     return run(this.hub.alerts(req.user.id));
+  }
+
+  @Post('inbox')
+  startThread(@Req() req: Authed, @Body() dto: OwnerThreadDto) {
+    return run(
+      this.hub.startOwnerThread(req.user.id, {
+        recipientUserId: dto.recipientUserId,
+        title: dto.title,
+        body: dto.body,
+      }),
+    );
   }
 
   @Get('inbox')

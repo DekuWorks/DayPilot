@@ -9,6 +9,7 @@ export function isWaitlistStatus(value: string): value is WaitlistStatus {
 }
 
 export type FoundingDirectoryInput = {
+  userId?: string | null;
   email?: string | null;
   name?: string | null;
   firstName?: string | null;
@@ -35,6 +36,7 @@ export type WaitlistDirectoryInput = {
 
 export type PeopleDirectory = {
   founding: {
+    userId: string | null;
     email: string | null;
     name: string | null;
     plan: string;
@@ -81,6 +83,7 @@ export function toPeopleDirectory(input: {
 }): PeopleDirectory {
   return {
     founding: input.founding.map((row) => ({
+      userId: row.userId?.trim() || null,
       email: row.email?.trim() || null,
       name: displayName(row),
       plan: resolvePlanId(row.tier, row.planId),
