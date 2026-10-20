@@ -6,6 +6,7 @@ import '../../core/providers/bootstrap_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/feature_scaffold.dart';
 import 'founder_hub_api.dart';
+import 'founder_owner_message.dart';
 
 class FounderInboxScreen extends ConsumerStatefulWidget {
   const FounderInboxScreen({super.key});
@@ -27,7 +28,9 @@ class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
 
   Future<void> _load() async {
     try {
-      final items = await FounderHubApi(ref.read(nestApiSessionProvider)).inbox();
+      final items = await FounderHubApi(
+        ref.read(nestApiSessionProvider),
+      ).inbox();
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -54,19 +57,19 @@ class _FounderInboxScreenState extends ConsumerState<FounderInboxScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: DayPilotColors.error)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: DayPilotColors.error),
+                  ),
                 if (_items.isEmpty && _error == null)
                   const Text('No founder messages.'),
                 for (final item in _items)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      '${item['title']}${item['ownerUnread'] == true ? ' · unread' : ''}',
-                    ),
-                    subtitle: Text(
-                      '${item['categoryLabel']} · ${item['statusLabel']}',
-                    ),
-                    onTap: () => context.push('/settings/founder-inbox/${item['id']}'),
+                    title: Text(inboxThreadTitle(item)),
+                    subtitle: Text(inboxThreadSubtitle(item)),
+                    onTap: () =>
+                        context.push('/settings/founder-inbox/${item['id']}'),
                   ),
               ],
             ),
@@ -106,8 +109,9 @@ class _FounderInboxThreadScreenState
 
   Future<void> _load() async {
     try {
-      final item =
-          await FounderHubApi(ref.read(nestApiSessionProvider)).inboxThread(widget.id);
+      final item = await FounderHubApi(
+        ref.read(nestApiSessionProvider),
+      ).inboxThread(widget.id);
       if (mounted) setState(() => _item = item);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -135,7 +139,10 @@ class _FounderInboxThreadScreenState
                       child: Text('${message['kind']}: ${message['body']}'),
                     ),
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: DayPilotColors.error)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: DayPilotColors.error),
+                  ),
                 TextField(
                   controller: _reply,
                   decoration: const InputDecoration(labelText: 'Reply'),
